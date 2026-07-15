@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Infinity at Rio Ranch — theme tokens
+   Light is the default. Dark + accent palettes are applied at
+   runtime via [data-theme] / [data-accent] on <html> (see theme store).
+   --hero-bg intentionally has no light override: the top Hero keeps
+   its dark, photo-backed look in both themes.
+   ============================================================ */
+@layer base {
+  :root {
+    --ink: #100e0b;
+    --panel: #17130d;
+    --panel2: #1e190f;
+    --cream: #f3ede2;
+    --muted: rgba(243, 237, 226, 0.6);
+    --line: rgba(243, 237, 226, 0.12);
+    --brass: #c9a86a;
+    --brass2: #e2c690;
+    --onbrass: #14100b;
+    --footer-bg: #0b0906;
+    --btn-outline: rgba(243, 237, 226, 0.35);
+    --nav-scrolled: rgba(16, 14, 11, 0.85);
+    --menu-bg: rgba(12, 10, 8, 0.97);
+
+    --hero-bg: radial-gradient(120% 78% at 50% 118%, #e0a24e 0%, #a9662f 20%, #5c3a20 40%, #2a1c12 64%, #140f0a 82%, #0f0b07 100%);
+    --band-overlay: linear-gradient(90deg, rgba(12, 10, 8, 0.92) 0%, rgba(12, 10, 8, 0.6) 46%, rgba(12, 10, 8, 0.25) 100%);
+    --contact-glow: radial-gradient(120% 90% at 50% 0%, rgba(90, 58, 32, 0.5), transparent 55%);
+  }
+
+  [data-theme='light'] {
+    --ink: #f6f0e6;
+    --panel: #efe7d8;
+    --panel2: #e8ddc9;
+    --cream: #2b2620;
+    --muted: rgba(43, 38, 32, 0.62);
+    --line: rgba(43, 38, 32, 0.14);
+    --onbrass: #fbf5ea;
+    --footer-bg: #ece1cf;
+    --btn-outline: rgba(43, 38, 32, 0.28);
+    --nav-scrolled: rgba(246, 240, 231, 0.85);
+    --menu-bg: rgba(246, 240, 231, 0.98);
+
+    --band-overlay: linear-gradient(90deg, rgba(246, 240, 231, 0.86) 0%, rgba(246, 240, 231, 0.42) 46%, rgba(246, 240, 231, 0.08) 100%);
+    --contact-glow: radial-gradient(120% 90% at 50% 0%, rgba(205, 160, 88, 0.32), transparent 55%);
+  }
+
+  /* Accent palettes — [accent][theme] pairs of [--brass, --brass2] */
+  [data-accent='champagne'] {
+    --brass: #d8c6a2;
+    --brass2: #efe1c4;
+  }
+  [data-accent='champagne'][data-theme='light'] {
+    --brass: #b08a4e;
+    --brass2: #8f6a34;
+  }
+  [data-accent='copper'] {
+    --brass: #c47a4c;
+    --brass2: #e0a06a;
+  }
+  [data-accent='copper'][data-theme='light'] {
+    --brass: #a55a30;
+    --brass2: #8a4a26;
+  }
+  [data-accent='sage'] {
+    --brass: #a9b487;
+    --brass2: #cdd6ad;
+  }
+  [data-accent='sage'][data-theme='light'] {
+    --brass: #6f7a4c;
+    --brass2: #586233;
+  }
+  /* Brass in light mode (default accent) */
+  [data-accent='brass'][data-theme='light'] {
+    --brass: #a9762d;
+    --brass2: #8a5f22;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--ink);
+    color: var(--cream);
+    font-family: 'Jost', system-ui, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  ::selection {
+    background: var(--brass);
+    color: var(--onbrass);
+  }
+}
+
+/* Respect the OS-level motion preference across every animation/transition on the site. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  /* Diagonal light sweep on the primary CTA — a single signature motion, not repeated everywhere. */
+  .btn-shine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    left: -75%;
+    width: 50%;
+    background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: skewX(-18deg);
+    transition: left 0.65s ease-out;
+    pointer-events: none;
+  }
+  .btn-shine:hover::after {
+    left: 125%;
+  }
+}
+
+/* ============================================================
+   Keyframes ported from the design prototype
+   ============================================================ */
+@layer utilities {
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.3;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+  @keyframes kenburns {
+    0% {
+      transform: scale(1.02) translate(0, 0);
+    }
+    100% {
+      transform: scale(1.14) translate(-1.6%, -2%);
+    }
+  }
+  @keyframes floatY {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-22px);
+    }
+  }
+  @keyframes scrolldot {
+    0% {
+      transform: translateY(-2px);
+      opacity: 0;
+    }
+    30% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+  }
+  @keyframes riseIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Print: show only the invoice document, drop all app chrome. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .invoice-print,
+  .invoice-print * {
+    visibility: visible;
+  }
+  .invoice-print {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    max-width: none;
+    box-shadow: none;
+  }
+}
