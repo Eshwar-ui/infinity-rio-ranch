@@ -44,7 +44,12 @@ Supabase backend, deployed to Vercel.
 - `src/components/admin/content-editor.tsx` — generic CRUD editor (testimonials/events/faqs).
 - `src/lib/supabase.ts` client; `src/lib/invoice.ts` totals/money helpers.
 - `src/hooks/use-admin.ts` session + is_admin; `src/hooks/use-site-content.ts` public reads.
+- `supabase/migrations/0001_init.sql` — full DB schema (tables, RLS, functions,
+  triggers, storage bucket, seeds). The source of truth for the backend; keep it
+  in sync with any schema change. `RUNBOOK.md` — key rotation + new-project setup.
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
+  **Its source is not in the repo** (deployed directly) — must be rebuilt from
+  scratch on a fresh project; see `RUNBOOK.md`.
 
 ## Verifying in the browser (important gotchas)
 - This site's **infinite CSS animations hang the preview's screenshot and
@@ -78,8 +83,12 @@ Supabase backend, deployed to Vercel.
 - **Theme:** dark (default) + light + 4 accents as CSS vars in `index.css`, mapped
   into Tailwind; `[data-theme]`/`[data-accent]` set on `<html>` by the theme store.
   Fonts: Cormorant Garamond (serif) / Dancing Script (script) / Jost (body).
-- **Supabase:** project `infinity-rio-ranch`, ref `fgzztabgzoxuwkknpdmu`
-  (region us-east-1), org `cscvnreghecmarqhgkrq`. Edge function: `send-invoice`.
+- **Supabase:** ref `xmnneacpgjwaihwcvayx` (`https://xmnneacpgjwaihwcvayx.supabase.co`).
+  Edge function: `send-invoice`. This replaced the original project
+  `fgzztabgzoxuwkknpdmu` (org `cscvnreghecmarqhgkrq`, region us-east-1) after it was
+  **deleted** — which is why the schema is now versioned in
+  `supabase/migrations/0001_init.sql`. Confirm the new project's region/org in the
+  dashboard; recovery steps in `RUNBOOK.md`.
 - **Hosting:** Vercel project `eshwar-uis-projects/infinity-rio-ranch`
   (live at https://infinity-rio-ranch.vercel.app; `vercel.json` handles SPA rewrites).
   Vercel CLI auth is interactive-only — can't deploy non-interactively from here.
@@ -88,5 +97,7 @@ Supabase backend, deployed to Vercel.
 - **Venue (real data):** Infinity at Rio Ranch, 326 Rio Pk Dr, Liberty Hill, TX 78642
   (Greater Austin). Contact details live in `src/data/site.ts`.
 
-See `admin-plan.md` for full backend/feature status and `progress.md` for the
-original site build.
+See `admin-plan.md` for full backend/feature status, `progress.md` for the
+original site build, `RUNBOOK.md` for backend ops (key rotation, standing up a
+new Supabase project, rebuilding the edge function), and `DEPLOY.md` for shipping
+to Vercel (env vars, pre-flight, verification, rollback).
