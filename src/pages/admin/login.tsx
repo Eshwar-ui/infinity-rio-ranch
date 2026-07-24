@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Eye, EyeSlash } from '@phosphor-icons/react'
 
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
@@ -12,6 +13,7 @@ export const AdminLogin = () => {
   const { session, isAdmin, loading } = useAdmin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -69,15 +71,26 @@ export const AdminLogin = () => {
             onChange={(e) => setEmail(e.target.value)}
             className={field}
           />
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={field}
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`${field} pr-11`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-brass2"
+            >
+              {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
 
           {error && <p className="text-[12px] text-[#d98a6a]">{error}</p>}
 
