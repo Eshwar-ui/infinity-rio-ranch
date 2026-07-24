@@ -44,9 +44,11 @@ Supabase backend, deployed to Vercel.
 - `src/components/admin/content-editor.tsx` — generic CRUD editor (testimonials/events/faqs).
 - `src/lib/supabase.ts` client; `src/lib/invoice.ts` totals/money helpers.
 - `src/hooks/use-admin.ts` session + is_admin; `src/hooks/use-site-content.ts` public reads.
-- `supabase/migrations/0001_init.sql` — full DB schema (tables, RLS, functions,
-  triggers, storage bucket, seeds). The source of truth for the backend; keep it
-  in sync with any schema change. `RUNBOOK.md` — key rotation + new-project setup.
+- `supabase/migrations/` — DB schema, source of truth for the backend; keep in
+  sync with any schema change. `0001_init.sql` = tables, RLS, functions, triggers,
+  storage bucket, seeds. `0002_hardening.sql` = leads CHECK constraints, single-
+  featured trigger, `updated_at`, indexes. `RUNBOOK.md` — key rotation + new-project
+  setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
   **Its source is not in the repo** (deployed directly) — must be rebuilt from
   scratch on a fresh project; see `RUNBOOK.md`.

@@ -80,10 +80,8 @@ export const AdminGallery = () => {
       : await supabase.from('gallery').insert(payload).select().single()
     if (res.error) return toast.error('Could not save.')
 
-    // Only one featured photo — clear the flag on all others.
-    if (payload.featured) {
-      await supabase.from('gallery').update({ featured: false }).neq('id', res.data.id)
-    }
+    // Single-featured is enforced by a DB trigger (0002_hardening.sql) — no
+    // client-side clearing needed. `load()` below refetches the corrected state.
     setDraft(null)
     toast.success('Saved.')
     load()
@@ -94,7 +92,19 @@ export const AdminGallery = () => {
     setRows((prev) => prev.filter((r) => r.id !== row.id))
     if (draft?.id === row.id) setDraft(null)
     const { error } = await supabase.from('gallery').delete().eq('id', row.id)
-    if (error) toast.error('Could not delete.')
+    if (error) {
+      toast.error('Could not delete.')
+      return
+    }
+    // Best-effort: also remove the uploaded file from Storage so it doesn't
+    // orphan. Seed rows point at bundled /assets and have no Storage object —
+    // those are skipped (marker absent).
+    const marker = '/storage/v1/object/public/gallery/'
+    const at = String(row.src ?? '').indexOf(marker)
+    if (at !== -1) {
+      const path = decodeURIComponent(String(row.src).slice(at + marker.length))
+      await supabase.storage.from('gallery').remove([path])
+    }
   }
 
   return (
