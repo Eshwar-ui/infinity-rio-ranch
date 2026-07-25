@@ -6,12 +6,14 @@
 //
 // Secrets to set (Dashboard → Edge Functions → send-invoice → Secrets, or
 // `supabase secrets set`): RESEND_API_KEY, INVOICE_FROM, SITE_URL.
+// Optional: INVOICE_REPLY_TO (where client replies should land, e.g. the venue's inbox).
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const INVOICE_FROM = Deno.env.get('INVOICE_FROM')          // e.g. "Infinity at Rio Ranch <invoices@yourdomain.com>"
-const SITE_URL = Deno.env.get('SITE_URL') ?? ''            // e.g. "https://infinity-rio-ranch.vercel.app"
+const INVOICE_FROM = Deno.env.get('INVOICE_FROM')          // e.g. "Infinity at Rio Ranch <invoices@infinityrioranch.com>"
+const INVOICE_REPLY_TO = Deno.env.get('INVOICE_REPLY_TO')  // e.g. "infinityrioranch6@gmail.com" — replies reach a real inbox
+const SITE_URL = Deno.env.get('SITE_URL') ?? ''            // e.g. "https://infinityrioranch.com"
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -102,15 +104,18 @@ Deno.serve(async (req) => {
       <p style="font-size:11px;color:#a99a86;margin-top:24px;font-family:Arial,sans-serif">If the button doesn't work, copy this link: ${link}</p>
     </div>`
 
+    const payload: Record<string, unknown> = {
+      from: INVOICE_FROM,
+      to: [inv.client_email],
+      subject: `Invoice ${inv.number ?? ''} from Infinity at Rio Ranch`,
+      html,
+    }
+    if (INVOICE_REPLY_TO) payload.reply_to = INVOICE_REPLY_TO
+
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: INVOICE_FROM,
-        to: [inv.client_email],
-        subject: `Invoice ${inv.number ?? ''} from Infinity at Rio Ranch`,
-        html,
-      }),
+      body: JSON.stringify(payload),
     })
 
     if (!resp.ok) {
