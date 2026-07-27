@@ -1,11 +1,112 @@
-# Dev/default copy. The deployed file is regenerated at build time by
-# scripts/prerender.mjs (source: robotsTxt() in src/lib/seo.ts) so the Sitemap
-# line always matches the domain the build targets.
+# robots.txt — Infinityrioranch (https://www.infinityrioranch.com)
+# Static landing site. Everything public is crawlable; only app-style private
+# paths (none exist on this static export, listed defensively) are disallowed.
 
+# ─── Default: all crawlers ───────────────────────────────────────────────
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin/
-Disallow: /invoice/
 
+# ─── Search engines ──────────────────────────────────────────────────────
+# Google
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-News
+Allow: /
+
+User-agent: Googlebot-Video
+Allow: /
+
+# Bing & Microsoft Copilot
+User-agent: Bingbot
+Allow: /
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /
+
+# Yandex
+User-agent: Yandex
+Allow: /
+
+# Apple
+User-agent: Applebot
+Allow: /
+
+# ─── AI answer engines (let them read & cite the site) ───────────────────
+# OpenAI / ChatGPT
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Google Gemini / Vertex
+User-agent: Google-Extended
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+
+# Amazon
+User-agent: Amazonbot
+Allow: /
+
+# Common Crawl (feeds many downstream models)
+User-agent: CCBot
+Allow: /
+
+# Meta AI
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# ByteDance / TikTok
+User-agent: Bytespider
+Allow: /
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+
+# ─── SEO / backlink crawlers ─────────────────────────────────────────────
+User-agent: AhrefsBot
+Allow: /
+
+User-agent: SemrushBot
+Allow: /
+
+User-agent: MJ12bot
+Allow: /
+
+# ─── Sitemap ─────────────────────────────────────────────────────────────
 Sitemap: https://www.infinityrioranch.com/sitemap.xml
+
+# ─── AI / LLM resources (llms.txt standard — llmstxt.org) ────────────────
+# Curated map + first-party facts for ChatGPT, Claude, Gemini, Perplexity, etc.
+# Map:        https://www.infinityrioranch.com/llms.txt
+# Full text:  https://www.infinityrioranch.com/llms-full.txt
+# Facts JSON: https://www.infinityrioranch.com/facts.json
