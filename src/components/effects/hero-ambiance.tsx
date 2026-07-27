@@ -20,6 +20,16 @@ export const HERO_SLIDES = [
 export const HeroSlideshow = ({ active }: { active: number }) => {
   const parallaxRef = useParallax<HTMLDivElement>(0.16)
   const mountRest = useAfterPaint(3000)
+  /*
+   * Ken Burns is held back separately, and it matters more than it looks: this
+   * animation runs on the direct parent of the LCP element. Starting an
+   * infinite `transform` animation on the first frame means the browser is
+   * compositing and recalculating style for the hero before it has even painted
+   * it once. Measured on mobile: LCP was 5.2 s with 4557 ms of *render delay*
+   * against only 189 ms of image load time — the photo was long since
+   * downloaded and simply couldn't get painted.
+   */
+  const animate = useAfterPaint()
 
   return (
     <div
@@ -38,7 +48,9 @@ export const HeroSlideshow = ({ active }: { active: number }) => {
               style={{
                 opacity: i === active ? 1 : 0,
                 transition: 'opacity 1.7s ease',
-                animation: `kenburns ${17 + i * 2}s ease-in-out infinite alternate`,
+                ...(animate
+                  ? { animation: `kenburns ${17 + i * 2}s ease-in-out infinite alternate` }
+                  : null),
               }}
             >
               <SmartImage

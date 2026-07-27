@@ -16,6 +16,19 @@ import { useEffect, useState } from 'react'
  * first render and hydration stays intact. These layers are `aria-hidden`
  * decoration — nothing indexable is deferred.
  */
+/**
+ * `requestIdleCallback` alone was not enough. On a fast machine the main thread
+ * goes idle within ~200 ms, so every "deferred" layer was mounting during the
+ * critical window anyway — measured: hero slide 2 (70 kB) requesting at 393 ms,
+ * and the grain/bokeh/lights style work landing before the largest paint.
+ *
+ * Idle is a statement about the CPU, not about whether the page has finished
+ * presenting itself. So: wait out a real settle window *first*, then ask for
+ * idle. `MIN_DELAY` is below the 5.5 s hero transition and above a typical
+ * largest paint, which is the window this is trying to protect.
+ */
+const MIN_DELAY = 1800
+
 export const useAfterPaint = (timeout = 2000) => {
   const [ready, setReady] = useState(false)
 
@@ -23,13 +36,19 @@ export const useAfterPaint = (timeout = 2000) => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const supportsIdle = typeof window.requestIdleCallback === 'function'
-    const id = supportsIdle
-      ? window.requestIdleCallback(() => setReady(true), { timeout })
-      : window.setTimeout(() => setReady(true), 600)
+    let idleId: number | undefined
+
+    const settle = window.setTimeout(() => {
+      if (supportsIdle) {
+        idleId = window.requestIdleCallback(() => setReady(true), { timeout })
+      } else {
+        setReady(true)
+      }
+    }, MIN_DELAY)
 
     return () => {
-      if (supportsIdle) window.cancelIdleCallback(id as number)
-      else window.clearTimeout(id)
+      window.clearTimeout(settle)
+      if (idleId !== undefined) window.cancelIdleCallback(idleId)
     }
   }, [timeout])
 

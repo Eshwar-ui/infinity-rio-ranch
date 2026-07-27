@@ -6,6 +6,7 @@ import { SectionHeading } from '@/components/ui/section-heading'
 import { StatList } from '@/components/ui/stat-list'
 import { Reveal } from '@/components/effects/reveal'
 import { useParallax } from '@/hooks/use-parallax'
+import { useAfterPaint } from '@/hooks/use-after-paint'
 import { GalleryCarousel } from '@/components/gallery/gallery-carousel'
 import { HomeHero } from '@/components/sections/home-hero'
 import { Testimonials } from '@/components/sections/testimonials'
@@ -17,12 +18,20 @@ const WELCOME_INSET = '/assets/site/DSC3669-2.jpg'
 
 const CtaBand = () => {
   const parallaxRef = useParallax<HTMLDivElement>(0.14)
+  /*
+   * A CSS background can't be lazy-loaded — the browser fetches it as soon as
+   * the rule applies. This one is a full-screen band *below* the fold, and it
+   * was being requested at 53 ms, ahead of the hero photo it was competing
+   * with. Applying it after the settle window keeps 39 kB out of the critical
+   * path; the section keeps its height either way, so nothing shifts.
+   */
+  const showBackdrop = useAfterPaint()
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden">
       <div
         ref={parallaxRef}
         className="absolute inset-x-0 -inset-y-[14%] z-0 bg-cover bg-center"
-        style={{ backgroundImage: 'url(/assets/site/ss.jpg)' }}
+        style={showBackdrop ? { backgroundImage: 'url(/assets/site/ss.jpg)' } : undefined}
       />
       <div className="absolute inset-0 z-[1]" style={{ background: 'var(--band-overlay)' }} />
       <div className="relative z-[3] mx-auto w-full max-w-content px-[clamp(20px,6vw,80px)] py-20">

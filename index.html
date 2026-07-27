@@ -95,20 +95,27 @@
         }
 
         // A visitor who interacts is a visitor worth measuring right now.
+        // NOT `scroll`: parallax/scroll-restoration fire it during hydration,
+        // which pulled GTM back onto the critical path (measured: loading at
+        // 358 ms instead of on idle).
         var opts = { once: true, passive: true, capture: true }
-        var events = ['pointerdown', 'keydown', 'touchstart', 'scroll']
+        var events = ['pointerdown', 'keydown', 'touchstart']
         for (var n = 0; n < events.length; n++) {
           w.addEventListener(events[n], start, opts)
         }
 
-        var backstop = setTimeout(start, 3000)
-
-        function schedule() {
-          if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 2000 })
-          else setTimeout(start, 200)
-        }
-        if (d.readyState === 'complete') schedule()
-        else w.addEventListener('load', schedule, { once: true })
+        /*
+         * Idle-after-load alone was not enough: on a fast connection `load`
+         * fires in a few hundred ms and the idle callback ran immediately, so
+         * GTM was back on the critical path (measured: requesting at 313 ms,
+         * 485 kB — a third of the page's total bytes — and 593 ms of main-thread
+         * time). Waiting for a real settle window before even asking for idle is
+         * what keeps it out of the paint.
+         */
+        var backstop = setTimeout(function () {
+          if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 1500 })
+          else start()
+        }, 3500)
       })(window, document, 'script', 'dataLayer', 'GTM-PXBN6P5J')
     </script>
 
