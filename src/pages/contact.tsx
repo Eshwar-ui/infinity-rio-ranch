@@ -204,6 +204,15 @@ export const ContactPage = () => {
                   {contact.address}
                 </a>
               </div>
+              <div className="overflow-hidden rounded-[2px] border border-line shadow-[0_20px_45px_rgba(0,0,0,0.25)]">
+                <iframe
+                  title="Infinity at Rio Ranch location"
+                  src={contact.mapEmbedUrl}
+                  className="h-[280px] w-full border-0 grayscale-[0.2]"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
           </Reveal>
         </div>

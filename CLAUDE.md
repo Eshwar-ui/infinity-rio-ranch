@@ -50,6 +50,17 @@ Supabase backend, deployed to Vercel.
   Adding a public page means updating `PUBLIC_ROUTES` + `ROUTE_META` there, the
   router in `App.tsx` **and** `src/entry-server.tsx`, plus a rewrite in
   `vercel.json` (the prerender script fails the build if you forget that last one).
+  The prerenderer also emits `404.html`, `llms.txt`, `llms-full.txt` and
+  `facts.json` from the same module.
+  **Never put `robots.txt` or `sitemap.xml` in `public/`** — Vite copies that
+  folder into `dist/` *before* the prerender step overwrites both files, so
+  hand-edits there look authoritative and ship nothing. This has already
+  happened once; see "The `public/` trap" in `SEO.md`.
+- **No catch-all rewrite in `vercel.json`.** A `/(.*)` → `/index.html` rule makes
+  every unknown URL return 200 with the homepage's HTML (soft 404s at unbounded
+  URLs). Unknown paths must fall through to `dist/404.html`. `App.tsx` and
+  `entry-server.tsx` both route `path="*"` to `NotFoundPage`; the prerender
+  script fails the build if a catch-all reappears.
   Photos must be real `<img>` with alt text — background images are unindexable.
   Full write-up in `SEO.md`.
 - **The client hydrates the prerendered HTML — don't break the match.** Both

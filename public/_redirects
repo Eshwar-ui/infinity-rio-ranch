@@ -1,6 +1,14 @@
-# Netlify-style fallback (Vercel uses vercel.json). Prerendered routes are
-# listed first so the SPA catch-all doesn't swallow their static HTML.
+# Netlify-style fallback. INERT on Vercel — vercel.json is what actually runs.
+# Kept only so a move to Netlify doesn't silently lose the routing rules; if you
+# change vercel.json, change this too.
+#
+# Note there is deliberately NO `/* /index.html 200` catch-all: it would make
+# every unknown URL return 200 with the homepage's HTML (soft 404s). Unknown
+# paths must fall through to 404.html and return a real 404.
 /about      /about/index.html      200
 /gallery    /gallery/index.html    200
 /contact    /contact/index.html    200
-/*          /index.html            200
+/admin      /index.html            200
+/admin/*    /index.html            200
+/invoice/*  /index.html            200
+/*          /404.html              404

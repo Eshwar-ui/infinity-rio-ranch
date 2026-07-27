@@ -51,6 +51,16 @@ export const PUBLIC_ROUTES = ['/', '/about', '/gallery', '/contact'] as const
 export type PublicRoute = (typeof PUBLIC_ROUTES)[number]
 
 /**
+ * Rendered to `dist/404.html`, which Vercel serves — with a real 404 status —
+ * for any path that matches no static file and no rewrite.
+ *
+ * Deliberately *not* in PUBLIC_ROUTES: it must never reach the sitemap, and
+ * `assertRewritesCoverRoutes` must not demand a rewrite for it (a rewrite is
+ * exactly what would turn it back into a 200).
+ */
+export const NOT_FOUND_ROUTE = '/404'
+
+/**
  * Social / link-preview card. 1752x1168 is the real size of this photo — the
  * dimensions must be truthful or scrapers fall back to guessing.
  */
@@ -368,6 +378,25 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
     }
   }
 
+  /*
+   * 404.html is served at whatever URL the visitor mistyped, so it gets no
+   * canonical (there is no correct URL to point at) and no JSON-LD (there is no
+   * entity on this page). `follow` keeps the nav links crawlable so the crawler
+   * can find its way back to the real pages.
+   */
+  if (pathname === NOT_FOUND_ROUTE) {
+    const robots404 = 'noindex, follow'
+    return {
+      title: `Page not found | ${BRAND}`,
+      description: `That page doesn't exist. Browse ${BRAND} in Liberty Hill, TX — venue details, photo gallery and tour bookings.`,
+      canonical: '',
+      robots: robots404,
+      metaName: { robots: robots404, 'theme-color': '#0c0a07' },
+      metaProperty: {},
+      jsonLd: [],
+    }
+  }
+
   const meta = ROUTE_META[pathname] ?? ROUTE_META['/']
   const image = meta.image ?? OG_IMAGE
   const canonical = pathname === '/' ? `${SITE_URL}/` : abs(pathname)
@@ -435,7 +464,10 @@ const escapeJsonLd = (value: unknown) =>
 export const renderHeadTags = (head: HeadModel): string => {
   const lines = [
     `<title>${escapeAttr(head.title)}</title>`,
-    `<link rel="canonical" href="${escapeAttr(head.canonical)}" />`,
+    // 404.html has no canonical — see buildHead.
+    ...(head.canonical
+      ? [`<link rel="canonical" href="${escapeAttr(head.canonical)}" />`]
+      : []),
     ...Object.entries(head.metaName).map(
       ([name, content]) =>
         `<meta name="${escapeAttr(name)}" content="${escapeAttr(content)}" />`,
@@ -469,7 +501,7 @@ export type SitemapEntry = {
 export const sitemapEntries = (): SitemapEntry[] =>
   PUBLIC_ROUTES.map((route) => ({
     loc: route === '/' ? `${SITE_URL}/` : abs(route),
-    changefreq: route === '/gallery' ? 'monthly' : 'monthly',
+    changefreq: 'monthly',
     priority: route === '/' ? '1.0' : route === '/contact' ? '0.9' : '0.8',
     images:
       route === '/gallery'
@@ -487,7 +519,50 @@ export const sitemapEntries = (): SitemapEntry[] =>
  * AI crawlers are named explicitly and allowed: this is a venue that *wants* to
  * be quoted by ChatGPT / Perplexity / AI Overviews when someone asks for a
  * wedding venue near Austin. Admin and invoice URLs stay out of every index.
+ *
+ * ⚠️ Every named group repeats the Disallow lines, and that is not redundant.
+ * A crawler obeys **only** the most specific `User-agent` group that matches it
+ * and ignores `User-agent: *` entirely. Naming a bot with a bare `Allow: /` —
+ * which is what a hand-written robots.txt usually ends up doing — therefore
+ * *grants* it `/admin` and `/invoice/`. Add bots to the list below; don't
+ * hand-write groups.
  */
+const AI_CRAWLERS = [
+  // OpenAI
+  'GPTBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  // Anthropic
+  'ClaudeBot',
+  'Claude-User',
+  'Claude-SearchBot',
+  'anthropic-ai',
+  // Perplexity
+  'PerplexityBot',
+  'Perplexity-User',
+  // Google Gemini / AI Overviews
+  'Google-Extended',
+  // Apple Intelligence
+  'Applebot',
+  'Applebot-Extended',
+  // Microsoft Copilot
+  'Bingbot',
+  // DuckDuckGo
+  'DuckAssistBot',
+  'DuckDuckBot',
+  // Meta AI
+  'meta-externalagent',
+  'Meta-ExternalFetcher',
+  // Others that feed answer engines and training corpora
+  'Amazonbot',
+  'CCBot',
+  'cohere-ai',
+  'MistralAI-User',
+  'YouBot',
+  'Bytespider',
+  'Yandex',
+]
+
 export const robotsTxt = () =>
   [
     '# https://www.robotstxt.org/robotstxt.html',
@@ -499,23 +574,7 @@ export const robotsTxt = () =>
     'Disallow: /invoice/',
     '',
     '# Answer engines / AI crawlers — explicitly welcome.',
-    ...[
-      'GPTBot',
-      'OAI-SearchBot',
-      'ChatGPT-User',
-      'ClaudeBot',
-      'Claude-User',
-      'Claude-SearchBot',
-      'PerplexityBot',
-      'Perplexity-User',
-      'Google-Extended',
-      'Applebot',
-      'Applebot-Extended',
-      'Bingbot',
-      'DuckAssistBot',
-      'cohere-ai',
-      'meta-externalagent',
-    ].flatMap((bot) => [
+    ...AI_CRAWLERS.flatMap((bot) => [
       `User-agent: ${bot}`,
       'Allow: /',
       'Disallow: /admin',
@@ -525,7 +584,158 @@ export const robotsTxt = () =>
     ]),
     `Sitemap: ${SITE_URL}/sitemap.xml`,
     '',
+    '# Plain-text summaries for LLMs (llmstxt.org convention).',
+    `# ${SITE_URL}/llms.txt`,
+    `# ${SITE_URL}/llms-full.txt`,
+    '',
   ].join('\n')
+
+/* ------------------------------------------------------------------ */
+/* llms.txt / llms-full.txt (consumed by scripts/prerender.mjs)        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `llms.txt` — the llmstxt.org convention: an H1, a blockquote summary, then
+ * curated links. It is a *map*, not the content.
+ *
+ * This is belt-and-braces, not the main GEO mechanism. The prerendered HTML is
+ * what every crawler actually reads today; the convention is not yet honoured
+ * by any major engine. It costs ~1 kB and is trivially generated from the same
+ * constants as everything else, so it stays in sync for free — but do not
+ * mistake it for a substitute for real HTML.
+ */
+export const llmsTxt = () =>
+  [
+    `# ${BRAND}`,
+    '',
+    `> ${VENUE_DESCRIPTION}`,
+    '',
+    `${BRAND} (also trading as ${LEGAL_NAME}) is located at ` +
+      `${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}, USA. ` +
+      `Bookings and tours: ${contact.phones[0]} or ${contact.email}.`,
+    '',
+    '## Pages',
+    '',
+    ...PUBLIC_ROUTES.map((route) => {
+      const meta = ROUTE_META[route]
+      const loc = route === '/' ? `${SITE_URL}/` : abs(route)
+      return `- [${meta.title.split('|')[0].trim()}](${loc}): ${meta.description}`
+    }),
+    '',
+    '## Key facts',
+    '',
+    `- Venue type: wedding and event venue (${eventTypes.join(', ')})`,
+    `- Location: ${ADDRESS.city}, ${ADDRESS.region} — Greater Austin, Williamson County`,
+    `- Grounds: 2 acres total — 2,600 sq ft indoor hall, 12,400 sq ft outdoor space`,
+    `- Areas served: ${AREA_SERVED.join(', ')}`,
+    `- Amenities: ${amenities.map((a) => a.title).join(', ')}`,
+    `- Phone: ${contact.phones.join(' / ')}`,
+    `- Email: ${contact.email}`,
+    `- Instagram: ${contact.instagram}`,
+    '',
+    '## Optional',
+    '',
+    `- [Full text](${SITE_URL}/llms-full.txt): every fact and FAQ answer on one page`,
+    `- [Machine-readable facts](${SITE_URL}/facts.json): the same data as JSON`,
+    '',
+  ].join('\n')
+
+/**
+ * `llms-full.txt` — the whole site as one flat plain-text document.
+ *
+ * Answer engines cite what they can extract cleanly. Flat `Label: value` lines
+ * and verbatim question/answer pairs survive chunking far better than the same
+ * facts spread across a styled page.
+ */
+export const llmsFullTxt = () =>
+  [
+    `# ${BRAND}`,
+    '',
+    `${VENUE_DESCRIPTION}`,
+    '',
+    '## At a glance',
+    '',
+    ...glanceFacts.map((f) => `${f.term}: ${f.detail}`),
+    `Legal name: ${LEGAL_NAME}`,
+    `Phone: ${contact.phones.join(' / ')}`,
+    `Email: ${contact.email}`,
+    `Instagram: ${contact.instagram}`,
+    `Map: ${contact.mapUrl}`,
+    '',
+    '## Spaces and amenities',
+    '',
+    ...amenities.map((a) => `- ${a.title}: ${a.sub}`),
+    '',
+    '## Included with every booking',
+    '',
+    ...included.map((item) => `- ${item}`),
+    '',
+    '## Events hosted',
+    '',
+    ...events.map((e) => `- ${e.title}: ${e.blurb}`),
+    '',
+    '## Areas served',
+    '',
+    ...AREA_SERVED.map((a) => `- ${a}`),
+    '',
+    '## Frequently asked questions',
+    '',
+    ...faqs.flatMap((f) => [`### ${f.q}`, '', f.a, '']),
+    '## Booking',
+    '',
+    `Send an inquiry at ${abs('/contact')} or call ${contact.phones[0]}. ` +
+      'We reply within one business day to confirm availability and arrange a tour.',
+    '',
+  ].join('\n')
+
+/**
+ * `facts.json` — the same facts as strict JSON.
+ *
+ * Not a standard (unlike llms.txt), but it costs nothing and gives any agent
+ * that fetches the site a parse-free path to the numbers that get quoted most:
+ * capacity, square footage, location and contact details.
+ */
+export const factsJson = () =>
+  JSON.stringify(
+    {
+      name: BRAND,
+      legalName: LEGAL_NAME,
+      alternateNames: [LEGAL_NAME, 'Infinity Rio Ranch'],
+      url: `${SITE_URL}/`,
+      description: VENUE_DESCRIPTION,
+      type: 'Wedding and event venue',
+      address: {
+        streetAddress: ADDRESS.street,
+        addressLocality: ADDRESS.city,
+        addressRegion: ADDRESS.region,
+        postalCode: ADDRESS.postalCode,
+        addressCountry: ADDRESS.country,
+        formatted: contact.address,
+        map: contact.mapUrl,
+      },
+      contact: {
+        phones: [...contact.phones],
+        email: contact.email,
+        instagram: contact.instagram,
+      },
+      spaces: {
+        totalAcres: 2,
+        indoorSqFt: 2600,
+        outdoorSqFt: 12400,
+      },
+      eventTypes: [...eventTypes],
+      amenities: amenities.map((a) => ({ name: a.title, detail: a.sub })),
+      included: [...included],
+      areaServed: [...AREA_SERVED],
+      faqs: faqs.map((f) => ({ question: f.q, answer: f.a })),
+      booking: {
+        url: abs('/contact'),
+        responseTime: 'within one business day',
+      },
+    },
+    null,
+    2,
+  ) + '\n'
 
 /** Stat lines reused by the About page's at-a-glance block. */
 export const glanceFacts = [

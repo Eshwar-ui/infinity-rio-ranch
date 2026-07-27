@@ -90,13 +90,13 @@ export const Navbar = () => {
 
           <Button
             asChild
-            variant="ghost"
+            variant="brass"
+            size="sm"
             className={cn(
               'hidden md:inline-flex',
-              onHero && 'border-[rgba(243,237,226,0.35)] text-[#e2c690] hover:border-[#e2c690] hover:text-[#e2c690]',
             )}
           >
-            <Link to="/contact">Inquire</Link>
+            <Link to="/contact">Enquire Now</Link>
           </Button>
 
           <button
@@ -138,6 +138,9 @@ export const Navbar = () => {
               {link.label}
             </NavLink>
           ))}
+          <Button asChild variant="brass" size="sm" onClick={() => setMenuOpen(false)}>
+            <Link to="/contact">Enquire Now</Link>
+          </Button>
         </div>
       )}
     </>

@@ -47,12 +47,18 @@ export const useDocumentHead = () => {
       setMeta('property', property, content)
     }
 
-    const canonical = upsert<HTMLLinkElement>('link[rel="canonical"]', () => {
-      const link = document.createElement('link')
-      link.rel = 'canonical'
-      return link
-    })
-    canonical.href = head.canonical
+    // An empty canonical means "this URL has no canonical form" (the 404 page).
+    // Drop the tag rather than pointing it at the mistyped URL.
+    if (head.canonical) {
+      const canonical = upsert<HTMLLinkElement>('link[rel="canonical"]', () => {
+        const link = document.createElement('link')
+        link.rel = 'canonical'
+        return link
+      })
+      canonical.href = head.canonical
+    } else {
+      document.head.querySelector('link[rel="canonical"]')?.remove()
+    }
 
     // Structured data is route-specific: clear the previous route's blocks.
     // Keyed blocks (data-seo-id) belong to a page component — leave those alone.

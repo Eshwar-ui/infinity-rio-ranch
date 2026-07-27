@@ -108,22 +108,87 @@ fabricated structured data, which is a manual-action risk:
 
 ### 4. Crawl control
 
-- `robots.txt` is generated at build time so its `Sitemap:` line always matches
-  the build's domain. It names fifteen AI crawlers and explicitly **allows**
-  them — this venue wants to be quoted when someone asks an assistant for a
-  wedding venue near Austin — while keeping `/admin` and `/invoice/` out.
+Everything in this section is **generated at build time from `src/lib/seo.ts`**
+and written into `dist/` by `scripts/prerender.mjs`. Nothing here belongs in
+`public/` — see "The `public/` trap" below, which has bitten this repo once.
+
+- `robots.txt` — its `Sitemap:` line always matches the build's domain. It names
+  ~24 AI crawlers and explicitly **allows** them (this venue wants to be quoted
+  when someone asks an assistant for a wedding venue near Austin) while keeping
+  `/admin` and `/invoice/` out.
+
+  > ⚠️ Every named group **repeats** the `Disallow` lines, and that is not
+  > redundant. A crawler obeys only the most specific `User-agent` group that
+  > matches it and ignores `User-agent: *` **entirely**. A named group with a
+  > bare `Allow: /` therefore *grants* that bot `/admin` and `/invoice/`. Add
+  > bots to the `AI_CRAWLERS` array; never hand-write groups.
+
 - `sitemap.xml` — 4 URLs with `lastmod`, plus 18 `<image:image>` entries on the
   gallery URL.
+- `404.html` — a real, branded 404 (`noindex, follow`, no canonical, no JSON-LD)
+  rendered from the same React tree as every other route. See "Soft 404s" below.
+- `llms.txt`, `llms-full.txt`, `facts.json` — plain-text and JSON summaries for
+  answer engines, built from the same constants as the JSON-LD so they cannot
+  drift. `llms.txt` follows the [llmstxt.org](https://llmstxt.org) convention (an
+  H1, a blockquote summary, curated links); `llms-full.txt` is the whole site as
+  flat prose with the FAQ verbatim; `facts.json` is the numbers that get quoted
+  most (square footage, address, phones).
+
+  These are **belt-and-braces, not the mechanism.** No major engine honours the
+  llms.txt convention yet — the prerendered HTML is what actually gets read
+  today. They cost ~9 kB total and stay in sync for free, which is the only
+  reason they're worth having. Don't let their presence justify letting the HTML
+  rot.
 - `vercel.json` — `X-Robots-Tag: noindex` headers on `/admin/*` and
   `/invoice/*` (defence in depth; those are token/auth surfaces), security
   headers, and split caching: `/build/*` (hashed bundles) immutable for a year,
   `/assets/*` (the venue's photos) one day with `stale-while-revalidate`.
   Vite now emits bundles to `build/` so the two can be told apart.
 
-> ⚠️ `vercel.json` lists an explicit rewrite per prerendered route *ahead* of the
-> SPA catch-all. Without it the catch-all would serve homepage HTML at `/about`.
-> `scripts/prerender.mjs` fails the build if a route is missing its rewrite, so
-> adding a page to `PUBLIC_ROUTES` will tell you what else to update.
+> ⚠️ `vercel.json` lists an explicit rewrite per prerendered route, plus
+> SPA rewrites for `/admin` and `/invoice/`. There is deliberately **no**
+> catch-all. `scripts/prerender.mjs` fails the build if a route is missing its
+> rewrite, if the SPA rewrites go missing, **or if a catch-all reappears**.
+
+#### Soft 404s — why there is no catch-all
+
+`vercel.json` used to end with `{ "source": "/(.*)", "destination":
+"/index.html" }`. That meant **every** URL that matched nothing returned `200`
+with the homepage's full HTML:
+
+```
+/llms.txt                 200  text/html
+/facts.json               200  text/html
+/this-page-does-not-exist 200  text/html
+```
+
+An unbounded set of URLs each serving a complete, indexable copy of the
+homepage — Google's definition of a soft 404. It wastes crawl budget, and the
+client router had no `*` route either, so a human landing there got a **blank
+page** after the JS booted.
+
+Now the rewrites cover only the prerendered routes and the two SPA branches, so
+anything else falls through to `dist/404.html` and returns a real `404`.
+`NOT_FOUND_ROUTE` is deliberately **not** in `PUBLIC_ROUTES`: it must never
+reach the sitemap, and it must never get a rewrite — a rewrite is exactly what
+would turn it back into a 200.
+
+`App.tsx` and `entry-server.tsx` both route `path="*"` to `NotFoundPage`, so the
+prerendered 404 hydrates cleanly instead of falling back to client rendering.
+
+#### The `public/` trap
+
+`public/robots.txt` and `public/sitemap.xml` once existed alongside the
+generated ones. **They never shipped.** Vite copies `public/` into `dist/`, then
+`scripts/prerender.mjs` runs and overwrites both files — so hand-edits there are
+silently discarded, while looking authoritative in the editor. They were also
+wrong: the hand-written robots.txt named ~25 bots with a bare `Allow: /` and no
+`Disallow`, which (see the warning above) would have opened `/admin` and
+`/invoice/` to every one of them.
+
+Both files are deleted. If you want to change robots or the sitemap, change
+`src/lib/seo.ts`. `public/_redirects` is Netlify-only and inert on Vercel; it is
+kept in sync purely so a platform move doesn't lose the rules.
 
 ### 5. Images
 
@@ -244,6 +309,36 @@ light-theme `--muted` was 4.15:1 (every muted paragraph failed AA), light-theme
 touch targets, and the gallery tiles replaced their visible caption with an
 `aria-label` (WCAG 2.5.3, label in name).
 
+#### Google Tag Manager is loaded after first paint, on purpose
+
+GTM (`GTM-PXBN6P5J`) lives in `index.html`, below the font/LCP preloads so those
+requests are queued first. Marking the injected script `async` stops it blocking
+the *parser*, but not from executing on the main thread while the page is still
+painting. Measured on the built site, Lighthouse median of 3, same machine:
+
+| | eager | deferred | no GTM at all |
+|---|---|---|---|
+| Performance | 72 | **76** | 76 |
+| Total Blocking Time | 240 ms | **152 ms** | 8 ms |
+| FCP / LCP | unchanged | unchanged | unchanged |
+
+The entire cost was main-thread execution — i.e. the TBT/INP budget, not paint.
+Deferring recovers the full 4 points. TBT lands at 152 ms rather than 8 ms
+because GTM still runs on idle *inside* the trace window; that's the trade-off,
+and it's the right one. Loading only on interaction would zero it out but would
+never record a visitor who bounces without touching the page.
+
+Loading starts at whichever comes first: first interaction (`pointerdown`,
+`keydown`, `touchstart`, `scroll`), `requestIdleCallback` after `load`, or a 3 s
+backstop. `dataLayer` is still created synchronously, so anything pushed before
+GTM arrives is queued and replayed — nothing is lost. To revert to eager
+loading, call `start()` directly instead of scheduling it.
+
+> GTM also loads on `/admin` and `/invoice/<token>`, which share the same shell.
+> The invoice token is the secret that grants access to that invoice, and it
+> reaches GA as part of `page_location`. If that matters, gate the snippet on
+> `location.pathname`.
+
 **Remaining levers**, none of them cheap: ~2 s of style/layout is inherent to the
 design (large DOM, full-viewport gradient sections, heavy shadow work), and
 ~1 s of unused JavaScript sits in the entry chunk — mostly `zod` +
@@ -338,3 +433,18 @@ Then, against the deployed URL:
 - [PageSpeed Insights](https://pagespeed.web.dev) — Core Web Vitals.
 - `curl -A "GPTBot" https://<domain>/` — confirm the copy is in the response
   body, not just in the JS bundle. This is the check that matters most for GEO.
+
+**Status codes can only be verified against the deployed site.** `npx serve` and
+`vite preview` both have their own SPA fallback and will return `200` for
+unknown paths regardless of what `vercel.json` says. After deploying:
+
+```bash
+# must be 404 — anything else means a catch-all rewrite came back
+curl -o /dev/null -s -w '%{http_code}\n' https://www.infinityrioranch.com/no-such-page
+
+# must be 200, and must not be HTML
+curl -sI https://www.infinityrioranch.com/llms.txt | grep -i content-type
+
+# must still be 200 (the SPA rewrites)
+curl -o /dev/null -s -w '%{http_code}\n' https://www.infinityrioranch.com/admin/login
+```

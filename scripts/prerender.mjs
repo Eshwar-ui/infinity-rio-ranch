@@ -61,11 +61,18 @@ const buildSitemap = (entries, lastmod) =>
   ].join('\n')
 
 /**
- * vercel.json's SPA catch-all would happily serve the homepage HTML for
- * /about — same title, same canonical, duplicate content. Each prerendered
- * route therefore needs its own rewrite listed ahead of the catch-all, and this
- * check makes forgetting one a build failure rather than a silent regression.
+ * Two things must hold in vercel.json, and both fail silently in ways that only
+ * show up in a traffic chart weeks later:
+ *
+ * 1. Every prerendered route needs its own rewrite. Without one it would fall
+ *    through to whatever comes next and serve the wrong HTML.
+ * 2. The SPA-only branches (/admin, /invoice) need rewrites, because there is
+ *    no catch-all any more. A blanket `/(.*)` → /index.html is what used to
+ *    make *every* unknown URL return 200 with the homepage's markup — an
+ *    unbounded set of soft-404 duplicates. If someone reinstates it, say so.
  */
+const SPA_REWRITES = ['/admin', '/admin/(.*)', '/invoice/(.*)']
+
 const assertRewritesCoverRoutes = async (routes) => {
   const config = JSON.parse(await readFile(path.join(ROOT, 'vercel.json'), 'utf8'))
   const sources = new Set((config.rewrites ?? []).map((r) => r.source))
@@ -79,47 +86,110 @@ const assertRewritesCoverRoutes = async (routes) => {
           .join('\n'),
     )
   }
+
+  const missingSpa = SPA_REWRITES.filter((source) => !sources.has(source))
+  if (missingSpa.length > 0) {
+    throw new Error(
+      `vercel.json is missing the SPA rewrites for: ${missingSpa.join(', ')}\n` +
+        'Without them /admin and /invoice/<token> return 404 instead of loading the app.',
+    )
+  }
+
+  const catchAll = [...sources].find((s) => s === '/(.*)' || s === '/(.+)')
+  if (catchAll) {
+    throw new Error(
+      `vercel.json has a catch-all rewrite ("${catchAll}") again.\n` +
+        'It makes every unknown URL return 200 with the homepage HTML (soft 404s).\n' +
+        'Unknown paths must fall through to dist/404.html so they return a real 404.',
+    )
+  }
 }
 
 const main = async () => {
+  const {
+    render,
+    PUBLIC_ROUTES,
+    NOT_FOUND_ROUTE,
+    sitemapEntries,
+    robotsTxt,
+    llmsTxt,
+    llmsFullTxt,
+    factsJson,
+    SITE_URL,
+  } = await import(pathToFileURL(SSR_ENTRY).href)
+
+  /*
+   * Validate vercel.json first. A routing mistake is cheap to detect and cheap
+   * to fix, so it should not cost a full render pass to surface — and checking
+   * here keeps the check independent of whatever state dist/ happens to be in.
+   */
+  await assertRewritesCoverRoutes(PUBLIC_ROUTES)
+
   const template = await readFile(path.join(DIST, 'index.html'), 'utf8')
 
   for (const marker of [HEAD_START, HEAD_END, APP_SLOT]) {
     if (!template.includes(marker)) {
-      throw new Error(`dist/index.html is missing the ${marker} marker — check index.html`)
+      throw new Error(
+        `dist/index.html is missing the ${marker} marker.\n` +
+          'Either index.html lost it, or prerender ran twice without an intervening ' +
+          '`vite build` (the first pass replaces the markers). Re-run `npm run build`.',
+      )
     }
   }
-
-  const { render, PUBLIC_ROUTES, sitemapEntries, robotsTxt, SITE_URL } = await import(
-    pathToFileURL(SSR_ENTRY).href
-  )
 
   const headPattern = new RegExp(
     `${HEAD_START}[\\s\\S]*?${HEAD_END}`,
   )
 
-  for (const route of PUBLIC_ROUTES) {
+  const renderRoute = (route) => {
     const { html, head } = render(route)
-
-    const page = template
+    return template
       .replace(headPattern, `${HEAD_START}\n    ${head}\n    ${HEAD_END}`)
       .replace(APP_SLOT, html)
-
-    const outDir = route === '/' ? DIST : path.join(DIST, route.replace(/^\//, ''))
-    await mkdir(outDir, { recursive: true })
-    await writeFile(path.join(outDir, 'index.html'), page, 'utf8')
-
-    const kb = (Buffer.byteLength(page) / 1024).toFixed(1)
-    console.log(`[prerender] ${route.padEnd(9)} → ${path.relative(ROOT, path.join(outDir, 'index.html'))} (${kb} kB)`)
   }
 
-  await assertRewritesCoverRoutes(PUBLIC_ROUTES)
+  const report = (label, file, body) =>
+    console.log(
+      `[prerender] ${label.padEnd(14)} → ${path.relative(ROOT, file)} (${(
+        Buffer.byteLength(body) / 1024
+      ).toFixed(1)} kB)`,
+    )
+
+  for (const route of PUBLIC_ROUTES) {
+    const page = renderRoute(route)
+    const outDir = route === '/' ? DIST : path.join(DIST, route.replace(/^\//, ''))
+    await mkdir(outDir, { recursive: true })
+    const file = path.join(outDir, 'index.html')
+    await writeFile(file, page, 'utf8')
+    report(route, file, page)
+  }
+
+  /*
+   * 404.html sits in the output root, where Vercel picks it up for any path
+   * that matches no file and no rewrite — and serves it with a real 404.
+   * It is not in PUBLIC_ROUTES, so it never reaches the sitemap.
+   */
+  const notFound = renderRoute(NOT_FOUND_ROUTE)
+  const notFoundFile = path.join(DIST, '404.html')
+  await writeFile(notFoundFile, notFound, 'utf8')
+  report(NOT_FOUND_ROUTE, notFoundFile, notFound)
 
   const lastmod = new Date().toISOString().slice(0, 10)
-  await writeFile(path.join(DIST, 'sitemap.xml'), buildSitemap(sitemapEntries(), lastmod), 'utf8')
-  await writeFile(path.join(DIST, 'robots.txt'), robotsTxt(), 'utf8')
+  const files = [
+    ['sitemap.xml', buildSitemap(sitemapEntries(), lastmod)],
+    ['robots.txt', robotsTxt()],
+    ['llms.txt', llmsTxt()],
+    ['llms-full.txt', llmsFullTxt()],
+    ['facts.json', factsJson()],
+  ]
 
-  console.log(`[prerender] sitemap.xml + robots.txt written for ${SITE_URL}`)
+  for (const [name, body] of files) {
+    const file = path.join(DIST, name)
+    await writeFile(file, body, 'utf8')
+    report(name, file, body)
+  }
+
+  console.log(`[prerender] all crawl + LLM files written for ${SITE_URL}`)
 }
 
 main().catch((error) => {

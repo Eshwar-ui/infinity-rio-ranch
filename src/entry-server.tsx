@@ -17,16 +17,30 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+import { NotFoundPage } from '@/pages/not-found'
 import {
   buildHead,
+  factsJson,
+  llmsFullTxt,
+  llmsTxt,
   renderHeadTags,
   robotsTxt,
   sitemapEntries,
+  NOT_FOUND_ROUTE,
   PUBLIC_ROUTES,
   SITE_URL,
 } from '@/lib/seo'
 
-export { PUBLIC_ROUTES, SITE_URL, robotsTxt, sitemapEntries }
+export {
+  PUBLIC_ROUTES,
+  NOT_FOUND_ROUTE,
+  SITE_URL,
+  robotsTxt,
+  sitemapEntries,
+  llmsTxt,
+  llmsFullTxt,
+  factsJson,
+}
 
 /** Mirrors the public branch of the router in src/App.tsx. */
 const PublicRoutes = () => (
@@ -36,6 +50,7 @@ const PublicRoutes = () => (
       <Route path="/about" element={<AboutPage />} />
       <Route path="/gallery" element={<GalleryPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Route>
   </Routes>
 )

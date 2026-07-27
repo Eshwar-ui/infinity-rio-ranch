@@ -7,6 +7,7 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+import { NotFoundPage } from '@/pages/not-found'
 
 // Admin + invoice code is lazy-loaded so public visitors never download it.
 const named = (factory: () => Promise<Record<string, any>>, name: string) =>
@@ -31,6 +32,9 @@ const router = createBrowserRouter([
       { path: '/about', element: <AboutPage /> },
       { path: '/gallery', element: <GalleryPage /> },
       { path: '/contact', element: <ContactPage /> },
+      // Matches dist/404.html, which the server returns for unknown paths.
+      // Mirror any change here in src/entry-server.tsx.
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
   // Admin — outside RootLayout (no public navbar/footer/effects).

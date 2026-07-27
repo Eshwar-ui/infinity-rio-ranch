@@ -5,7 +5,10 @@
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/gallery", "destination": "/gallery/index.html" },
     { "source": "/contact", "destination": "/contact/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/(.*)", "destination": "/index.html" },
+    { "source": "/invoice/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -34,6 +37,10 @@
           "value": "public, max-age=86400, stale-while-revalidate=604800"
         }
       ]
+    },
+    {
+      "source": "/admin",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {
       "source": "/admin/(.*)",

@@ -10,10 +10,12 @@ export const contact = {
   email: 'infinityrioranch6@gmail.com',
   phones: ['+1 (512) 630-2236', '+1 (737) 328-3895'],
   phoneHref: 'tel:+15126302236',
+  whatsappUrl: 'https://wa.me/15126302236',
   instagram: 'https://www.instagram.com/infinity_rio_ranch',
   instagramHandle: '@infinity_rio_ranch',
   address: '326 Rio Pk Dr, Liberty Hill, TX 78642',
   mapUrl: 'https://maps.google.com/?q=326+Rio+Pk+Dr,+Liberty+Hill,+TX+78642',
+  mapEmbedUrl: 'https://www.google.com/maps?q=326+Rio+Pk+Dr,+Liberty+Hill,+TX+78642&output=embed',
   location: 'Liberty Hill, TX · Greater Austin',
 } as const
 

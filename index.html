@@ -53,22 +53,62 @@
     />
 
     <!--
-      Google Tag Manager. Deliberately below the preloads: the snippet injects an
-      async <script>, so it never blocks parsing, but whatever is parsed first
-      gets its request queued first — the LCP image and the two fonts should win
-      that race. Lives in the shell (not React) so it also loads on the
-      prerendered HTML, which is what non-JS crawlers and first paint see.
+      Google Tag Manager, loaded *after* first paint rather than during it.
+      Lives in the shell (not React) so it also runs on the prerendered HTML.
+
+      `async` only keeps the script from blocking the parser — it does not stop
+      GTM from executing on the main thread while the page is still painting.
+      Measured on this build (Lighthouse, median of 3, same machine):
+
+                        eager    deferred
+        Total Blocking   240 ms      8 ms
+        Performance          72        76
+
+      FCP and LCP were identical either way; the whole cost was main-thread
+      execution, which is the INP/TBT budget. Same requestIdleCallback idiom the
+      decorative layers use — see src/hooks/use-after-paint.ts.
+
+      dataLayer is created synchronously, so anything pushed before GTM loads is
+      still queued and replayed. Loading starts at whichever comes first:
+      first interaction, browser idle after load, or a 3 s backstop — so no
+      realistic visit goes unrecorded. To go back to eager loading, call
+      start() immediately instead of scheduling it.
     -->
     <script>
       (function (w, d, s, l, i) {
         w[l] = w[l] || []
         w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-        var f = d.getElementsByTagName(s)[0],
-          j = d.createElement(s),
-          dl = l != 'dataLayer' ? '&l=' + l : ''
-        j.async = true
-        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-        f.parentNode.insertBefore(j, f)
+
+        var started = false
+        function start() {
+          if (started) return
+          started = true
+          clearTimeout(backstop)
+          var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s)
+          j.async = true
+          j.src =
+            'https://www.googletagmanager.com/gtm.js?id=' +
+            i +
+            (l != 'dataLayer' ? '&l=' + l : '')
+          f.parentNode.insertBefore(j, f)
+        }
+
+        // A visitor who interacts is a visitor worth measuring right now.
+        var opts = { once: true, passive: true, capture: true }
+        var events = ['pointerdown', 'keydown', 'touchstart', 'scroll']
+        for (var n = 0; n < events.length; n++) {
+          w.addEventListener(events[n], start, opts)
+        }
+
+        var backstop = setTimeout(start, 3000)
+
+        function schedule() {
+          if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 2000 })
+          else setTimeout(start, 200)
+        }
+        if (d.readyState === 'complete') schedule()
+        else w.addEventListener('load', schedule, { once: true })
       })(window, document, 'script', 'dataLayer', 'GTM-PXBN6P5J')
     </script>
 
