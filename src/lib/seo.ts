@@ -20,6 +20,7 @@ import {
   gallery,
   included,
   stats,
+  venueImg,
 } from '@/data/site'
 
 /* ------------------------------------------------------------------ */
@@ -78,6 +79,29 @@ const ADDRESS = {
   postalCode: '78642',
   country: 'US',
 }
+
+/**
+ * Verified coordinates for the venue, or `null`.
+ *
+ * ── TO ENABLE ────────────────────────────────────────────────────────────────
+ * Open Google Maps, find the venue's own pin (not the street, not the town),
+ * right-click it → the first item in the menu is the lat/long → return it here:
+ *
+ *     const venueGeo = (): GeoPoint => ({ latitude: 30.xxxxxx, longitude: -97.xxxxxx })
+ *
+ * That is all — `venueNode()` picks it up and emits a `geo` node automatically.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * It is null because 326 Rio Pk Dr does not resolve in OpenStreetMap; the only
+ * match for the address is the Liberty Hill *town centroid* (30.6649, -97.9225),
+ * which is roughly the town square, not this venue. Publishing that would place
+ * the business at the wrong point on every map surface that trusts the markup —
+ * worse than publishing nothing, and a fabricated-data risk. A guess here is not
+ * a small guess.
+ */
+type GeoPoint = { latitude: number; longitude: number }
+
+const venueGeo = (): GeoPoint | null => null
 
 /** Towns we realistically serve — helps local + AI "near me" retrieval. */
 const AREA_SERVED = [
@@ -189,6 +213,11 @@ const venueNode = () => ({
     addressCountry: ADDRESS.country,
   },
   hasMap: contact.mapUrl,
+  // Emitted only once a human has verified the pin — see venueGeo().
+  ...(() => {
+    const geo = venueGeo()
+    return geo ? { geo: { '@type': 'GeoCoordinates', ...geo } } : {}
+  })(),
   areaServed: AREA_SERVED.map((name) => ({ '@type': 'Place', name })),
   sameAs: [contact.instagram],
   currenciesAccepted: 'USD',
@@ -491,25 +520,62 @@ export const renderHeadTags = (head: HeadModel): string => {
 /* ------------------------------------------------------------------ */
 
 export type SitemapEntry = {
+  /** The route itself, so the prerenderer doesn't have to pair by array index. */
+  route: string
   loc: string
-  changefreq: string
-  priority: string
   images: { loc: string; title: string }[]
 }
 
-/** One entry per indexable route; the gallery carries image-sitemap children. */
+/**
+ * Images to declare per route.
+ *
+ * These must be photos the page renders as a real `<img>`. A CSS
+ * `background-image` is not crawlable, so listing one is a claim Google cannot
+ * verify. That rules out every `PageHero` photo (`page-hero.tsx` still paints
+ * its image via `style={{ backgroundImage }}`) — the hero shots on /about,
+ * /gallery and /contact are therefore absent here on purpose.
+ */
+const routeImages = (route: string): { src: string; title: string }[] => {
+  const tag = (label: string) => `${label} — ${BRAND}, ${ADDRESS.city}, ${ADDRESS.region}`
+
+  switch (route) {
+    case '/':
+      return [
+        { src: '/assets/site/wed.jpg', title: tag('Wedding ceremony on the lawn') },
+        { src: '/assets/site/DSC3669-2.jpg', title: tag('The grand reception hall') },
+        ...events.map((e) => ({ src: e.image, title: tag(e.title) })),
+      ]
+    case '/about':
+      return [
+        { src: '/assets/site/f11.jpg', title: tag('Golden-hour portraits on the grounds') },
+        { src: venueImg(11), title: tag('The outdoor cocktail garden') },
+      ]
+    case '/gallery':
+      return gallery.map((g) => ({ src: g.src, title: tag(g.label) }))
+    case '/contact':
+      return [{ src: '/assets/site/DSC3699-Edit-2.jpg', title: tag('Candlelit reception tables') }]
+    default:
+      return []
+  }
+}
+
+/**
+ * One entry per indexable route.
+ *
+ * `changefreq` and `priority` are deliberately **not** emitted. Google has
+ * stated publicly that it ignores both, and `priority` in particular is
+ * self-assigned — every site claims 1.0 for its homepage, so it carries no
+ * information. Omitting them is not a downgrade; it is removing noise.
+ *
+ * `lastmod` is not set here either. It is filled in by scripts/prerender.mjs
+ * from each route's real git history, because a `lastmod` of "today" on every
+ * URL at every deploy is a lie that gets the signal ignored site-wide.
+ */
 export const sitemapEntries = (): SitemapEntry[] =>
   PUBLIC_ROUTES.map((route) => ({
+    route,
     loc: route === '/' ? `${SITE_URL}/` : abs(route),
-    changefreq: 'monthly',
-    priority: route === '/' ? '1.0' : route === '/contact' ? '0.9' : '0.8',
-    images:
-      route === '/gallery'
-        ? gallery.map((g) => ({
-            loc: abs(g.src),
-            title: `${g.label} — ${BRAND}, ${ADDRESS.city}, ${ADDRESS.region}`,
-          }))
-        : [],
+    images: routeImages(route).map((img) => ({ loc: abs(img.src), title: img.title })),
   }))
 
 /**
@@ -528,7 +594,7 @@ export const sitemapEntries = (): SitemapEntry[] =>
  * hand-write groups.
  */
 const AI_CRAWLERS = [
-  // OpenAI
+  // OpenAI — training, live retrieval, and user-initiated fetches.
   'GPTBot',
   'OAI-SearchBot',
   'ChatGPT-User',
@@ -540,9 +606,9 @@ const AI_CRAWLERS = [
   // Perplexity
   'PerplexityBot',
   'Perplexity-User',
-  // Google Gemini / AI Overviews
+  // Google Gemini / AI Overviews. Opt-out by default — naming it is the opt-IN.
   'Google-Extended',
-  // Apple Intelligence
+  // Apple. Applebot-Extended is likewise an explicit opt-in for Apple Intelligence.
   'Applebot',
   'Applebot-Extended',
   // Microsoft Copilot
@@ -553,35 +619,47 @@ const AI_CRAWLERS = [
   // Meta AI
   'meta-externalagent',
   'Meta-ExternalFetcher',
-  // Others that feed answer engines and training corpora
+  // Others feeding answer engines and training corpora
   'Amazonbot',
   'CCBot',
   'cohere-ai',
   'MistralAI-User',
   'YouBot',
-  'Bytespider',
-  'Yandex',
 ]
 
+/** The one rule set every group shares. Defined once so groups cannot drift. */
+const CRAWL_RULES = ['Allow: /', 'Disallow: /admin', 'Disallow: /admin/', 'Disallow: /invoice/']
+
+/**
+ * Consecutive `User-agent:` lines share the rule block that follows them — that
+ * is the standard's own grouping mechanism, and it is why this file is ~40
+ * lines instead of the ~130 it takes to repeat the rules per bot.
+ *
+ * The named AI group is currently **identical** to the `*` group, so it changes
+ * no crawler's behaviour today. It earns its place for two reasons: it is a
+ * legible public statement that this venue wants to be cited, and
+ * `Google-Extended` / `Applebot-Extended` are opt-out controls where naming
+ * them is the explicit opt-in. If the owner ever wants to exclude one engine,
+ * this is where it splits.
+ *
+ * ⚠️ A crawler obeys only the most specific group matching it and ignores
+ * `User-agent: *` entirely — so any named group MUST carry the full rule set.
+ * That is what CRAWL_RULES guarantees. Never hand-write a group.
+ */
 export const robotsTxt = () =>
   [
-    '# https://www.robotstxt.org/robotstxt.html',
+    `# ${SITE_URL}/robots.txt`,
+    '# Generated at build time from src/lib/seo.ts — do not hand-edit, and never',
+    '# put a copy in public/ (it is silently overwritten). See SEO.md.',
     '',
+    '# Default for every crawler.',
     'User-agent: *',
-    'Allow: /',
-    'Disallow: /admin',
-    'Disallow: /admin/',
-    'Disallow: /invoice/',
+    ...CRAWL_RULES,
     '',
-    '# Answer engines / AI crawlers — explicitly welcome.',
-    ...AI_CRAWLERS.flatMap((bot) => [
-      `User-agent: ${bot}`,
-      'Allow: /',
-      'Disallow: /admin',
-      'Disallow: /admin/',
-      'Disallow: /invoice/',
-      '',
-    ]),
+    '# Answer engines and AI crawlers — explicitly welcome to read and cite.',
+    ...AI_CRAWLERS.map((bot) => `User-agent: ${bot}`),
+    ...CRAWL_RULES,
+    '',
     `Sitemap: ${SITE_URL}/sitemap.xml`,
     '',
     '# Plain-text summaries for LLMs (llmstxt.org convention).',

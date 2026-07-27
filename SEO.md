@@ -112,19 +112,57 @@ Everything in this section is **generated at build time from `src/lib/seo.ts`**
 and written into `dist/` by `scripts/prerender.mjs`. Nothing here belongs in
 `public/` — see "The `public/` trap" below, which has bitten this repo once.
 
-- `robots.txt` — its `Sitemap:` line always matches the build's domain. It names
-  ~24 AI crawlers and explicitly **allows** them (this venue wants to be quoted
-  when someone asks an assistant for a wedding venue near Austin) while keeping
-  `/admin` and `/invoice/` out.
+- `robots.txt` — its `Sitemap:` line always matches the build's domain. Two
+  groups: a `*` default, and 22 named AI crawlers explicitly **allowed** (this
+  venue wants to be quoted when someone asks an assistant for a wedding venue
+  near Austin), both keeping `/admin` and `/invoice/` out.
 
-  > ⚠️ Every named group **repeats** the `Disallow` lines, and that is not
-  > redundant. A crawler obeys only the most specific `User-agent` group that
-  > matches it and ignores `User-agent: *` **entirely**. A named group with a
-  > bare `Allow: /` therefore *grants* that bot `/admin` and `/invoice/`. Add
-  > bots to the `AI_CRAWLERS` array; never hand-write groups.
+  Consecutive `User-agent:` lines share the rule block that follows — that is
+  the standard's own grouping mechanism, and it is why the file is 45 lines
+  (1.2 kB) rather than the 130 lines (2.5 kB) it takes to repeat the rules once
+  per bot. Same coverage, half the bytes, one place to change a rule.
 
-- `sitemap.xml` — 4 URLs with `lastmod`, plus 18 `<image:image>` entries on the
-  gallery URL.
+  The named group is currently **identical** to the `*` group, so it changes no
+  crawler's behaviour today. It earns its place because it is a legible public
+  statement of intent, and because `Google-Extended` and `Applebot-Extended` are
+  opt-*out* controls where naming them is how you opt in. If the owner ever
+  wants to exclude one engine, that group is where it splits.
+
+  > ⚠️ Both groups carry the **full** rule set, and that is not redundant. A
+  > crawler obeys only the most specific `User-agent` group matching it and
+  > ignores `User-agent: *` **entirely**. A named group with a bare `Allow: /`
+  > therefore *grants* that bot `/admin` and `/invoice/`. `CRAWL_RULES` is
+  > defined once and spread into both groups so they cannot drift. Add bots to
+  > the `AI_CRAWLERS` array; never hand-write a group.
+
+- `sitemap.xml` — 4 URLs with a truthful `lastmod` and 27 `<image:image>`
+  entries across all four (6 home / 2 about / 18 gallery / 1 contact).
+
+  **`changefreq` and `priority` are deliberately not emitted.** Google has
+  stated it ignores both, and `priority` is self-assigned — every site on earth
+  claims `1.0` for its homepage, so the field carries no information. Dropping
+  them is removing noise, not capability.
+
+  **`lastmod` comes from git, not the clock.** It is the date of the last commit
+  touching the files that compose each route (the page component plus
+  `src/data/site.ts`, `src/lib/seo.ts` and the shared layout/section
+  components). Stamping today's date on every URL at every deploy is a lie, and
+  Google's documented response to a `lastmod` it cannot trust is to ignore the
+  field **site-wide**. If git can't answer — CI often checks out shallow — the
+  field is omitted for that URL and the build logs a warning. An absent
+  `lastmod` costs nothing; a wrong one costs the signal.
+
+  Two honest limitations:
+  - It is **coarse**. `src/lib/seo.ts` and `src/data/site.ts` are shared by
+    every route, so touching either moves all four dates together. That is a
+    false positive when the edit only changed, say, `robotsTxt()`. It's the
+    lesser evil: excluding those files would mean a title or description change
+    *didn't* bump `lastmod`, and a false negative — Google not recrawling a page
+    that really did change — is worse than a slightly eager one.
+  - It tracks the **code, not the copy**. Published CMS content lives in
+    Supabase and is fetched at runtime, so an edit made in `/admin` changes what
+    visitors see without changing any file git can see. `lastmod` therefore
+    reflects template changes, not content edits.
 - `404.html` — a real, branded 404 (`noindex, follow`, no canonical, no JSON-LD)
   rendered from the same React tree as every other route. See "Soft 404s" below.
 - `llms.txt`, `llms-full.txt`, `facts.json` — plain-text and JSON summaries for
@@ -199,6 +237,17 @@ home-page event cards, Polaroids and the lightbox. Background images cannot be
 indexed by Google Images, cannot carry alt text, and cannot be lazy-loaded.
 
 The homepage preloads the first hero slide (`DSC3699-2.jpg`) as its LCP element.
+
+> ⚠️ **`PageHero` is the exception, and the claim above overstated things.**
+> `src/components/layout/page-hero.tsx` still paints its photo with
+> `style={{ backgroundImage: url(...) }}`, so the hero images on `/about`
+> (`venue-06`), `/gallery` and `/contact` (`venue-01`) carry no alt text and
+> cannot be indexed by Google Images. They are excluded from the image sitemap
+> on purpose — declaring an image the crawler can't see is a claim it can't
+> verify. Converting `PageHero` to a positioned `<img>` with
+> `object-fit: cover` would look identical, add three indexable photos and let
+> the hero take `fetchpriority="high"` (it is the LCP element on those routes).
+> Not done here: it is a visual-component change and belongs in its own pass.
 
 ### 7. Image weight — `scripts/optimize-images.mjs`
 
@@ -366,9 +415,20 @@ can supply. See below.
 Ordered by impact. None of these are code problems.
 
 1. **Google Business Profile.** For a local venue this outranks everything on
-   this page. Claim it, verify the address, add photos and hours. Then paste the
-   verified latitude/longitude into `src/lib/seo.ts` (`venueNode`, add a `geo`
-   node) and the profile URL into `sameAs`.
+   this page. Claim it, verify the address, add photos and hours. Then put the
+   profile URL into `sameAs`.
+
+2. **Verified lat/long — one line, already wired up.** `venueGeo()` in
+   `src/lib/seo.ts` returns `null`; return a `GeoPoint` and `venueNode()` emits
+   a `geo` node automatically. Get the value from Google Maps: find the venue's
+   own pin, right-click it, and the first menu item is the coordinates.
+
+   It is null because **326 Rio Pk Dr does not geocode.** OpenStreetMap has no
+   record of the street; the only match for the address is the Liberty Hill town
+   centroid (30.6649, -97.9225), which is the town square, not this venue.
+   Publishing that would put the business at the wrong point on every map
+   surface that trusts the markup — worse than publishing nothing. This one
+   genuinely needs a human with a map.
 2. **Confirm the recompressed photos look right to you.** Done in code (see
    below) but not visually verified by me — open `/gallery` and the homepage
    hero and check nothing looks soft or banded. `git checkout -- public/assets`

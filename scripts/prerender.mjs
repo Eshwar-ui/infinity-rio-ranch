@@ -8,6 +8,7 @@
  * JavaScript. Set SKIP_PRERENDER=1 to opt out deliberately.
  */
 
+import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -33,7 +34,48 @@ const xmlEscape = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
 
-const buildSitemap = (entries, lastmod) =>
+/**
+ * When each route last actually changed, from git — not from the clock.
+ *
+ * A `lastmod` of "today" on every URL at every deploy is a lie, and Google's
+ * documented response to a sitemap whose lastmod it cannot trust is to ignore
+ * the field for the whole site. So: the date of the last commit touching the
+ * files that compose the route, or nothing at all.
+ *
+ * Returns null rather than guessing when git can't answer — CI often checks out
+ * shallow, and `git log` then legitimately has no commit for an older file.
+ * An absent lastmod costs nothing; a wrong one costs the signal.
+ */
+const SHARED_SOURCES = [
+  'src/data/site.ts',
+  'src/lib/seo.ts',
+  'src/components/layout',
+  'src/components/sections',
+]
+
+const routeSources = (route) => [
+  route === '/' ? 'src/pages/home.tsx' : `src/pages${route}.tsx`,
+  ...SHARED_SOURCES,
+]
+
+const gitLastModified = (route) => {
+  try {
+    const out = execFileSync(
+      'git',
+      ['log', '-1', '--format=%cI', '--', ...routeSources(route)],
+      { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    ).trim()
+    return out || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * `changefreq` and `priority` are intentionally absent — Google ignores both,
+ * and `priority` is self-assigned so it carries no information.
+ */
+const buildSitemap = (entries) =>
   [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
@@ -42,9 +84,7 @@ const buildSitemap = (entries, lastmod) =>
       [
         '  <url>',
         `    <loc>${xmlEscape(entry.loc)}</loc>`,
-        `    <lastmod>${lastmod}</lastmod>`,
-        `    <changefreq>${entry.changefreq}</changefreq>`,
-        `    <priority>${entry.priority}</priority>`,
+        ...(entry.lastmod ? [`    <lastmod>${xmlEscape(entry.lastmod)}</lastmod>`] : []),
         ...entry.images.map((img) =>
           [
             '    <image:image>',
@@ -174,9 +214,21 @@ const main = async () => {
   await writeFile(notFoundFile, notFound, 'utf8')
   report(NOT_FOUND_ROUTE, notFoundFile, notFound)
 
-  const lastmod = new Date().toISOString().slice(0, 10)
+  const dated = sitemapEntries().map((entry) => ({
+    ...entry,
+    lastmod: gitLastModified(entry.route),
+  }))
+
+  const undated = dated.filter((e) => !e.lastmod)
+  if (undated.length > 0) {
+    console.warn(
+      `[prerender] no git history for ${undated.length} route(s) — emitting them ` +
+        'without <lastmod> rather than stamping today. Shallow clone?',
+    )
+  }
+
   const files = [
-    ['sitemap.xml', buildSitemap(sitemapEntries(), lastmod)],
+    ['sitemap.xml', buildSitemap(dated)],
     ['robots.txt', robotsTxt()],
     ['llms.txt', llmsTxt()],
     ['llms-full.txt', llmsFullTxt()],
