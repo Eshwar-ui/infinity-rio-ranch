@@ -53,6 +53,26 @@
     />
 
     <!--
+      Google Tag Manager. Deliberately below the preloads: the snippet injects an
+      async <script>, so it never blocks parsing, but whatever is parsed first
+      gets its request queued first — the LCP image and the two fonts should win
+      that race. Lives in the shell (not React) so it also loads on the
+      prerendered HTML, which is what non-JS crawlers and first paint see.
+    -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || []
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : ''
+        j.async = true
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+        f.parentNode.insertBefore(j, f)
+      })(window, document, 'script', 'dataLayer', 'GTM-PXBN6P5J')
+    </script>
+
+    <!--
       Everything between the markers is replaced per route at build time by
       scripts/prerender.mjs (source of truth: src/lib/seo.ts) and re-applied on
       client-side navigation by useDocumentHead(). The defaults below are the
@@ -83,6 +103,20 @@
     <!--seo-head-end-->
   </head>
   <body>
+    <!--
+      GTM noscript fallback. Must stay outside #root — React hydrates that
+      container against entry-server.tsx's output, and an extra child would be a
+      mismatch (error #418 → silent client-render fallback, ~2s of LCP).
+    -->
+    <noscript
+      ><iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PXBN6P5J"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe
+    ></noscript>
+
     <div id="root"><!--app-html--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
