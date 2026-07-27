@@ -1,7 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
-import { Toaster } from 'sonner'
 
+import { AppShell } from '@/components/layout/app-shell'
 import { RootLayout } from '@/components/layout/root-layout'
 import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
@@ -55,27 +55,9 @@ const router = createBrowserRouter([
 ])
 
 const App = () => (
-  <>
-    <Suspense
-      fallback={
-        <div className="grid min-h-screen place-items-center bg-ink text-sm uppercase tracking-[0.24em] text-muted">
-          Loading…
-        </div>
-      }
-    >
-      <RouterProvider router={router} />
-    </Suspense>
-    <Toaster
-      position="bottom-center"
-      toastOptions={{
-        style: {
-          background: 'var(--panel)',
-          color: 'var(--cream)',
-          border: '1px solid var(--line)',
-        },
-      }}
-    />
-  </>
+  <AppShell>
+    <RouterProvider router={router} />
+  </AppShell>
 )
 
 export default App

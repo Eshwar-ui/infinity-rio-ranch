@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react'
 
+import { SmartImage } from '@/components/ui/smart-image'
 import { useLightboxStore } from '@/store/lightbox'
 
 export const Lightbox = () => {
@@ -71,9 +72,12 @@ export const Lightbox = () => {
       </button>
 
       <div onClick={(e) => e.stopPropagation()} className="w-[min(1000px,86vw)] max-w-full">
-        <div
-          className="aspect-[16/10] w-full rounded-[3px] bg-cover bg-center shadow-[0_40px_120px_rgba(0,0,0,0.7)]"
-          style={{ backgroundImage: `url(${item.src})` }}
+        <SmartImage
+          src={item.src}
+          alt={`${item.label} — Infinity at Rio Ranch`}
+          sizes="(max-width: 1163px) 86vw, 1000px"
+          priority
+          className="aspect-[16/10] w-full rounded-[3px] object-cover shadow-[0_40px_120px_rgba(0,0,0,0.7)]"
         />
         <div className="mt-5 flex items-center justify-between">
           <span className="font-serif text-[22px] text-[#f3ede2]">{item.label}</span>

@@ -1,0 +1,746 @@
+{
+  "__version": 3,
+  "files": {
+    "img/hero-01.jpg": {
+      "hash": "97a32f4039e744bd",
+      "sources": {
+        "base": "/assets/_r/img/hero-01",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "img/hero-02.jpg": {
+      "hash": "5dc3f5b268359fa6",
+      "sources": {
+        "base": "/assets/_r/img/hero-02",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "img/hero-03.jpg": {
+      "hash": "1b74f9b7f3c434a7",
+      "sources": {
+        "base": "/assets/_r/img/hero-03",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "img/hero-04.jpg": {
+      "hash": "d2632ed5b2ab86fa",
+      "sources": {
+        "base": "/assets/_r/img/hero-04",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "img/venue-01.jpg": {
+      "hash": "30c7e30056ac0b80",
+      "sources": {
+        "base": "/assets/_r/img/venue-01",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-02.jpg": {
+      "hash": "627a5071a549ed96",
+      "sources": {
+        "base": "/assets/_r/img/venue-02",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-03.jpg": {
+      "hash": "dd65403a59088aa9",
+      "sources": {
+        "base": "/assets/_r/img/venue-03",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-04.jpg": {
+      "hash": "44785a9585e6e3a8",
+      "sources": {
+        "base": "/assets/_r/img/venue-04",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-05.jpg": {
+      "hash": "0dd32c98896dc430",
+      "sources": {
+        "base": "/assets/_r/img/venue-05",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-06.jpg": {
+      "hash": "b1912c9662d80d9f",
+      "sources": {
+        "base": "/assets/_r/img/venue-06",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-07.jpg": {
+      "hash": "52657b3586131194",
+      "sources": {
+        "base": "/assets/_r/img/venue-07",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-08.jpg": {
+      "hash": "bbf7394c320572b7",
+      "sources": {
+        "base": "/assets/_r/img/venue-08",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-09.jpg": {
+      "hash": "3b10266179d3b7f1",
+      "sources": {
+        "base": "/assets/_r/img/venue-09",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-10.jpg": {
+      "hash": "4bf526d0d4f3029a",
+      "sources": {
+        "base": "/assets/_r/img/venue-10",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-11.jpg": {
+      "hash": "66e26fe5d58512fd",
+      "sources": {
+        "base": "/assets/_r/img/venue-11",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-12.jpg": {
+      "hash": "f0a2edaf76f966af",
+      "sources": {
+        "base": "/assets/_r/img/venue-12",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-13.jpg": {
+      "hash": "2ce36dc38161ca46",
+      "sources": {
+        "base": "/assets/_r/img/venue-13",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-14.jpg": {
+      "hash": "6c98544ef2bd2a69",
+      "sources": {
+        "base": "/assets/_r/img/venue-14",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-15.jpg": {
+      "hash": "208cef9e0014f431",
+      "sources": {
+        "base": "/assets/_r/img/venue-15",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-16.jpg": {
+      "hash": "103a4130349c3837",
+      "sources": {
+        "base": "/assets/_r/img/venue-16",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-17.jpg": {
+      "hash": "d891aa5ec0770c3b",
+      "sources": {
+        "base": "/assets/_r/img/venue-17",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "img/venue-18.jpg": {
+      "hash": "016ded421bf00ed0",
+      "sources": {
+        "base": "/assets/_r/img/venue-18",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1000
+      }
+    },
+    "logo-cutout-dark.png": {
+      "hash": "4ac2aec0a965e447",
+      "sources": {
+        "base": "/assets/_r/logo-cutout-dark",
+        "png": [
+          240,
+          480
+        ],
+        "w": 834
+      }
+    },
+    "logo-cutout.png": {
+      "hash": "100362aa88811260",
+      "sources": {
+        "base": "/assets/_r/logo-cutout",
+        "png": [
+          240,
+          480
+        ],
+        "w": 834
+      }
+    },
+    "logo.png": {
+      "hash": "414795bfd1b3641f",
+      "sources": {
+        "base": "/assets/_r/logo",
+        "webp": [
+          240,
+          480,
+          720,
+          834
+        ],
+        "w": 834,
+        "full": true
+      }
+    },
+    "site/DSC3669-2.jpg": {
+      "hash": "5b58171e1d857231",
+      "sources": {
+        "base": "/assets/_r/site/DSC3669-2",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3674.jpg": {
+      "hash": "8c2a013186184fd6",
+      "sources": {
+        "base": "/assets/_r/site/DSC3674",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3678.jpg": {
+      "hash": "61b1767f2b976e70",
+      "sources": {
+        "base": "/assets/_r/site/DSC3678",
+        "jpg": [
+          240,
+          480,
+          720
+        ],
+        "w": 768
+      }
+    },
+    "site/DSC3692.jpg": {
+      "hash": "e0aa522dbea2c4c2",
+      "sources": {
+        "base": "/assets/_r/site/DSC3692",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3699-2.jpg": {
+      "hash": "2ab170e9125cfb60",
+      "sources": {
+        "base": "/assets/_r/site/DSC3699-2",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3699-Edit-2.jpg": {
+      "hash": "67893914b8c49b42",
+      "sources": {
+        "base": "/assets/_r/site/DSC3699-Edit-2",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3699-Edit-3.jpg": {
+      "hash": "298d3223d241e3d0",
+      "sources": {
+        "base": "/assets/_r/site/DSC3699-Edit-3",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3699.jpg": {
+      "hash": "555746bbc859f0dd",
+      "sources": {
+        "base": "/assets/_r/site/DSC3699",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3705.jpg": {
+      "hash": "2509621749286080",
+      "sources": {
+        "base": "/assets/_r/site/DSC3705",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3707.jpg": {
+      "hash": "c94163d0713f59e2",
+      "sources": {
+        "base": "/assets/_r/site/DSC3707",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/DSC3712.jpg": {
+      "hash": "e73e6419816f23fa",
+      "sources": {
+        "base": "/assets/_r/site/DSC3712",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1067
+      }
+    },
+    "site/arch.png": {
+      "hash": "cccfe19a4f23b074",
+      "sources": {
+        "base": "/assets/_r/site/arch",
+        "webp": [
+          240,
+          480,
+          720,
+          960,
+          1600
+        ],
+        "w": 1600,
+        "full": true
+      }
+    },
+    "site/events/ev-57.png": {
+      "hash": "3a116d4a62f243f2",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-57",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-57b.png": {
+      "hash": "87847b816f423646",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-57b",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-58.png": {
+      "hash": "4de78570f735b746",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-58",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-58b.png": {
+      "hash": "45bb1f4af5bedf14",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-58b",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-59.png": {
+      "hash": "9a3e76a94802dc8f",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-59",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-59b.png": {
+      "hash": "e5433388b872a0f4",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-59b",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-60.png": {
+      "hash": "bdb0190a77e98618",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-60",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-61.png": {
+      "hash": "75e9083e873e15e1",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-61",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-62.png": {
+      "hash": "aa3afa76b0122095",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-62",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-63.png": {
+      "hash": "215d0c7c04a813ef",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-63",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/events/ev-64.png": {
+      "hash": "2e0c6b502fcf478a",
+      "sources": {
+        "base": "/assets/_r/site/events/ev-64",
+        "webp": [
+          240,
+          480,
+          600
+        ],
+        "w": 600,
+        "full": true
+      }
+    },
+    "site/f11.jpg": {
+      "hash": "12794cead22ea634",
+      "sources": {
+        "base": "/assets/_r/site/f11",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1200
+      }
+    },
+    "site/ss.jpg": {
+      "hash": "be73ce9994eb4c6b",
+      "sources": {
+        "base": "/assets/_r/site/ss",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1600
+      }
+    },
+    "site/w1.jpg": {
+      "hash": "d79c30863fe9d813",
+      "sources": {
+        "base": "/assets/_r/site/w1",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w2.jpg": {
+      "hash": "cf3f5ec9a6c247c9",
+      "sources": {
+        "base": "/assets/_r/site/w2",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w3.jpg": {
+      "hash": "6df92e685d151632",
+      "sources": {
+        "base": "/assets/_r/site/w3",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w4.jpg": {
+      "hash": "50ba453e02440aca",
+      "sources": {
+        "base": "/assets/_r/site/w4",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w5.jpg": {
+      "hash": "7490fa660c3fcc9a",
+      "sources": {
+        "base": "/assets/_r/site/w5",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w6.jpg": {
+      "hash": "0182db5ed111a08a",
+      "sources": {
+        "base": "/assets/_r/site/w6",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w7.jpg": {
+      "hash": "93531798b88ca796",
+      "sources": {
+        "base": "/assets/_r/site/w7",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/w8.jpg": {
+      "hash": "ace97282b9647310",
+      "sources": {
+        "base": "/assets/_r/site/w8",
+        "jpg": [
+          240
+        ],
+        "w": 428
+      }
+    },
+    "site/wed.jpg": {
+      "hash": "6ce964f28852eaab",
+      "sources": {
+        "base": "/assets/_r/site/wed",
+        "jpg": [
+          240,
+          480,
+          720,
+          960
+        ],
+        "w": 1067
+      }
+    }
+  }
+}

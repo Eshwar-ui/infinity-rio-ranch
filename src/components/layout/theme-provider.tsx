@@ -10,6 +10,12 @@ export const ThemeProvider = () => {
   const theme = useThemeStore((s) => s.theme)
   const accent = useThemeStore((s) => s.accent)
 
+  // The store is created with skipHydration so the first render matches the
+  // prerendered HTML; the saved theme is applied here, right after mount.
+  useEffect(() => {
+    void useThemeStore.persist.rehydrate()
+  }, [])
+
   useEffect(() => {
     const root = document.documentElement
     root.setAttribute('data-theme', theme)

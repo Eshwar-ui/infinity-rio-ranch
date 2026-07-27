@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { logoFor } from '@/store/theme'
 import { StatList } from '@/components/ui/stat-list'
 import { Button } from '@/components/ui/button'
+import { SmartImage } from '@/components/ui/smart-image'
 import {
   HERO_SLIDES,
   HeroBokeh,
@@ -89,25 +90,35 @@ export const HomeHero = () => {
           </div>
 
           <div className="flex flex-col items-center gap-7">
-            <img
+            <SmartImage
               src={logoFor('dark')}
               alt="Infinity at Rio Ranch"
+              sizes="(max-width: 1233px) 30vw, 370px"
+              priority
               className="block h-auto w-[clamp(240px,30vw,370px)] opacity-0 [filter:drop-shadow(0_30px_84px_rgba(0,0,0,0.62))]"
               style={rise(0.4)}
             />
-            <div className="flex items-center gap-2.5 opacity-0" style={rise(0.72)}>
+            <div className="flex items-center gap-1 opacity-0" style={rise(0.72)}>
               {HERO_SLIDES.map((src, i) => (
+                // The button itself is a 24px WCAG 2.5.8 target; the visible dot
+                // is the span inside it. A small button with an oversized
+                // ::before hit area fails instead on *spacing*, because the
+                // neighbouring targets then overlap.
                 <button
                   key={src}
                   type="button"
                   onClick={() => setSlide(i)}
                   aria-label={`Go to slide ${i + 1}`}
-                  className={cn(
-                    'h-2 rounded-[20px] transition-all',
-                    i === slide ? 'w-6 bg-brass2' : 'w-2 bg-[rgba(246,239,228,0.42)]',
-                  )}
-                  style={{ transitionDuration: '450ms' }}
-                />
+                  className="flex h-6 w-6 items-center justify-center"
+                >
+                  <span
+                    className={cn(
+                      'block h-2 rounded-[20px] transition-all',
+                      i === slide ? 'w-6 bg-brass2' : 'w-2 bg-[rgba(246,239,228,0.42)]',
+                    )}
+                    style={{ transitionDuration: '450ms' }}
+                  />
+                </button>
               ))}
             </div>
           </div>

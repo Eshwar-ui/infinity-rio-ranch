@@ -42,12 +42,19 @@ const AccordionTrigger = React.forwardRef<
 ))
 AccordionTrigger.displayName = 'AccordionTrigger'
 
+/**
+ * `forceMount` keeps every answer in the DOM even while collapsed. Radix adds
+ * `hidden` when closed, so it stays visually identical — but the text is now
+ * present in the prerendered HTML, which is what answer engines and featured
+ * snippets extract. Without it, a collapsed FAQ ships zero indexable answers.
+ */
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
+    forceMount
     className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >

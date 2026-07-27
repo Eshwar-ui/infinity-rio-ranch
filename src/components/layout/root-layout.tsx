@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
+import { useDocumentHead } from '@/hooks/use-document-head'
 import { ThemeProvider } from '@/components/layout/theme-provider'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
@@ -16,16 +17,19 @@ const ScrollToTop = () => {
   return null
 }
 
-export const RootLayout = () => (
-  <div className="relative">
-    <ThemeProvider />
-    <ScrollToTop />
-    <Grain />
-    <Navbar />
-    <main>
-      <Outlet />
-    </main>
-    <Footer />
-    <Lightbox />
-  </div>
-)
+export const RootLayout = () => {
+  useDocumentHead()
+  return (
+    <div className="relative">
+      <ThemeProvider />
+      <ScrollToTop />
+      <Grain />
+      <Navbar />
+      <main>
+        <Outlet />
+      </main>
+      <Footer />
+      <Lightbox />
+    </div>
+  )
+}

@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 
 import { cn } from '@/lib/utils'
+import { SmartImage } from '@/components/ui/smart-image'
 
 type PolaroidProps = {
   src: string
@@ -10,6 +11,8 @@ type PolaroidProps = {
   rotate?: number
   aspect?: string
   className?: string
+  /** Frames range from a 190px inset to a 420px feature. */
+  sizes?: string
 }
 
 /**
@@ -24,6 +27,7 @@ export const Polaroid = ({
   rotate = -3,
   aspect = 'aspect-[4/5]',
   className,
+  sizes = '(max-width: 768px) 90vw, 420px',
 }: PolaroidProps) => (
   <div
     className={cn(
@@ -33,12 +37,15 @@ export const Polaroid = ({
     )}
     style={{ '--tilt': `${rotate}deg` } as CSSProperties}
   >
+    {/* Real <img> so the photo is indexable by image search and lazy-loadable. */}
     <div
-      role="img"
-      aria-label={alt}
-      className={cn('w-full overflow-hidden rounded-[1px] bg-cover bg-center shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]', aspect)}
-      style={{ backgroundImage: `url(${src})` }}
-    />
+      className={cn(
+        'w-full overflow-hidden rounded-[1px] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]',
+        aspect,
+      )}
+    >
+      <SmartImage src={src} alt={alt} sizes={sizes} className="h-full w-full object-cover" />
+    </div>
     {caption && (
       <p className="mt-2.5 truncate text-center font-script text-[19px] leading-none text-[#6b5a41]/80">
         {caption}

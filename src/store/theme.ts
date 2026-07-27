@@ -20,7 +20,16 @@ export const useThemeStore = create<ThemeState>()(
         set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
       setAccent: (accent) => set({ accent }),
     }),
-    { name: 'irr-theme' },
+    {
+      name: 'irr-theme',
+      /**
+       * Without this, the store reads localStorage during module init, so a
+       * returning dark-mode visitor's first client render disagrees with the
+       * prerendered HTML and hydration bails out to a full client render.
+       * ThemeProvider calls rehydrate() in an effect instead.
+       */
+      skipHydration: true,
+    },
   ),
 )
 

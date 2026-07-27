@@ -1,4 +1,6 @@
+import { useAfterPaint } from '@/hooks/use-after-paint'
 import { useParallax } from '@/hooks/use-parallax'
+import { SmartImage } from '@/components/ui/smart-image'
 
 export const HERO_SLIDES = [
   '/assets/site/DSC3699-2.jpg',
@@ -6,9 +8,18 @@ export const HERO_SLIDES = [
   '/assets/site/arch.png',
 ]
 
-/** Cross-fading, Ken-Burns hero background with a parallax layer. */
+/**
+ * Cross-fading, Ken-Burns hero background with a parallax layer.
+ *
+ * Only the first slide is mounted on load. The other two used to be
+ * background-images on always-present divs, so all three downloaded during the
+ * initial page load — 964 kB for one visible photo. They now mount once the
+ * browser is idle (and always before the 5.5 s first transition), which keeps
+ * ~520 kB off the critical path without changing what the visitor sees.
+ */
 export const HeroSlideshow = ({ active }: { active: number }) => {
   const parallaxRef = useParallax<HTMLDivElement>(0.16)
+  const mountRest = useAfterPaint(3000)
 
   return (
     <div
@@ -17,25 +28,39 @@ export const HeroSlideshow = ({ active }: { active: number }) => {
       style={{ background: 'var(--hero-bg)' }}
     >
       <div className="absolute inset-0 overflow-hidden">
-        {HERO_SLIDES.map((src, i) => (
-          <div
-            key={src}
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${src})`,
-              opacity: i === active ? 1 : 0,
-              transition: 'opacity 1.7s ease',
-              animation: `kenburns ${17 + i * 2}s ease-in-out infinite alternate`,
-            }}
-          />
-        ))}
+        {/* `i === active` keeps the dots working for reduced-motion visitors,
+            for whom useAfterPaint never flips and the hero stays static. */}
+        {HERO_SLIDES.map((src, i) =>
+          i === 0 || i === active || mountRest ? (
+            <div
+              key={src}
+              className="absolute inset-0"
+              style={{
+                opacity: i === active ? 1 : 0,
+                transition: 'opacity 1.7s ease',
+                animation: `kenburns ${17 + i * 2}s ease-in-out infinite alternate`,
+              }}
+            >
+              <SmartImage
+                src={src}
+                alt=""
+                sizes="100vw"
+                priority={i === 0}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : null,
+        )}
       </div>
     </div>
   )
 }
 
-/** Soft floating light orbs. */
-export const HeroBokeh = () => (
+/** Soft floating light orbs. Deferred — 9 blurred, continuously-animating layers. */
+export const HeroBokeh = () => {
+  if (!useAfterPaint()) return null
+
+  return (
   <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
     {Array.from({ length: 9 }, (_, i) => {
       const left = (i * 11 + 5) % 100
@@ -58,10 +83,17 @@ export const HeroBokeh = () => (
       )
     })}
   </div>
-)
+  )
+}
 
-/** Twinkling brass points along the top of the hero. */
-export const HeroLights = () => (
+/**
+ * Twinkling brass points along the top of the hero. Deferred — 22 elements
+ * animating scale under a `box-shadow` glow repaint that glow every frame.
+ */
+export const HeroLights = () => {
+  if (!useAfterPaint()) return null
+
+  return (
   <div className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[42%]">
     {Array.from({ length: 22 }, (_, i) => {
       const left = ((i + 0.5) / 22) * 100
@@ -83,7 +115,8 @@ export const HeroLights = () => (
       )
     })}
   </div>
-)
+  )
+}
 
 /** Bottom-right scroll indicator. */
 export const ScrollCue = () => (

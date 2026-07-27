@@ -1,11 +1,13 @@
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
 import { contact, eventTypes, venueImg } from '@/data/site'
 import { useFaqs } from '@/hooks/use-site-content'
+import { useJsonLd } from '@/hooks/use-document-head'
+import { FAQ_JSONLD_ID, faqPageNode } from '@/lib/seo'
 import { inquirySchema, type InquiryValues } from '@/lib/inquiry-schema'
 import { Reveal } from '@/components/effects/reveal'
 import { PageHero } from '@/components/layout/page-hero'
@@ -27,6 +29,11 @@ const errorText = 'text-[11px] text-[#d98a6a]'
 
 export const ContactPage = () => {
   const faqs = useFaqs()
+
+  // FAQ schema is rebuilt from whatever the CMS is actually serving, so the
+  // markup can never claim answers that differ from the ones on the page.
+  useJsonLd(FAQ_JSONLD_ID, useMemo(() => faqPageNode(faqs), [faqs]))
+
   const {
     register,
     handleSubmit,
@@ -45,6 +52,8 @@ export const ContactPage = () => {
   })
 
   const onSubmit = async (values: InquiryValues) => {
+    // Loaded on submit rather than on render — see use-site-content.ts.
+    const { supabase } = await import('@/lib/supabase')
     const { error } = await supabase.from('leads').insert({
       name: values.name,
       email: values.email,

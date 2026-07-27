@@ -35,6 +35,23 @@ export const GalleryPage = () => {
 
       <section className="relative bg-ink px-[clamp(20px,6vw,80px)] pb-[clamp(70px,10vw,120px)] pt-[clamp(50px,7vw,80px)]">
         <div className="mx-auto max-w-wide">
+          {/*
+            A photo wall with no prose is invisible to search: this intro gives
+            the page indexable copy and names the spaces the photos show.
+          */}
+          <Reveal className="mx-auto mb-12 max-w-[720px] text-center">
+            <h2 className="mb-4 font-serif text-[clamp(1.6rem,3.2vw,2.4rem)] font-normal leading-[1.15] text-cream">
+              Real weddings and events at Infinity at Rio Ranch
+            </h2>
+            <p className="text-[15.5px] font-light leading-[1.85] text-muted">
+              A look around our two acres in Liberty Hill, Texas — the ceremony
+              lawn and floral arch, the 2,600 sq ft indoor reception hall, the
+              string-lit outdoor terrace, the private bridal suite, and the
+              golden-hour light our couples come back for. Filter by ceremony,
+              reception, outdoor spaces or details, and tap any photo to enlarge.
+            </p>
+          </Reveal>
+
           {featuredTile && (
             <Reveal className="mb-14">
               <GalleryFeatured

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { InstagramLogo } from '@phosphor-icons/react'
 
 import { contact, navLinks } from '@/data/site'
+import { SmartImage } from '@/components/ui/smart-image'
 import { logoFor, useThemeStore } from '@/store/theme'
 
 /** Small brass sparkle that echoes the hero's twinkling lights. */
@@ -25,7 +26,9 @@ export const Footer = () => {
   const contactItems = [
     { label: contact.email, href: `mailto:${contact.email}`, external: false },
     { label: contact.phones[0], href: contact.phoneHref, external: false },
-    { label: contact.location, href: contact.mapUrl, external: true },
+    // The full street address, not just the town: a consistent NAP block in the
+    // footer of every page is the baseline signal for local search and maps.
+    { label: contact.address, href: contact.mapUrl, external: true },
   ]
 
   return (
@@ -46,9 +49,10 @@ export const Footer = () => {
           />
           <span className="hidden h-px w-14 bg-gradient-to-r from-transparent to-brass/45 sm:block lg:w-24" />
           <Sparkle />
-          <img
+          <SmartImage
             src={logoFor(theme)}
             alt="Infinity at Rio Ranch"
+            sizes="(max-width: 640px) 132px, 148px"
             className="relative block h-auto w-[132px] shrink-0 [filter:drop-shadow(0_14px_34px_rgba(0,0,0,0.45))] sm:w-[148px]"
           />
           <Sparkle />

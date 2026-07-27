@@ -17,8 +17,12 @@ Supabase backend, deployed to Vercel.
 
 ## Commands
 - `npm run dev` — dev server (use the preview tool, not raw shell, to run it).
-- `npm run build` — `tsc -b` + vite build (must pass before shipping).
+- `npm run build` — `tsc -b` → vite build → SSR build → prerender (must pass
+  before shipping). The prerender step fails the build on error by design.
 - `npm run lint` — oxlint. `design/` warnings are the design bundle, ignore them.
+- `npm run optimize:images` — re-encodes `public/assets` in place (JPEG q78,
+  1600px cap). Run it after adding photos; it's manifest-idempotent and
+  deliberately outside `build` so nothing gets re-compressed every deploy.
 
 ## Architecture rules
 - **Security is RLS, not app code.** The public site uses the publishable anon key;
@@ -38,6 +42,29 @@ Supabase backend, deployed to Vercel.
   security-definer RPC — the invoices table stays admin-only under RLS.
 - Admin + invoice pages are `React.lazy` chunks in `src/App.tsx` so public visitors
   don't download them. Keep new admin code lazy.
+- **Public routes are prerendered; `src/lib/seo.ts` is the only SEO source.**
+  `scripts/prerender.mjs` writes real HTML per route into `dist/<route>/index.html`
+  so non-JS crawlers (GPTBot, ClaudeBot, PerplexityBot) see the content. Titles,
+  meta, JSON-LD, `sitemap.xml` and `robots.txt` all come from `src/lib/seo.ts`,
+  used at build time by the prerenderer and at runtime by `useDocumentHead()`.
+  Adding a public page means updating `PUBLIC_ROUTES` + `ROUTE_META` there, the
+  router in `App.tsx` **and** `src/entry-server.tsx`, plus a rewrite in
+  `vercel.json` (the prerender script fails the build if you forget that last one).
+  Photos must be real `<img>` with alt text — background images are unindexable.
+  Full write-up in `SEO.md`.
+- **The client hydrates the prerendered HTML — don't break the match.** Both
+  `App.tsx` and `src/entry-server.tsx` render the same `AppShell`; if their trees
+  diverge, React logs error #418 and silently falls back to client rendering,
+  which quietly costs ~2s of LCP. Anything that differs between build time and
+  first client paint (localStorage, `Date`, viewport measurements) must render
+  its server value first and correct itself in an effect — see `use-reveal.ts`
+  and the `skipHydration` in `store/theme.ts`.
+- **Images go through `<SmartImage>`**, which reads `src/lib/image-sources.json`
+  (generated) and falls back to a plain `<img>` for anything unknown, so CMS
+  uploads still work. Pass a truthful `sizes` — a wrong one is worse than none.
+  Photos live in `public/assets`; generated derivatives in `public/assets/_r`.
+  Both are committed; never `git clean` that tree without regenerating
+  (`public/assets/fonts` lives there too).
 
 ## Layout
 - `src/pages/` public pages; `src/pages/admin/` admin panel; `src/pages/invoice-public.tsx`.
@@ -92,7 +119,9 @@ Supabase backend, deployed to Vercel.
   `supabase/migrations/0001_init.sql`. Confirm the new project's region/org in the
   dashboard; recovery steps in `RUNBOOK.md`.
 - **Hosting:** Vercel project `eshwar-uis-projects/infinity-rio-ranch`
-  (live at https://infinity-rio-ranch.vercel.app; `vercel.json` handles SPA rewrites).
+  live at **https://www.infinityrioranch.com** (canonical host; the apex
+  redirects to www, `infinity-rio-ranch.vercel.app` is the platform URL).
+  `vercel.json` handles the prerendered-route + SPA rewrites.
   Vercel CLI auth is interactive-only — can't deploy non-interactively from here.
 - **Git:** private repo `Eshwar-ui/infinity-rio-ranch` (gh CLI authed as Eshwar-ui).
   `.env.local` is gitignored — keys are never committed.
@@ -101,5 +130,6 @@ Supabase backend, deployed to Vercel.
 
 See `admin-plan.md` for full backend/feature status, `progress.md` for the
 original site build, `RUNBOOK.md` for backend ops (key rotation, standing up a
-new Supabase project, rebuilding the edge function), and `DEPLOY.md` for shipping
-to Vercel (env vars, pre-flight, verification, rollback).
+new Supabase project, rebuilding the edge function), `DEPLOY.md` for shipping
+to Vercel (env vars, pre-flight, verification, rollback), and `SEO.md` for
+search/answer-engine architecture and the open owner-side tasks.

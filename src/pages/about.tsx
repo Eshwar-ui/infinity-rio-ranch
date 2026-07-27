@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Check } from '@phosphor-icons/react'
 
 import { amenities, included, venueImg } from '@/data/site'
+import { glanceFacts } from '@/lib/seo'
 import { Button } from '@/components/ui/button'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { StatList } from '@/components/ui/stat-list'
@@ -25,9 +26,15 @@ export const AboutPage = () => (
     <section className="relative bg-ink px-[clamp(20px,6vw,80px)] py-[clamp(80px,12vw,150px)]">
       <div className="mx-auto grid max-w-content grid-cols-1 items-center gap-[clamp(40px,6vw,90px)] md:grid-cols-2">
         <Reveal className="relative pb-10 pr-10 md:pb-0">
-          <Polaroid src={ABOUT_IMG} rotate={2} className="mx-auto w-full max-w-[400px]" />
+          <Polaroid
+            src={ABOUT_IMG}
+            alt="Golden-hour couple portraits on the grounds at Infinity at Rio Ranch"
+            rotate={2}
+            className="mx-auto w-full max-w-[400px]"
+          />
           <Polaroid
             src={venueImg(11)}
+            alt="The outdoor cocktail garden at Infinity at Rio Ranch"
             rotate={-5}
             aspect="aspect-square"
             className="absolute -bottom-2 -right-2 hidden w-[180px] md:block"
@@ -43,7 +50,8 @@ export const AboutPage = () => (
           </Reveal>
           <Reveal delay={0.14}>
             <p className="mb-5 text-[15.5px] font-light leading-[1.85] text-muted">
-              Infinity at Rio Ranch is a stunning event venue spread across two
+              Infinity at Rio Ranch is a wedding and event venue in Liberty
+              Hill, Texas, in the Greater Austin area. It spreads across two
               acres, featuring 2,600 sq ft of indoor space and 12,400 sq ft of
               outdoor space — perfect for hosting unforgettable celebrations.
               Whether you're planning an intimate gathering or a grand
@@ -65,6 +73,40 @@ export const AboutPage = () => (
           </Reveal>
         </div>
       </div>
+    </section>
+
+    {/*
+      Venue at a glance — a flat, factual key/value block. This is the shape
+      answer engines and featured snippets extract cleanly, and it gives AI
+      search a citable set of specifics (where, how big, what for, how to book).
+    */}
+    <section
+      aria-labelledby="venue-at-a-glance"
+      className="relative bg-ink px-[clamp(20px,6vw,80px)] pb-[clamp(50px,7vw,90px)]"
+    >
+      <Reveal className="mx-auto max-w-content">
+        <h2
+          id="venue-at-a-glance"
+          className="mb-7 text-[11px] uppercase tracking-[0.28em] text-brass"
+        >
+          The venue at a glance
+        </h2>
+        <dl className="grid grid-cols-1 border-t border-line">
+          {glanceFacts.map((fact) => (
+            <div
+              key={fact.term}
+              className="grid grid-cols-1 gap-1 border-b border-line py-[18px] sm:grid-cols-[200px_1fr] sm:gap-6"
+            >
+              <dt className="text-[11px] uppercase tracking-[0.2em] text-muted">
+                {fact.term}
+              </dt>
+              <dd className="m-0 text-[15px] font-light leading-[1.7] text-cream">
+                {fact.detail}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </Reveal>
     </section>
 
     {/* Stats band */}

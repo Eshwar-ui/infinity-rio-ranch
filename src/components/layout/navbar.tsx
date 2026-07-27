@@ -7,6 +7,7 @@ import { navLinks } from '@/data/site'
 import { logoFor, useThemeStore } from '@/store/theme'
 import { useScrolled } from '@/hooks/use-scrolled'
 import { Button } from '@/components/ui/button'
+import { SmartImage } from '@/components/ui/smart-image'
 
 export const Navbar = () => {
   const scrolled = useScrolled(40)
@@ -55,7 +56,13 @@ export const Navbar = () => {
         }}
       >
         <Link to="/" className="flex items-center" aria-label="Infinity at Rio Ranch — home">
-          <img src={logoFor(onHero ? 'dark' : theme)} alt="Infinity at Rio Ranch" className="h-[62px] w-auto" />
+          <SmartImage
+            src={logoFor(onHero ? 'dark' : theme)}
+            alt="Infinity at Rio Ranch"
+            sizes="62px"
+            priority
+            className="h-[62px] w-auto"
+          />
         </Link>
 
         <nav className="hidden items-center gap-[38px] md:flex">

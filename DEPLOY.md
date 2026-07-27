@@ -6,11 +6,15 @@ For backend/DB ops (schema, keys, new Supabase project) see `RUNBOOK.md`.
 ## What & where
 - **App:** Vite + React SPA, static build output in `dist/`.
 - **Host:** Vercel project `eshwar-uis-projects/infinity-rio-ranch`, live at
-  https://infinity-rio-ranch.vercel.app.
+  **https://www.infinityrioranch.com** (the canonical host; the apex
+  `infinityrioranch.com` redirects to www, and `infinity-rio-ranch.vercel.app`
+  still resolves as the platform URL).
 - **Repo:** `Eshwar-ui/infinity-rio-ranch` (gh CLI authed as `Eshwar-ui`).
   Production tracks the `main` branch.
-- **SPA routing:** `vercel.json` rewrites every path to `/index.html` so
-  client-side routes (`/gallery`, `/admin`, `/invoice/:token`) resolve on refresh.
+- **Routing:** `/`, `/about`, `/gallery` and `/contact` ship as **prerendered
+  static HTML** (`dist/<route>/index.html`) with their own rewrite in
+  `vercel.json`; everything else (`/admin`, `/invoice/:token`) falls through the
+  catch-all rewrite to `/index.html` and resolves client-side. See `SEO.md`.
 
 ## Required env vars (set in Vercel BEFORE deploying)
 `src/lib/supabase.ts` throws on load if either is missing — a missing var
@@ -20,6 +24,14 @@ For backend/DB ops (schema, keys, new Supabase project) see `RUNBOOK.md`.
 |---|---|---|
 | `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` | Production (+ Preview) |
 | `VITE_SUPABASE_ANON_KEY` | `sb_publishable_...` | Production (+ Preview) |
+| `VITE_SITE_URL` | canonical origin — only if it ever changes | Production |
+
+`VITE_SITE_URL` is optional: it defaults to `https://www.infinityrioranch.com`,
+which is correct today. Set it only if the canonical host changes — every
+canonical, OG URL, sitemap entry and `robots.txt` line is derived from it.
+
+The build now **executes** app modules during prerendering, so missing Supabase
+vars fail the *build* rather than white-screening at runtime.
 
 Vercel → Project → Settings → Environment Variables. These are **build-time**
 (`VITE_` vars are inlined into the bundle) — after changing them you must
@@ -31,10 +43,11 @@ rotating them.
 ## Pre-flight (must pass)
 ```bash
 npm ci            # clean install matching package-lock
-npm run build     # tsc -b && vite build — typecheck + bundle; fix any error before shipping
+npm run build     # typecheck + bundle + SSR build + prerender; fix any error before shipping
 npm run lint      # oxlint; ignore design/ warnings (that's the design bundle)
 ```
-`npm run preview` serves the built `dist/` locally to sanity-check before deploy.
+`npm run preview` serves the built `dist/` locally — note its SPA fallback hides
+the per-route prerendered files, so verify those by reading `dist/` directly.
 
 ## Deploy
 Vercel auto-builds on push. Normal flow:
@@ -50,7 +63,9 @@ Deploy by pushing to `main` or with the **Redeploy** button in the dashboard.
 1. Load https://infinity-rio-ranch.vercel.app — public site renders (not a white
    screen; a white screen = missing/av bad env vars).
 2. Hard-refresh a sub-route (e.g. `/gallery`) — should load, not 404 (proves the
-   `vercel.json` rewrite is live).
+   `vercel.json` rewrite is live), and view-source should show that page's own
+   `<title>` and content, not the homepage's (proves the prerender shipped).
+   `curl -s https://<domain>/about | grep '<title>'` is the fast check.
 3. Contact form submits → a row appears in Supabase `leads`.
 4. `/admin` → login → the CMS lists content (proves keys + RLS + `is_admin()`).
 5. Quick key/schema check without the app:

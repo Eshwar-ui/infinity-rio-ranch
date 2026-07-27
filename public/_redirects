@@ -1,1 +1,6 @@
-/*  /index.html  200
+# Netlify-style fallback (Vercel uses vercel.json). Prerendered routes are
+# listed first so the SPA catch-all doesn't swallow their static HTML.
+/about      /about/index.html      200
+/gallery    /gallery/index.html    200
+/contact    /contact/index.html    200
+/*          /index.html            200

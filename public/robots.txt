@@ -1,0 +1,11 @@
+# Dev/default copy. The deployed file is regenerated at build time by
+# scripts/prerender.mjs (source: robotsTxt() in src/lib/seo.ts) so the Sitemap
+# line always matches the domain the build targets.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /invoice/
+
+Sitemap: https://www.infinityrioranch.com/sitemap.xml

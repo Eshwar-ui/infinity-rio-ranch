@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-import { supabase } from '@/lib/supabase'
 import {
   events as eventsFallback,
   faqs as faqsFallback,
@@ -35,6 +34,11 @@ const galleryFallback: GalleryTileData[] = galleryList.map((g, i) => ({
  * Reads a published, ordered content list from Supabase, falling back to the
  * hardcoded site.ts array on any error or empty result — so the public site can
  * never render an empty section even if the DB is unreachable.
+ *
+ * The Supabase client is imported dynamically: it's ~110 kB and nothing on first
+ * paint needs it, since the fallback data renders immediately. Keeping it out of
+ * the entry chunk is worth more than the one-tick delay before the CMS values
+ * arrive.
  */
 function useContent<T>(
   table: string,
@@ -45,11 +49,14 @@ function useContent<T>(
 
   useEffect(() => {
     let active = true
-    supabase
-      .from(table)
-      .select('*')
-      .eq('published', true)
-      .order('sort', { ascending: true })
+    import('@/lib/supabase')
+      .then(({ supabase }) =>
+        supabase
+          .from(table)
+          .select('*')
+          .eq('published', true)
+          .order('sort', { ascending: true }),
+      )
       .then(({ data, error }) => {
         if (active && !error && data && data.length > 0) setItems(data.map(map))
       })

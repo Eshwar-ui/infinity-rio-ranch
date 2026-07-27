@@ -10,6 +10,7 @@ import { GalleryCarousel } from '@/components/gallery/gallery-carousel'
 import { HomeHero } from '@/components/sections/home-hero'
 import { Testimonials } from '@/components/sections/testimonials'
 import { Polaroid } from '@/components/ui/polaroid'
+import { SmartImage } from '@/components/ui/smart-image'
 
 const WELCOME_IMG = '/assets/site/wed.jpg'
 const WELCOME_INSET = '/assets/site/DSC3669-2.jpg'
@@ -62,7 +63,8 @@ export const HomePage = () => {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mb-5 text-[15.5px] font-light leading-[1.85] text-muted">
-              Welcome to Infinity, your premier wedding venue and event center!
+              Welcome to Infinity at Rio Ranch, a premier wedding venue and
+              event center in Liberty Hill, Texas, just outside Austin.
               Combining timeless charm with modern amenities, our rustic
               elegance provides the perfect backdrop for your most unforgettable
               moments. Whether you're exchanging vows in a breathtaking
@@ -83,13 +85,14 @@ export const HomePage = () => {
         <Reveal delay={0.12} className="relative pb-10 pl-10 md:pb-0">
           <Polaroid
             src={WELCOME_IMG}
-            alt="The Grand Reception Hall"
+            alt="Wedding ceremony on the lawn at Infinity at Rio Ranch, Liberty Hill, TX"
             caption="The Grand Reception Hall"
             rotate={-3}
             className="mx-auto w-full max-w-[420px]"
           />
           <Polaroid
             src={WELCOME_INSET}
+            alt="The grand reception hall set for dinner at Infinity at Rio Ranch"
             rotate={5}
             aspect="aspect-square"
             className="absolute -bottom-2 -left-2 hidden w-[190px] md:block"
@@ -115,10 +118,13 @@ export const HomePage = () => {
                 to="/contact"
                 className="group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-[2px] border border-line transition-all duration-500 hover:-translate-y-2 hover:border-brass"
               >
-                <div
-                  className="absolute inset-0 z-0 bg-cover bg-center shadow-[inset_0_-120px_120px_rgba(10,8,6,0.85)]"
-                  style={{ backgroundImage: `url(${evt.image})` }}
+                <SmartImage
+                  src={evt.image}
+                  alt={`${evt.title} at Infinity at Rio Ranch in Liberty Hill, TX`}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="absolute inset-0 z-0 h-full w-full object-cover"
                 />
+                <div className="absolute inset-0 z-[1] shadow-[inset_0_-120px_120px_rgba(10,8,6,0.85)]" />
                 <div className="relative z-[2] flex min-h-[190px] flex-col justify-end gap-2.5 px-6 pb-7 pt-[26px]">
                   <span className="font-serif text-[15px] text-brass2">{evt.n}</span>
                   <h3 className="m-0 font-serif text-[23px] font-medium leading-[1.12] text-cream">

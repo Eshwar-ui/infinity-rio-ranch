@@ -64,6 +64,7 @@ export const GalleryCarousel = ({ tiles }: { tiles: Tile[] }) => {
             key={`${tile.label}-${i}`}
             tile={tile}
             onOpen={() => open(list, i)}
+            sizes="(max-width: 768px) 60vw, 380px"
             className="aspect-square w-[clamp(220px,32vw,380px)] shrink-0 snap-start"
           />
         ))}
