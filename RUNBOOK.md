@@ -17,10 +17,16 @@ Do this when the Supabase project is gone or you're moving to a fresh one.
 
 1. **Create the project** — Supabase Dashboard → New project. Note its ref
    (the `<ref>` in `https://<ref>.supabase.co`), region, and org.
-2. **Apply the schema** — SQL Editor → New query → paste all of
-   `supabase/migrations/0001_init.sql` → Run. Creates every table, RLS policy,
-   `is_admin()`, invoice numbering, the `get_invoice_by_token` RPC, the `gallery`
-   storage bucket, and seed content. Safe to re-run (seeds are `NOT EXISTS`-guarded).
+2. **Apply the schema** — SQL Editor → New query → paste and Run each migration
+   **in order**: `0001_init.sql` (tables, RLS, `is_admin()`, invoice numbering,
+   the `get_invoice_by_token` RPC, the `gallery` storage bucket, seed content),
+   then `0002_hardening.sql` (leads CHECK constraints, single-featured trigger,
+   `updated_at`), then `0003_page_content.sql` (`site_copy`, `stats`,
+   `amenities`, `list_items`, `site_settings` + the shipped page copy), then
+   `0004_clients.sql` (`clients`, the `converted` lead status and the
+   `convert_lead_to_client()` RPC).
+   All four are safe to re-run — seeds are `NOT EXISTS` / `ON CONFLICT`-guarded,
+   so re-running never overwrites copy the owner has edited.
 3. **Create the admin user** — Dashboard → Authentication → Users → Add user,
    tick **Auto Confirm User**. (Passwords are the owner's to set — never scripted.)
 4. **Promote them to admin** — SQL Editor, with the real email:
@@ -31,6 +37,11 @@ Do this when the Supabase project is gone or you're moving to a fresh one.
 5. **Update env vars** (both places — see next section).
 6. **Redeploy** on Vercel so production picks up the new keys.
 7. **Rebuild the edge function** if invoice email is needed (see below).
+8. **Set the deploy hook** — Vercel → Project Settings → Git → Deploy Hooks →
+   create one, then paste it into the admin sidebar's "Publish to live site"
+   panel (stored in `site_settings`). Without it, CMS edits stay invisible to
+   crawlers until someone deploys by hand: the prerendered HTML is only rewritten
+   during a build, when `pull:content` snapshots the tables. See SEO.md §5b.
 
 ---
 

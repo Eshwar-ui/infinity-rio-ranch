@@ -13,15 +13,34 @@
 
 import {
   amenities,
-  contact,
   eventTypes,
   events,
   faqs,
   gallery,
-  included,
-  stats,
   venueImg,
 } from '@/data/site'
+/*
+ * Venue facts come from the CMS snapshot, not the hardcoded `site.ts` values.
+ * The address, phones and capacity numbers appear both as visible copy and
+ * inside the JSON-LD, llms.txt and facts.json — reading them from two different
+ * sources is how structured data ends up asserting an address the page no
+ * longer shows. `content-snapshot.ts` is deliberately hook-free so it can be
+ * read here at module scope, where the prerenderer needs it.
+ */
+import {
+  contactSnapshot as contact,
+  seededList,
+  seededStats as stats,
+} from '@/lib/content-snapshot'
+
+const included = seededList('included')
+
+/**
+ * Phone numbers are editable too, so never interpolate `contact.phones[0]`
+ * directly — clearing both fields in the CMS would print the literal string
+ * "undefined" into the OG tags, llms.txt and facts.json.
+ */
+const primaryPhone = contact.phones[0] ?? ''
 
 /* ------------------------------------------------------------------ */
 /* Site constants                                                      */
@@ -72,11 +91,19 @@ const OG_IMAGE = {
   alt: 'The reception hall at Infinity at Rio Ranch set for a wedding',
 }
 
+/**
+ * The structured address, from the same editable fields the footer renders.
+ *
+ * Previously hardcoded here while the visible address came from `site.ts` —
+ * two copies of one fact, which is how a `PostalAddress` ends up asserting an
+ * address the page stopped showing. Country stays fixed: it isn't editable, and
+ * schema.org wants the ISO code rather than anything a person would type.
+ */
 const ADDRESS = {
-  street: '326 Rio Pk Dr',
-  city: 'Liberty Hill',
-  region: 'TX',
-  postalCode: '78642',
+  street: contact.street || '326 Rio Pk Dr',
+  city: contact.city || 'Liberty Hill',
+  region: contact.region || 'TX',
+  postalCode: contact.postalCode || '78642',
   country: 'US',
 }
 
@@ -468,7 +495,7 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
       'business:contact_data:region': ADDRESS.region,
       'business:contact_data:postal_code': ADDRESS.postalCode,
       'business:contact_data:country_name': 'USA',
-      'business:contact_data:phone_number': contact.phones[0],
+      'business:contact_data:phone_number': primaryPhone,
     },
     jsonLd: jsonLdFor(pathname, meta),
   }
@@ -690,7 +717,7 @@ export const llmsTxt = () =>
     '',
     `${BRAND} (also trading as ${LEGAL_NAME}) is located at ` +
       `${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}, USA. ` +
-      `Bookings and tours: ${contact.phones[0]} or ${contact.email}.`,
+      `Bookings and tours: ${primaryPhone} or ${contact.email}.`,
     '',
     '## Pages',
     '',
@@ -761,7 +788,7 @@ export const llmsFullTxt = () =>
     ...faqs.flatMap((f) => [`### ${f.q}`, '', f.a, '']),
     '## Booking',
     '',
-    `Send an inquiry at ${abs('/contact')} or call ${contact.phones[0]}. ` +
+    `Send an inquiry at ${abs('/contact')} or call ${primaryPhone}. ` +
       'We reply within one business day to confirm availability and arrange a tour.',
     '',
   ].join('\n')
@@ -815,10 +842,24 @@ export const factsJson = () =>
     2,
   ) + '\n'
 
+/**
+ * The grounds line, built from however many statistics the CMS is serving.
+ *
+ * Deliberately not `stats[0]`/`stats[1]`/`stats[2]`. The statistics are editable
+ * now, and the prerender step fails the build on a throw — so a positional read
+ * meant that deleting one stat in the admin panel took the whole deploy down
+ * with a `Cannot read properties of undefined`. Joining whatever is there keeps
+ * a bad edit to a slightly worse sentence instead of a broken release.
+ */
+const groundsDetail = () => {
+  const parts = stats.map((stat) => `${stat.value} ${stat.label}`.trim())
+  return parts.length > 0 ? parts.join(' · ') : 'Two acres of indoor and outdoor space'
+}
+
 /** Stat lines reused by the About page's at-a-glance block. */
 export const glanceFacts = [
   { term: 'Location', detail: `${ADDRESS.street}, ${ADDRESS.city}, ${ADDRESS.region} ${ADDRESS.postalCode}` },
-  { term: 'Grounds', detail: `${stats[0].value} acres — ${stats[1].value} sq ft indoors, ${stats[2].value} sq ft outdoors` },
+  { term: 'Grounds', detail: groundsDetail() },
   { term: 'Event types', detail: events.map((e) => e.title).join(' · ') },
   { term: 'Serving', detail: 'Liberty Hill, Georgetown, Leander, Cedar Park and Greater Austin' },
   { term: 'Booking', detail: 'Send an inquiry and we reply within one business day' },

@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Eye, EyeSlash } from '@phosphor-icons/react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Eye, EyeSlash } from '@phosphor-icons/react'
 
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
+import { SmartImage } from '@/components/ui/smart-image'
+import { ThemeProvider } from '@/components/layout/theme-provider'
+import { logoFor, useThemeStore } from '@/store/theme'
 
 const field =
   'w-full rounded-[1px] border border-line bg-transparent px-[15px] py-3 text-sm text-cream outline-none transition-colors focus:border-brass'
 
 export const AdminLogin = () => {
   const navigate = useNavigate()
+  const theme = useThemeStore((s) => s.theme)
   const { session, isAdmin, loading } = useAdmin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,12 +57,47 @@ export const AdminLogin = () => {
 
   return (
     <div className="grid min-h-screen place-items-center bg-ink px-6">
+      {/*
+       * `/admin/login` sits outside RootLayout, so nothing had ever set
+       * <html data-theme> on a direct load — the page fell through to the dark
+       * `:root` tokens while the un-rehydrated store still read 'light'. Any
+       * logo picked from that store would have been the dark cutout on a dark
+       * page. Mounting the provider here makes the palette and the logo derive
+       * from the same value again, in both themes.
+       */}
+      <ThemeProvider />
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="font-serif text-2xl text-cream">Infinity Rio Ranch</div>
-          <div className="mt-1 text-[10px] uppercase tracking-[0.24em] text-muted">
+        {/*
+         * The logo doubles as the way out of the admin area — this route is a
+         * dead end otherwise, since the login screen renders without the public
+         * navbar. The wordmark is in the artwork, so it replaces the serif
+         * heading that used to repeat it. The text link underneath is there
+         * because a logo alone doesn't read as clickable to everyone.
+         */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Link
+            to="/"
+            aria-label="Infinity at Rio Ranch — back to the website"
+            className="group inline-flex"
+          >
+            <SmartImage
+              src={logoFor(theme)}
+              alt="Infinity at Rio Ranch"
+              sizes="96px"
+              priority
+              className="h-24 w-auto transition-opacity duration-300 group-hover:opacity-75"
+            />
+          </Link>
+          <div className="mt-3 text-[10px] uppercase tracking-[0.24em] text-muted">
             Admin sign in
           </div>
+          <Link
+            to="/"
+            className="mt-5 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-brass2"
+          >
+            <ArrowLeft size={12} aria-hidden />
+            Back to website
+          </Link>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">

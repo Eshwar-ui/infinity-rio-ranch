@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom'
 
-import { useEvents, useGallery } from '@/hooks/use-site-content'
+import { useContact, useCopy, useEvents, useGallery } from '@/hooks/use-site-content'
 import { Button } from '@/components/ui/button'
 import { SectionHeading } from '@/components/ui/section-heading'
-import { StatList } from '@/components/ui/stat-list'
 import { Reveal } from '@/components/effects/reveal'
 import { useParallax } from '@/hooks/use-parallax'
-import { useAfterPaint } from '@/hooks/use-after-paint'
+import { useNearViewport } from '@/hooks/use-near-viewport'
 import { GalleryCarousel } from '@/components/gallery/gallery-carousel'
 import { HomeHero } from '@/components/sections/home-hero'
 import { Testimonials } from '@/components/sections/testimonials'
@@ -17,17 +16,25 @@ const WELCOME_IMG = '/assets/site/wed.jpg'
 const WELCOME_INSET = '/assets/site/DSC3669-2.jpg'
 
 const CtaBand = () => {
+  const t = useCopy()
   const parallaxRef = useParallax<HTMLDivElement>(0.14)
   /*
    * A CSS background can't be lazy-loaded — the browser fetches it as soon as
    * the rule applies. This one is a full-screen band *below* the fold, and it
    * was being requested at 53 ms, ahead of the hero photo it was competing
-   * with. Applying it after the settle window keeps 39 kB out of the critical
-   * path; the section keeps its height either way, so nothing shifts.
+   * with. Holding it until the band is near the viewport keeps those 39 kB out
+   * of the critical path and still has it loaded by the time anyone scrolls
+   * here; the section keeps its height either way, so nothing shifts.
+   *
+   * Not `useAfterPaint`: that one stays false forever under reduced motion,
+   * which left this section permanently photo-less for those visitors.
    */
-  const showBackdrop = useAfterPaint()
+  const { ref: bandRef, near: showBackdrop } = useNearViewport<HTMLElement>()
   return (
-    <section className="relative flex min-h-screen items-center overflow-hidden">
+    <section
+      ref={bandRef}
+      className="relative flex min-h-screen items-center overflow-hidden"
+    >
       <div
         ref={parallaxRef}
         className="absolute inset-x-0 -inset-y-[14%] z-0 bg-cover bg-center"
@@ -37,18 +44,15 @@ const CtaBand = () => {
       <div className="relative z-[3] mx-auto w-full max-w-content px-[clamp(20px,6vw,80px)] py-20">
         <Reveal className="max-w-[560px]">
           <SectionHeading
-            eyebrow="Begin your journey"
-            title="Discover the perfect setting for your special moments."
+            eyebrow={t('home.band.eyebrow')}
+            title={t('home.band.title')}
             titleClassName="text-[clamp(2.3rem,5vw,4rem)] leading-[1.04] mb-6"
           />
           <p className="mb-9 text-[15.5px] font-light leading-[1.85] text-muted">
-            Spanning two acres with stunning indoor and outdoor spaces, Infinity
-            at Rio Ranch is designed for unforgettable weddings, celebrations,
-            corporate events, and community gatherings — elegance, versatility,
-            and natural beauty all in one place.
+            {t('home.band.body')}
           </p>
           <Button asChild variant="brass">
-            <Link to="/gallery">View the Gallery →</Link>
+            <Link to="/gallery">{t('home.band.cta')}</Link>
           </Button>
         </Reveal>
       </div>
@@ -57,6 +61,8 @@ const CtaBand = () => {
 }
 
 export const HomePage = () => {
+  const t = useCopy()
+  const contact = useContact()
   const events = useEvents()
   const previewTiles = useGallery().slice(0, 8)
   return (
@@ -68,34 +74,24 @@ export const HomePage = () => {
       <div className="mx-auto grid max-w-content grid-cols-1 items-center gap-[clamp(40px,6vw,90px)] md:grid-cols-[1.05fr_0.95fr]">
         <div>
           <Reveal>
-            <SectionHeading eyebrow="Welcome" title="A premier venue where rustic elegance meets refined celebration." withRule titleClassName="mb-[26px]" />
+            <SectionHeading eyebrow={t('home.welcome.eyebrow')} title={t('home.welcome.title')} withRule titleClassName="mb-[26px]" />
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mb-5 text-[15.5px] font-light leading-[1.85] text-muted">
-              Welcome to Infinity at Rio Ranch, a premier wedding venue and
-              event center in Liberty Hill, Texas, just outside Austin.
-              Combining timeless charm with modern amenities, our rustic
-              elegance provides the perfect backdrop for your most unforgettable
-              moments. Whether you're exchanging vows in a breathtaking
-              indoor/outdoor setting or envisioning stunning photos to share,
-              Infinity is the perfect place to make your dreams come true.
+              {t('home.welcome.body1')}
             </p>
           </Reveal>
           <Reveal delay={0.24}>
-            <p className="mb-[38px] text-[15.5px] font-light leading-[1.85] text-muted">
-              From intimate gatherings to grand celebrations, our venue offers
-              the perfect blend of sophistication and natural beauty.
+            <p className="text-[15.5px] font-light leading-[1.85] text-muted">
+              {t('home.welcome.body2')}
             </p>
-          </Reveal>
-          <Reveal delay={0.3}>
-            <StatList className="border-t border-line pt-[34px]" />
           </Reveal>
         </div>
         <Reveal delay={0.12} className="relative pb-10 pl-10 md:pb-0">
           <Polaroid
             src={WELCOME_IMG}
             alt="Wedding ceremony on the lawn at Infinity at Rio Ranch, Liberty Hill, TX"
-            caption="The Grand Reception Hall"
+            caption={t('home.welcome.caption')}
             rotate={-3}
             className="mx-auto w-full max-w-[420px]"
           />
@@ -115,8 +111,8 @@ export const HomePage = () => {
       <div className="mx-auto max-w-content">
         <Reveal className="mb-16 text-center">
           <SectionHeading
-            eyebrow="Every Occasion"
-            title="Made for your most meaningful gatherings"
+            eyebrow={t('home.events.eyebrow')}
+            title={t('home.events.title')}
             align="center"
           />
         </Reveal>
@@ -156,12 +152,12 @@ export const HomePage = () => {
     <section className="relative flex min-h-screen flex-col justify-center bg-ink px-[clamp(20px,6vw,80px)] py-[clamp(70px,10vw,130px)]">
       <div className="mx-auto w-full min-w-0 max-w-wide">
         <Reveal className="mb-12 flex flex-wrap items-end justify-between gap-6">
-          <SectionHeading eyebrow="Get inspired" title="Photo Gallery" titleClassName="mt-2" />
+          <SectionHeading eyebrow={t('home.gallery.eyebrow')} title={t('home.gallery.title')} titleClassName="mt-2" />
           <Link
             to="/gallery"
             className="border-b border-brass pb-[5px] text-[11px] uppercase tracking-[0.24em] text-brass2 transition-colors duration-300 hover:text-brass"
           >
-            View Full Gallery →
+            {t('home.gallery.link')}
           </Link>
         </Reveal>
         <Reveal delay={0.1}>
@@ -180,30 +176,29 @@ export const HomePage = () => {
       <div className="mx-auto max-w-[920px] text-center">
         <Reveal>
           <div className="mb-1.5 font-script text-[36px] font-bold text-brass2">
-            Take a tour
+            {t('home.cta.script')}
           </div>
         </Reveal>
         <Reveal delay={0.06}>
           <h2 className="mb-6 font-serif text-[clamp(2.4rem,5.6vw,4.4rem)] font-normal leading-[1.04] text-cream">
-            Let's plan something{' '}
+            {t('home.cta.title_lead')}{' '}
             <span className="font-script text-[1.15em] font-bold text-brass2">
-              unforgettable
+              {t('home.cta.title_accent')}
             </span>
             .
           </h2>
         </Reveal>
         <Reveal delay={0.12}>
           <p className="mx-auto mb-11 max-w-[520px] text-base font-light leading-[1.8] text-muted">
-            We'd love to show you around, reserve your event date, or discuss
-            your wedding-day dreams.
+            {t('home.cta.body')}
           </p>
         </Reveal>
         <Reveal delay={0.18} className="flex flex-col justify-center gap-4 sm:flex-row">
           <Button asChild variant="brass" size="lg">
-            <Link to="/contact">Contact Us</Link>
+            <Link to="/contact">{t('home.cta.button_primary')}</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <a href="tel:+15126302236">Call to Schedule</a>
+            <a href={contact.phoneHref}>{t('home.cta.button_secondary')}</a>
           </Button>
         </Reveal>
       </div>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 import { galleryFilters, venueImg, type Filter } from '@/data/site'
-import { useGallery } from '@/hooks/use-site-content'
+import { useCopy, useGallery } from '@/hooks/use-site-content'
 import { useLightboxStore } from '@/store/lightbox'
 import { Button } from '@/components/ui/button'
 import { Reveal } from '@/components/effects/reveal'
@@ -11,6 +11,7 @@ import { GalleryFeatured, GalleryGrid } from '@/components/gallery/gallery-grid'
 import { PageHero } from '@/components/layout/page-hero'
 
 export const GalleryPage = () => {
+  const t = useCopy()
   const items = useGallery()
   const open = useLightboxStore((s) => s.open)
   const [active, setActive] = useState<Filter['key']>('all')
@@ -27,8 +28,8 @@ export const GalleryPage = () => {
   return (
     <div style={{ animation: 'riseIn .6s ease forwards' }}>
       <PageHero
-        eyebrow="Get inspired"
-        title="Gallery"
+        eyebrow={t('gallery.hero.eyebrow')}
+        title={t('gallery.hero.title')}
         crumb="Gallery"
         image={venueImg(10)}
       />
@@ -41,14 +42,10 @@ export const GalleryPage = () => {
           */}
           <Reveal className="mx-auto mb-12 max-w-[720px] text-center">
             <h2 className="mb-4 font-serif text-[clamp(1.6rem,3.2vw,2.4rem)] font-normal leading-[1.15] text-cream">
-              Real weddings and events at Infinity at Rio Ranch
+              {t('gallery.intro.title')}
             </h2>
             <p className="text-[15.5px] font-light leading-[1.85] text-muted">
-              A look around our two acres in Liberty Hill, Texas — the ceremony
-              lawn and floral arch, the 2,600 sq ft indoor reception hall, the
-              string-lit outdoor terrace, the private bridal suite, and the
-              golden-hour light our couples come back for. Filter by ceremony,
-              reception, outdoor spaces or details, and tap any photo to enlarge.
+              {t('gallery.intro.body')}
             </p>
           </Reveal>
 
@@ -92,10 +89,10 @@ export const GalleryPage = () => {
 
           <Reveal className="mt-16 text-center">
             <p className="mb-[22px] font-serif text-[clamp(1.5rem,3vw,2.1rem)] text-cream">
-              Ready to see it in person?
+              {t('gallery.cta.title')}
             </p>
             <Button asChild variant="brass">
-              <Link to="/contact">Schedule a Tour</Link>
+              <Link to="/contact">{t('gallery.cta.button')}</Link>
             </Button>
           </Reveal>
         </div>

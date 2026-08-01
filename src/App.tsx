@@ -16,10 +16,16 @@ const named = (factory: () => Promise<Record<string, any>>, name: string) =>
 const AdminLogin = named(() => import('@/pages/admin/login'), 'AdminLogin')
 const RequireAdmin = named(() => import('@/pages/admin/admin-layout'), 'RequireAdmin')
 const LeadsPage = named(() => import('@/pages/admin/leads'), 'LeadsPage')
+const AdminClients = named(() => import('@/pages/admin/clients'), 'AdminClients')
 const AdminTestimonials = named(() => import('@/pages/admin/testimonials'), 'AdminTestimonials')
 const AdminEvents = named(() => import('@/pages/admin/events'), 'AdminEvents')
 const AdminFaqs = named(() => import('@/pages/admin/faqs'), 'AdminFaqs')
 const AdminGallery = named(() => import('@/pages/admin/gallery'), 'AdminGallery')
+const AdminPageCopy = named(() => import('@/pages/admin/page-copy'), 'AdminPageCopy')
+const AdminStats = named(() => import('@/pages/admin/lists'), 'AdminStats')
+const AdminAmenities = named(() => import('@/pages/admin/lists'), 'AdminAmenities')
+const AdminIncluded = named(() => import('@/pages/admin/lists'), 'AdminIncluded')
+const AdminEventTypes = named(() => import('@/pages/admin/lists'), 'AdminEventTypes')
 const AdminInvoices = named(() => import('@/pages/admin/invoices'), 'AdminInvoices')
 const InvoiceEditor = named(() => import('@/pages/admin/invoice-editor'), 'InvoiceEditor')
 const InvoicePublicPage = named(() => import('@/pages/invoice-public'), 'InvoicePublicPage')
@@ -45,6 +51,12 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/admin/leads" replace /> },
       { path: 'leads', element: <LeadsPage /> },
+      { path: 'clients', element: <AdminClients /> },
+      { path: 'content', element: <AdminPageCopy /> },
+      { path: 'stats', element: <AdminStats /> },
+      { path: 'amenities', element: <AdminAmenities /> },
+      { path: 'included', element: <AdminIncluded /> },
+      { path: 'event-types', element: <AdminEventTypes /> },
       { path: 'testimonials', element: <AdminTestimonials /> },
       { path: 'events', element: <AdminEvents /> },
       { path: 'faqs', element: <AdminFaqs /> },

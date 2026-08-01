@@ -2,7 +2,8 @@ import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { InstagramLogo } from '@phosphor-icons/react'
 
-import { contact, navLinks } from '@/data/site'
+import { navLinks } from '@/data/site'
+import { useContact } from '@/hooks/use-site-content'
 import { SmartImage } from '@/components/ui/smart-image'
 import { logoFor, useThemeStore } from '@/store/theme'
 
@@ -22,6 +23,7 @@ const Dot = () => (
 
 export const Footer = () => {
   const theme = useThemeStore((s) => s.theme)
+  const contact = useContact()
 
   const contactItems = [
     { label: contact.email, href: `mailto:${contact.email}`, external: false },

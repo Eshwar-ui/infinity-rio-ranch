@@ -1,22 +1,27 @@
 import { Link } from 'react-router-dom'
 import { Check } from '@phosphor-icons/react'
 
-import { amenities, included, venueImg } from '@/data/site'
+import { venueImg } from '@/data/site'
+import { useAmenities, useCopy, useList } from '@/hooks/use-site-content'
 import { glanceFacts } from '@/lib/seo'
 import { Button } from '@/components/ui/button'
 import { SectionHeading } from '@/components/ui/section-heading'
-import { StatList } from '@/components/ui/stat-list'
 import { Reveal } from '@/components/effects/reveal'
 import { PageHero } from '@/components/layout/page-hero'
 import { Polaroid } from '@/components/ui/polaroid'
 
 const ABOUT_IMG = '/assets/site/f11.jpg'
 
-export const AboutPage = () => (
+export const AboutPage = () => {
+  const t = useCopy()
+  const amenities = useAmenities()
+  const included = useList('included')
+
+  return (
   <div style={{ animation: 'riseIn .6s ease forwards' }}>
     <PageHero
-      eyebrow="Our story"
-      title="About Us"
+      eyebrow={t('about.hero.eyebrow')}
+      title={t('about.hero.title')}
       crumb="About"
       image={venueImg(6)}
       className="min-h-[58vh]"
@@ -43,32 +48,24 @@ export const AboutPage = () => (
         <div>
           <Reveal>
             <SectionHeading
-              eyebrow="Welcome to Infinity"
-              title="Two acres of timeless charm and modern amenities."
+              eyebrow={t('about.intro.eyebrow')}
+              title={t('about.intro.title')}
               titleClassName="text-[clamp(2rem,4.4vw,3.4rem)] leading-[1.1] mb-[26px]"
             />
           </Reveal>
           <Reveal delay={0.14}>
             <p className="mb-5 text-[15.5px] font-light leading-[1.85] text-muted">
-              Infinity at Rio Ranch is a wedding and event venue in Liberty
-              Hill, Texas, in the Greater Austin area. It spreads across two
-              acres, featuring 2,600 sq ft of indoor space and 12,400 sq ft of
-              outdoor space — perfect for hosting unforgettable celebrations.
-              Whether you're planning an intimate gathering or a grand
-              celebration, our venue offers the perfect blend of sophistication
-              and natural beauty.
+              {t('about.intro.body1')}
             </p>
           </Reveal>
           <Reveal delay={0.22}>
             <p className="mb-[34px] text-[15.5px] font-light leading-[1.85] text-muted">
-              Combining rustic elegance with contemporary comfort, Infinity is
-              designed to be the backdrop for your most meaningful moments — and
-              the stunning photographs you'll treasure long after.
+              {t('about.intro.body2')}
             </p>
           </Reveal>
           <Reveal delay={0.28}>
             <Button asChild variant="brass">
-              <Link to="/contact">Schedule a Tour</Link>
+              <Link to="/contact">{t('about.intro.cta')}</Link>
             </Button>
           </Reveal>
         </div>
@@ -89,7 +86,7 @@ export const AboutPage = () => (
           id="venue-at-a-glance"
           className="mb-7 text-[11px] uppercase tracking-[0.28em] text-brass"
         >
-          The venue at a glance
+          {t('about.glance.title')}
         </h2>
         <dl className="grid grid-cols-1 border-t border-line">
           {glanceFacts.map((fact) => (
@@ -109,26 +106,17 @@ export const AboutPage = () => (
       </Reveal>
     </section>
 
-    {/* Stats band */}
-    <section className="relative bg-[linear-gradient(180deg,var(--ink),var(--panel2)_60%,var(--ink))] px-[clamp(20px,6vw,80px)] py-[clamp(60px,8vw,110px)]">
-      <Reveal className="mx-auto max-w-[1100px]">
-        <StatList variant="band" />
-      </Reveal>
-    </section>
-
     {/* Owners & amenities */}
     <section className="relative bg-ink px-[clamp(20px,6vw,80px)] py-[clamp(70px,10vw,130px)]">
       <div className="mx-auto grid max-w-content grid-cols-1 items-center gap-[clamp(40px,6vw,80px)] md:grid-cols-[0.9fr_1.1fr]">
         <Reveal>
           <SectionHeading
-            eyebrow="Owners & amenities"
-            title="Family-owned, personally hosted."
+            eyebrow={t('about.amenities.eyebrow')}
+            title={t('about.amenities.title')}
             titleClassName="text-[clamp(2rem,4.4vw,3.2rem)] leading-[1.1] mb-6"
           />
           <p className="text-[15.5px] font-light leading-[1.85] text-muted">
-            Infinity Weddings &amp; Events pairs attentive, personal service with
-            thoughtfully appointed spaces — so every detail of your celebration
-            feels effortless from your first tour to your final dance.
+            {t('about.amenities.body')}
           </p>
         </Reveal>
         <Reveal delay={0.1} className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
@@ -157,8 +145,8 @@ export const AboutPage = () => (
       <div className="mx-auto max-w-content">
         <Reveal className="mb-14 text-center">
           <SectionHeading
-            eyebrow="Effortless from the start"
-            title="Every celebration includes"
+            eyebrow={t('about.included.eyebrow')}
+            title={t('about.included.title')}
             align="center"
           />
         </Reveal>
@@ -177,10 +165,11 @@ export const AboutPage = () => (
         </Reveal>
         <Reveal delay={0.16} className="mt-14 text-center">
           <Button asChild variant="brass">
-            <Link to="/contact">Inquire About Your Date</Link>
+            <Link to="/contact">{t('about.included.cta')}</Link>
           </Button>
         </Reveal>
       </div>
     </section>
   </div>
-)
+  )
+}

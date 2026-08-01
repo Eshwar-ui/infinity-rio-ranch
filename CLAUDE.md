@@ -17,8 +17,11 @@ Supabase backend, deployed to Vercel.
 
 ## Commands
 - `npm run dev` — dev server (use the preview tool, not raw shell, to run it).
-- `npm run build` — `tsc -b` → vite build → SSR build → prerender (must pass
-  before shipping). The prerender step fails the build on error by design.
+- `npm run build` — pull:content → `tsc -b` → vite build → SSR build → prerender
+  (must pass before shipping). The prerender step fails the build on error by design.
+- `npm run pull:content` — refreshes `src/data/content.generated.json` from the
+  CMS. Runs as the first build step; run it by hand after publishing edits if you
+  want the change committed. Commit the result.
 - `npm run lint` — oxlint. `design/` warnings are the design bundle, ignore them.
 - `npm run optimize:images` — re-encodes `public/assets` in place (JPEG q78,
   1600px cap). Run it after adding photos; it's manifest-idempotent and
@@ -32,10 +35,44 @@ Supabase backend, deployed to Vercel.
   in `admin_users`, checked via the `is_admin()` security-definer function. RLS on
   admin data gates on `is_admin()`, so a stray signup can reach the login screen but
   read nothing. Reuse this pattern for any new admin table.
-- **Public content reads DB with a `site.ts` fallback.** `src/hooks/use-site-content.ts`
-  fetches published rows; if the fetch fails/empty it falls back to the hardcoded
-  arrays in `src/data/site.ts`, so the site never renders empty. New CMS content
-  should follow this shape (table + hook + fallback).
+- **CMS content reaches crawlers via a build-time snapshot, not the client fetch.**
+  `npm run pull:content` (`scripts/pull-content.mjs`, runs first in `build`)
+  reads the published rows over PostgREST and writes `src/data/content.generated.json`,
+  which is **committed**. `src/lib/content-snapshot.ts` layers that over the
+  `src/data/site.ts` / `src/data/copy.defaults.json` defaults and is deliberately
+  hook-free, so `seo.ts` and the prerenderer can read it at module scope.
+  `use-site-content.ts` seeds every hook from it and then refetches live in the
+  browser. This ordering is the whole point: effects don't run during SSR, so
+  anything fetched in a `useEffect` is absent from `dist/` and invisible to
+  GPTBot/ClaudeBot/PerplexityBot. Seeding from a static import puts real CMS
+  values in the prerendered HTML *and* makes the client's first render match it,
+  so hydration holds. The pull is forgiving by design — no creds, no network, or
+  no tables and it keeps the committed snapshot and exits 0.
+- **Editable content lives in five tables.** `site_copy` (keyed page copy —
+  `key`, `page`, `label`, `value`, `type`), `stats`, `amenities`, `list_items`
+  (`list` = `included` | `event_types`), plus the pre-existing `testimonials`,
+  `events`, `faqs`, `gallery`. Admin UI: `/admin/content` for copy,
+  `ContentEditor` (with its `scope` prop for `list_items`) for the rest.
+  **Add a copy key to `src/data/copy.defaults.json` first** — it is the single
+  source for the render fallback, the migration seed and the admin field list.
+- **Anything editable must survive being deleted or emptied.** The prerender step
+  fails the build on a throw, so `stats[1].value` in `seo.ts` meant removing one
+  statistic in the admin panel broke the deploy. Never index CMS arrays
+  positionally and never interpolate a possibly-absent value into a template.
+- **Publishing is a rebuild.** Saving in the admin panel updates the DB — instant
+  for JS visitors, invisible to crawlers until the next build. The "Publish to
+  live site" button (`components/admin/publish-bar.tsx`) POSTs a Vercel deploy
+  hook stored in the admin-only `site_settings` table (never a `VITE_` var — the
+  admin chunk is lazy but still public).
+- **Leads and clients are two tables, not one.** `leads` is the anon-writable
+  contact-form inbox; `clients` (`0004_clients.sql`) is the booked side and is
+  admin-only with **no public INSERT policy** — nothing on the public site ever
+  writes a client. Conversion goes through the `convert_lead_to_client()`
+  security-definer RPC so the client insert and the lead's `status = 'converted'`
+  land in one transaction; never do it as two client-side writes. A lead's
+  `converted` status is owned by that function — the admin UI deliberately can't
+  set it by hand. `clients.lead_id` is UNIQUE (one conversion per lead) and
+  `ON DELETE SET NULL` (deleting an old lead never removes a booked client).
 - **Invoice numbers are DB-assigned.** A `BEFORE INSERT` trigger pulls from a
   sequence (`INV-YYYY-0001`) — never generate numbers in JS (races).
 - **Client-facing invoice** (`/invoice/:token`) reads via the `get_invoice_by_token`
@@ -85,8 +122,10 @@ Supabase backend, deployed to Vercel.
 - `supabase/migrations/` — DB schema, source of truth for the backend; keep in
   sync with any schema change. `0001_init.sql` = tables, RLS, functions, triggers,
   storage bucket, seeds. `0002_hardening.sql` = leads CHECK constraints, single-
-  featured trigger, `updated_at`, indexes. `RUNBOOK.md` — key rotation + new-project
-  setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
+  featured trigger, `updated_at`, indexes. `0003_page_content.sql` = `site_copy`,
+  `stats`, `amenities`, `list_items`, `site_settings` + RLS + copy seeds. `0004_clients.sql` = `clients`
+  table, the `converted` lead status and `convert_lead_to_client()`.
+  `RUNBOOK.md` — key rotation + new-project setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
   **Its source is not in the repo** (deployed directly) — must be rebuilt from
   scratch on a fresh project; see `RUNBOOK.md`.

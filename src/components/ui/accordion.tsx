@@ -43,10 +43,23 @@ const AccordionTrigger = React.forwardRef<
 AccordionTrigger.displayName = 'AccordionTrigger'
 
 /**
- * `forceMount` keeps every answer in the DOM even while collapsed. Radix adds
- * `hidden` when closed, so it stays visually identical — but the text is now
- * present in the prerendered HTML, which is what answer engines and featured
- * snippets extract. Without it, a collapsed FAQ ships zero indexable answers.
+ * `forceMount` keeps every answer in the DOM even while collapsed, so the text
+ * ships in the prerendered HTML — that is what answer engines and featured
+ * snippets extract, and without it a collapsed FAQ ships zero indexable answers.
+ *
+ * The catch, and the reason this collapses in CSS rather than leaning on the
+ * library: `forceMount` also disables Radix's own hiding. It computes
+ * `isOpen = context.open || isPresent` and renders `hidden={!isOpen}`, and
+ * forcing the mount pins `isPresent` true — so `hidden` is never applied and
+ * every panel renders fully expanded while `data-state` still reads "closed"
+ * (open answers under an unrotated `+`). The height keyframes can't hold the
+ * closed state either: they're plain animations with no fill mode, so height
+ * springs back to auto the moment they finish.
+ *
+ * So `data-state` drives a grid-template-rows collapse instead. It animates
+ * to and from intrinsic height with no JS measurement and no dependence on
+ * `--radix-accordion-content-height`, and it renders identically on the server
+ * and the client's first paint, which keeps hydration intact.
  */
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
@@ -55,11 +68,13 @@ const AccordionContent = React.forwardRef<
   <AccordionPrimitive.Content
     ref={ref}
     forceMount
-    className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out data-[state=closed]:grid-rows-[0fr] data-[state=open]:grid-rows-[1fr]"
     {...props}
   >
-    <div className={cn('max-w-[62ch] pb-7 text-[15px] font-light leading-[1.8] text-muted', className)}>
-      {children}
+    <div className="min-h-0 overflow-hidden">
+      <div className={cn('max-w-[62ch] pb-7 text-[15px] font-light leading-[1.8] text-muted', className)}>
+        {children}
+      </div>
     </div>
   </AccordionPrimitive.Content>
 ))

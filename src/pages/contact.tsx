@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { CaretDown } from '@phosphor-icons/react'
 
 import { cn } from '@/lib/utils'
-import { contact, eventTypes, venueImg } from '@/data/site'
-import { useFaqs } from '@/hooks/use-site-content'
+import { venueImg } from '@/data/site'
+import { useContact, useCopy, useFaqs, useList } from '@/hooks/use-site-content'
 import { useJsonLd } from '@/hooks/use-document-head'
 import { FAQ_JSONLD_ID, faqPageNode } from '@/lib/seo'
 import { inquirySchema, type InquiryValues } from '@/lib/inquiry-schema'
@@ -28,6 +29,9 @@ const labelText =
 const errorText = 'text-[11px] text-[#d98a6a]'
 
 export const ContactPage = () => {
+  const t = useCopy()
+  const contact = useContact()
+  const eventTypes = useList('event_types')
   const faqs = useFaqs()
 
   // FAQ schema is rebuilt from whatever the CMS is actually serving, so the
@@ -75,8 +79,8 @@ export const ContactPage = () => {
   return (
     <div style={{ animation: 'riseIn .6s ease forwards' }}>
       <PageHero
-        eyebrow="Take a tour"
-        title="Contact Us"
+        eyebrow={t('contact.hero.eyebrow')}
+        title={t('contact.hero.title')}
         crumb="Contact"
         image={venueImg(1)}
         className="min-h-[50vh]"
@@ -86,25 +90,26 @@ export const ContactPage = () => {
         <div className="mx-auto grid max-w-[1200px] grid-cols-1 items-start gap-[clamp(40px,6vw,80px)] md:grid-cols-[1.1fr_0.9fr]">
           <Reveal>
             <span className="font-script text-[30px] font-bold text-brass2">
-              Inquire
+              {t('contact.form.script')}
             </span>
             <h2 className="mb-[30px] mt-2 font-serif text-[clamp(1.9rem,4vw,3rem)] font-normal leading-[1.1] text-cream">
-              Tell us about your celebration.
+              {t('contact.form.title')}
             </h2>
 
             {isSubmitSuccessful ? (
               <div className="border border-brass bg-[rgba(201,168,106,0.06)] px-[34px] py-10 text-center">
-                <div className="font-serif text-[28px] text-brass2">Thank you!</div>
+                <div className="font-serif text-[28px] text-brass2">
+                  {t('contact.success.title')}
+                </div>
                 <p className="mx-auto mb-6 mt-3 max-w-[380px] text-[14.5px] font-light leading-[1.7] text-muted">
-                  We've received your inquiry and will be in touch within one
-                  business day to talk dates and details.
+                  {t('contact.success.body')}
                 </p>
                 <button
                   type="button"
                   onClick={() => reset()}
                   className="border border-[var(--btn-outline)] px-[26px] py-3.5 text-[11px] uppercase tracking-[0.2em] text-cream transition-colors duration-300 hover:border-brass hover:text-brass2"
                 >
-                  Send Another
+                  {t('contact.success.button')}
                 </button>
               </div>
             ) : (
@@ -132,13 +137,30 @@ export const ContactPage = () => {
 
                 <label className="mt-[18px] flex flex-col gap-2.5">
                   <span className={labelText}>Event Type</span>
-                  <select className={fieldClass} {...register('type')}>
-                    {eventTypes.map((t) => (
-                      <option key={t} className="bg-ink text-cream">
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                  {/*
+                   * A native select paints its own dropdown arrow in the OS
+                   * colours and sizes the control to its own metrics, so it
+                   * ignored the theme and sat taller than the inputs beside it.
+                   * `appearance-none` drops both; the caret below replaces the
+                   * arrow and follows the accent like every other icon here.
+                   * `pointer-events-none` keeps clicks falling through to the
+                   * select, so the native menu still opens when you hit it.
+                   */}
+                  <div className="relative">
+                    <select className={cn(fieldClass, 'appearance-none pr-10')} {...register('type')}>
+                      {eventTypes.map((t) => (
+                        <option key={t} className="bg-ink text-cream">
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    <CaretDown
+                      size={16}
+                      weight="light"
+                      aria-hidden
+                      className="pointer-events-none absolute right-[15px] top-1/2 -translate-y-1/2 text-brass"
+                    />
+                  </div>
                 </label>
 
                 <label className="mt-[18px] flex flex-col gap-2.5">
@@ -156,7 +178,7 @@ export const ContactPage = () => {
                   disabled={isSubmitting}
                   className="mt-[26px] inline-flex items-center gap-2.5 bg-brass px-10 py-[17px] text-xs font-medium uppercase tracking-[0.2em] text-onbrass transition-all duration-300 hover:-translate-y-0.5 hover:bg-brass2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Sending…' : 'Send Inquiry'}
+                  {isSubmitting ? 'Sending…' : t('contact.form.submit')}
                 </button>
               </form>
             )}
@@ -223,8 +245,8 @@ export const ContactPage = () => {
         <div className="mx-auto max-w-[820px]">
           <Reveal className="mb-10 text-center">
             <SectionHeading
-              eyebrow="Good to know"
-              title="Frequently asked questions"
+              eyebrow={t('contact.faq.eyebrow')}
+              title={t('contact.faq.title')}
               align="center"
             />
           </Reveal>

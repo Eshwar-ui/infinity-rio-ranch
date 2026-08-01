@@ -1,4 +1,4 @@
-import { contact } from '@/data/site'
+import { useContact } from '@/hooks/use-site-content'
 import { computeTotals, money, type InvoiceData } from '@/lib/invoice'
 
 const statusStyle: Record<string, string> = {
@@ -12,6 +12,7 @@ const fmt = (d?: string | null) =>
 
 /** White, print-ready invoice. Reused by the admin preview and the public page. */
 export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
+  const contact = useContact()
   const { subtotal, tax, total } = computeTotals(data.items, data.tax_rate)
 
   return (

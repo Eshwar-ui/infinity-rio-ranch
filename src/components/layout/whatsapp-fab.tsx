@@ -1,8 +1,10 @@
 import { WhatsappLogo } from '@phosphor-icons/react'
 
-import { contact } from '@/data/site'
+import { useContact } from '@/hooks/use-site-content'
 
-export const WhatsAppFab = () => (
+export const WhatsAppFab = () => {
+  const contact = useContact()
+  return (
   <a
     href={contact.whatsappUrl}
     target="_blank"
@@ -12,4 +14,5 @@ export const WhatsAppFab = () => (
   >
     <WhatsappLogo size={29} weight="fill" aria-hidden="true" />
   </a>
-)
+  )
+}

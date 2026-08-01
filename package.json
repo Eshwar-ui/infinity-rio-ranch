@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npm run build:ssr && npm run prerender",
+    "build": "npm run pull:content && tsc -b && vite build && npm run build:ssr && npm run prerender",
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir .prerender --logLevel warn",
     "prerender": "node scripts/prerender.mjs",
+    "pull:content": "node scripts/pull-content.mjs",
     "optimize:images": "node scripts/optimize-images.mjs",
     "lint": "oxlint",
     "preview": "vite preview"

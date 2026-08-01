@@ -285,11 +285,43 @@ photo — new or edited photos are picked up automatically. It is **not** wired 
 `npm run build`, because a lossy encoder in the build path would degrade the same
 photo a little more on every deploy. Originals: `git checkout -- public/assets`.
 
+### 5b. CMS content actually reaches crawlers
+
+For a while it didn't. `scripts/prerender.mjs` renders the real React tree, but
+effects never run during SSR — so every hook that fetched its rows in a
+`useEffect` contributed **nothing** to `dist/`. Testimonials, events, FAQs and
+gallery captions were edited in the admin panel, changed in the browser, and
+left the prerendered HTML frozen at the hardcoded `site.ts` values that every
+non-JS crawler reads.
+
+The fix is a build-time snapshot. `npm run pull:content` runs first in `build`,
+reads the published rows over PostgREST with the anon key, and writes
+`src/data/content.generated.json` (committed, so builds work offline).
+`src/lib/content-snapshot.ts` layers it over the shipped defaults and is
+hook-free on purpose, so this file and the prerenderer can read it at module
+scope. Everything downstream — visible copy, `FAQPage`, `PostalAddress`,
+`sitemap.xml`, `llms.txt`, `facts.json` — resolves from that one object, which
+is why the address in the footer and the address in the JSON-LD can no longer
+disagree.
+
+**Publishing is therefore a rebuild.** Saving in the admin panel is instant for
+human visitors and invisible to answer engines until a deploy runs. The
+"Publish to live site" button in the admin sidebar POSTs a Vercel deploy hook
+(stored in the admin-only `site_settings` table) to close that gap.
+
+**Watch out:** anything the CMS can delete must not be read positionally.
+`glanceFacts` used `stats[0]`/`stats[1]`/`stats[2]`, so removing one statistic
+threw during prerender — and the prerender step fails the build by design.
+
 ### 6. Content for answer engines
 
 - **FAQ answers now exist in the HTML.** `AccordionContent` uses `forceMount`,
-  so collapsed panels stay in the DOM (Radix marks them `hidden`; the page looks
-  identical). Before this, the answers were in no HTML at all.
+  so collapsed panels stay in the DOM. Before this, the answers were in no HTML
+  at all. Note that `forceMount` does **not** leave Radix's own hiding intact —
+  it pins the panel "present", so Radix never applies `hidden` and every answer
+  renders expanded. `AccordionContent` therefore collapses closed panels itself,
+  off `data-state`, with a grid-template-rows transition; see the comment there
+  before changing it.
 - **"The venue at a glance"** — a flat `<dl>` on `/about` with location, size,
   event types, area served and how to book. Flat key/value facts are the shape
   answer engines and featured snippets extract cleanly.

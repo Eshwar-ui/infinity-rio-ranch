@@ -21,19 +21,24 @@ export const useReveal = <T extends HTMLElement = HTMLDivElement>() => {
    * fade back in on scroll as designed.
    */
   const [shown, setShown] = useState(true)
-  const settled = useRef(false)
 
+  /**
+   * Deliberately no "already settled" ref guard. StrictMode double-invokes this
+   * in dev (mount → cleanup → mount); a ref survives that cycle, so a guard
+   * would let the first pass un-reveal the element and then make the second
+   * pass bail out before re-creating the observer the cleanup just
+   * disconnected — every below-the-fold section stuck at opacity 0, dev only.
+   * Re-running is harmless instead: it re-measures and re-observes, and with
+   * `[]` deps the only re-run that ever happens is StrictMode's, which lands
+   * at mount before anyone can scroll.
+   */
   useIsomorphicLayoutEffect(() => {
     const el = ref.current
-    if (!el || settled.current) return
+    if (!el) return
 
     // On screen already — leave it revealed and skip the observer entirely.
-    if (el.getBoundingClientRect().top < window.innerHeight) {
-      settled.current = true
-      return
-    }
+    if (el.getBoundingClientRect().top < window.innerHeight) return
 
-    settled.current = true
     setShown(false)
 
     const io = new IntersectionObserver(

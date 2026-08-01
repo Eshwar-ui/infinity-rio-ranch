@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
+import { useCopy } from '@/hooks/use-site-content'
 import { logoFor } from '@/store/theme'
-import { StatList } from '@/components/ui/stat-list'
 import { Button } from '@/components/ui/button'
 import { SmartImage } from '@/components/ui/smart-image'
 import {
@@ -19,6 +19,7 @@ const rise = (delay: number) => ({
 })
 
 export const HomeHero = () => {
+  const t = useCopy()
   const [slide, setSlide] = useState(0)
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export const HomeHero = () => {
             <div className="mb-[26px] inline-flex items-center gap-3.5 opacity-0" style={rise(0.1)}>
               <span className="h-px w-[42px] bg-[rgba(230,207,160,0.75)]" />
               <span className="text-[11px] font-medium uppercase tracking-[0.4em] text-[#e6cfa0]">
-                Austin, Texas · Wedding &amp; Event Venue
+                {t('home.hero.eyebrow')}
               </span>
             </div>
 
@@ -51,41 +52,26 @@ export const HomeHero = () => {
               className="m-0 font-serif text-[clamp(2.9rem,6.6vw,6rem)] font-normal leading-[0.97] tracking-[0.005em] text-[#f6efe4] opacity-0 [text-shadow:0_4px_44px_rgba(0,0,0,0.5)]"
               style={rise(0.3)}
             >
-              Where Endless
+              {t('home.hero.title_lead')}
               <br />
-              <span className="italic text-brass2">Celebrations</span> Begin
+              <span className="italic text-brass2">{t('home.hero.title_accent')}</span>{' '}
+              {t('home.hero.title_trail')}
             </h1>
-
-            <p
-              className="mt-[30px] max-w-[470px] text-base font-light leading-[1.78] text-[rgba(246,239,228,0.82)] opacity-0"
-              style={rise(0.5)}
-            >
-              Timeless charm meets modern amenities across two acres of indoor
-              and outdoor space — the perfect backdrop for your most
-              unforgettable moments.
-            </p>
 
             <div
               className="mt-10 flex flex-col gap-4 opacity-0 sm:flex-row"
               style={rise(0.68)}
             >
               <Button asChild variant="brass">
-                <Link to="/contact">Inquire About a Date</Link>
+                <Link to="/contact">{t('home.hero.cta_primary')}</Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 className="border-[rgba(243,237,226,0.35)] text-[#f3ede2] hover:border-[#e2c690] hover:text-[#e2c690]"
               >
-                <Link to="/gallery">Explore the Venue</Link>
+                <Link to="/gallery">{t('home.hero.cta_secondary')}</Link>
               </Button>
-            </div>
-
-            <div
-              className="mt-12 max-w-[540px] border-t border-[rgba(246,239,228,0.16)] pt-[30px] opacity-0"
-              style={rise(0.84)}
-            >
-              <StatList tone="onDark" />
             </div>
           </div>
 

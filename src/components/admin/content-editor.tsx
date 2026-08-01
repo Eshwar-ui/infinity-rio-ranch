@@ -19,6 +19,13 @@ type Props = {
   fields: EditorField[]
   primary: (row: Row) => string
   subtitle?: (row: Row) => string
+  /**
+   * Restricts the editor to one slice of a shared table, e.g. `list_items`
+   * holds both "What's included" and the inquiry form's event types under a
+   * `list` column. Filters the read and is stamped onto every insert, so a row
+   * created here can't land in the wrong list.
+   */
+  scope?: { column: string; value: string }
 }
 
 const inputClass =
@@ -29,16 +36,26 @@ const inputClass =
  * Ordering + published toggle are handled here; per-type fields come from config.
  * The table's RLS is the real guard — this UI only runs for admins anyway.
  */
-export const ContentEditor = ({ table, title, fields, primary, subtitle }: Props) => {
+export const ContentEditor = ({
+  table,
+  title,
+  fields,
+  primary,
+  subtitle,
+  scope,
+}: Props) => {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState<Row | null>(null)
 
+  const scopeColumn = scope?.column
+  const scopeValue = scope?.value
+
   useEffect(() => {
     let active = true
-    supabase
-      .from(table)
-      .select('*')
+    let query = supabase.from(table).select('*')
+    if (scopeColumn && scopeValue) query = query.eq(scopeColumn, scopeValue)
+    query
       .order('sort', { ascending: true })
       .order('created_at', { ascending: true })
       .then(({ data, error }) => {
@@ -50,7 +67,7 @@ export const ContentEditor = ({ table, title, fields, primary, subtitle }: Props
     return () => {
       active = false
     }
-  }, [table, title])
+  }, [table, title, scopeColumn, scopeValue])
 
   const blank = (): Row => {
     const r: Row = { published: true, sort: rows.length }
@@ -68,6 +85,7 @@ export const ContentEditor = ({ table, title, fields, primary, subtitle }: Props
     }
     const payload: Row = { published: !!draft.published, sort: Number(draft.sort) || 0 }
     for (const f of fields) payload[f.key] = draft[f.key] ?? null
+    if (scopeColumn && scopeValue) payload[scopeColumn] = scopeValue
 
     const res = draft.id
       ? await supabase.from(table).update(payload).eq('id', draft.id).select().single()

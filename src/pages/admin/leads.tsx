@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 
-type LeadStatus = 'new' | 'read' | 'replied' | 'archived'
+type LeadStatus = 'new' | 'read' | 'replied' | 'converted' | 'archived'
 
 type Lead = {
   id: string
@@ -17,12 +18,19 @@ type Lead = {
   created_at: string
 }
 
+/**
+ * Statuses an admin sets by hand. 'converted' is deliberately not here — it is
+ * owned by convert_lead_to_client(), and setting it manually would claim a
+ * client record that doesn't exist.
+ */
 const STATUSES: LeadStatus[] = ['new', 'read', 'replied', 'archived']
+const FILTERS: LeadStatus[] = ['new', 'read', 'replied', 'converted', 'archived']
 
 const statusClass: Record<LeadStatus, string> = {
   new: 'bg-brass/15 text-brass2 border-brass/40',
   read: 'bg-cream/5 text-cream/70 border-line',
   replied: 'bg-[#6a9a7a]/15 text-[#8fc0a0] border-[#6a9a7a]/40',
+  converted: 'bg-brass/25 text-brass2 border-brass',
   archived: 'bg-transparent text-muted/60 border-line',
 }
 
@@ -34,10 +42,12 @@ const fmtDate = (iso: string) =>
   })
 
 export const LeadsPage = () => {
+  const navigate = useNavigate()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | LeadStatus>('all')
+  const [converting, setConverting] = useState(false)
 
   useEffect(() => {
     supabase
@@ -77,6 +87,30 @@ export const LeadsPage = () => {
     if (error) toast.error('Could not delete lead.')
   }
 
+  /**
+   * One RPC, not "insert a client then update the lead" — the function runs both
+   * in a single transaction, so a failure can't leave a lead marked converted
+   * with nothing on the clients side. Re-running it on an already-converted lead
+   * returns the existing client rather than creating a second one.
+   */
+  const convert = async (lead: Lead) => {
+    if (!confirm(`Convert ${lead.name} into a client?`)) return
+    setConverting(true)
+    const { data, error } = await supabase.rpc('convert_lead_to_client', {
+      p_lead_id: lead.id,
+    })
+    setConverting(false)
+    if (error) {
+      toast.error('Could not convert this lead.')
+      return
+    }
+    setLeads((prev) =>
+      prev.map((l) => (l.id === lead.id ? { ...l, status: 'converted' } : l)),
+    )
+    toast.success('Lead converted to a client.')
+    navigate(`/admin/clients?id=${data}`)
+  }
+
   const newCount = leads.filter((l) => l.status === 'new').length
 
   return (
@@ -89,7 +123,7 @@ export const LeadsPage = () => {
           </p>
         </div>
         <div className="flex gap-1">
-          {(['all', ...STATUSES] as const).map((s) => (
+          {(['all', ...FILTERS] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -151,12 +185,30 @@ export const LeadsPage = () => {
                     {selected.type} · submitted {fmtDate(selected.created_at)}
                   </p>
                 </div>
-                <button
-                  onClick={() => remove(selected.id)}
-                  className="text-[11px] uppercase tracking-[0.16em] text-muted hover:text-[#d98a6a]"
-                >
-                  Delete
-                </button>
+                <div className="flex shrink-0 items-center gap-4">
+                  {selected.status === 'converted' ? (
+                    <button
+                      onClick={() => navigate('/admin/clients')}
+                      className="border border-line px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-brass2 hover:border-brass"
+                    >
+                      View in Clients
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => convert(selected)}
+                      disabled={converting}
+                      className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-onbrass transition-colors hover:bg-brass2 disabled:opacity-50"
+                    >
+                      {converting ? 'Converting…' : 'Convert to client'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => remove(selected.id)}
+                    className="text-[11px] uppercase tracking-[0.16em] text-muted hover:text-[#d98a6a]"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
               <dl className="mt-8 grid grid-cols-[110px_1fr] gap-y-3 text-sm">

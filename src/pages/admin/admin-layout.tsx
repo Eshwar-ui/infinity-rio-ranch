@@ -2,16 +2,26 @@ import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
 
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
+import { PublishBar } from '@/components/admin/publish-bar'
 
 /** Sidebar items. Only built routes are links; the rest show the roadmap. */
 const NAV = [
+  { group: 'Pipeline' },
   { to: '/admin/leads', label: 'Leads', ready: true },
-  { to: '/admin/testimonials', label: 'Testimonials', ready: true },
-  { to: '/admin/events', label: 'Events & Packages', ready: true },
-  { to: '/admin/faqs', label: 'FAQs', ready: true },
+  { to: '/admin/clients', label: 'Clients', ready: true },
+  { group: 'Website' },
+  { to: '/admin/content', label: 'Page content', ready: true },
   { to: '/admin/gallery', label: 'Gallery', ready: true },
+  { to: '/admin/events', label: 'Events & Packages', ready: true },
+  { to: '/admin/testimonials', label: 'Testimonials', ready: true },
+  { to: '/admin/faqs', label: 'FAQs', ready: true },
+  { to: '/admin/stats', label: 'Venue numbers', ready: true },
+  { to: '/admin/amenities', label: 'Amenities', ready: true },
+  { to: '/admin/included', label: "What's included", ready: true },
+  { to: '/admin/event-types', label: 'Event types', ready: true },
+  { group: 'Billing' },
   { to: '/admin/invoices', label: 'Invoices', ready: true },
-]
+] as const
 
 /**
  * Route guard + chrome for the whole /admin area. Redirects to login when there
@@ -76,9 +86,16 @@ const AdminShell = () => {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {NAV.map((item) =>
-            item.ready ? (
+            'group' in item ? (
+              <div
+                key={item.group}
+                className="px-3 pb-1.5 pt-5 text-[9px] uppercase tracking-[0.24em] text-muted/70"
+              >
+                {item.group}
+              </div>
+            ) : item.ready ? (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -103,6 +120,8 @@ const AdminShell = () => {
             ),
           )}
         </nav>
+
+        <PublishBar />
 
         <button
           onClick={signOut}

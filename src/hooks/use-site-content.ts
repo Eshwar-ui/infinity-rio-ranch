@@ -1,51 +1,38 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { DEFAULT_COPY } from '@/data/copy'
 import {
-  events as eventsFallback,
-  faqs as faqsFallback,
-  gallery as galleryList,
-  galleryTall,
-  galleryWide,
-  testimonials as testimonialsFallback,
-  type EventItem,
-  type Faq,
-  type GalleryCategory,
-  type Testimonial,
-} from '@/data/site'
+  SEEDED_COPY,
+  contactFrom,
+  seededAmenities,
+  seededEvents,
+  seededFaqs,
+  seededGallery,
+  seededList,
+  seededTestimonials,
+  type ContactDetails,
+  type GalleryTileData,
+} from '@/lib/content-snapshot'
+import type { Amenity, EventItem, Faq, Testimonial } from '@/data/site'
 
-export type GalleryTileData = {
-  label: string
-  cat: GalleryCategory
-  src: string
-  span: 'tall' | 'wide' | null
-  featured: boolean
-}
-
-/** Fallback built from the static gallery + its index-keyed spans / featured shot. */
-const galleryFallback: GalleryTileData[] = galleryList.map((g, i) => ({
-  label: g.label,
-  cat: g.cat,
-  src: g.src,
-  span: galleryTall.has(i) ? 'tall' : galleryWide.has(i) ? 'wide' : null,
-  featured: i === 12,
-}))
+export type { GalleryTileData, Stat } from '@/lib/content-snapshot'
 
 /**
- * Reads a published, ordered content list from Supabase, falling back to the
- * hardcoded site.ts array on any error or empty result — so the public site can
- * never render an empty section even if the DB is unreachable.
+ * Reads a published, ordered content list from Supabase, starting from the
+ * build-time snapshot so the first paint is never empty and never disagrees
+ * with the prerendered HTML.
  *
  * The Supabase client is imported dynamically: it's ~110 kB and nothing on first
- * paint needs it, since the fallback data renders immediately. Keeping it out of
- * the entry chunk is worth more than the one-tick delay before the CMS values
- * arrive.
+ * paint needs it, since the seeded data renders immediately. Keeping it out of
+ * the entry chunk is worth more than the one-tick delay before edits published
+ * since the last deploy arrive.
  */
 function useContent<T>(
   table: string,
-  fallback: T[],
+  initial: T[],
   map: (row: Record<string, any>) => T,
 ): T[] {
-  const [items, setItems] = useState<T[]>(fallback)
+  const [items, setItems] = useState<T[]>(initial)
 
   useEffect(() => {
     let active = true
@@ -63,15 +50,74 @@ function useContent<T>(
     return () => {
       active = false
     }
-    // `map`/`fallback` are stable per call site; refetch only when the table changes.
+    // `map`/`initial` are stable per call site; refetch only when the table changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table])
 
   return items
 }
 
+// ============================================================================
+//  Keyed page copy
+// ============================================================================
+
+/**
+ * One in-flight request shared by every `useCopy` caller on the page. Without
+ * it each section needing a string would issue its own `site_copy` select.
+ */
+let copyRequest: Promise<Record<string, string> | null> | null = null
+
+const fetchCopy = () => {
+  copyRequest ??= import('@/lib/supabase')
+    .then(({ supabase }) => supabase.from('site_copy').select('key,value'))
+    .then(({ data, error }) => {
+      if (error || !data || data.length === 0) return null
+      const next: Record<string, string> = {}
+      for (const row of data) {
+        // An empty string in the CMS means "fall back", not "render nothing".
+        if (row.value) next[row.key] = row.value
+      }
+      return next
+    })
+    .catch(() => null)
+  return copyRequest
+}
+
+/**
+ * Returns a lookup for editable strings: `t('home.hero.eyebrow')`.
+ *
+ * Resolution is snapshot → `copy.defaults.json`, so an unknown key still renders
+ * its shipped text rather than a blank element, and a key that exists nowhere
+ * returns '' instead of throwing mid-render.
+ */
+export const useCopy = () => {
+  const [copy, setCopy] = useState<Record<string, string>>(SEEDED_COPY)
+
+  useEffect(() => {
+    let active = true
+    void fetchCopy().then((live) => {
+      if (active && live) setCopy((prev) => ({ ...prev, ...live }))
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return useCallback((key: string) => copy[key] ?? DEFAULT_COPY[key] ?? '', [copy])
+}
+
+/** Contact details from the editable copy keys, with links derived. */
+export const useContact = (): ContactDetails => {
+  const t = useCopy()
+  return useMemo(() => contactFrom(t), [t])
+}
+
+// ============================================================================
+//  Content lists
+// ============================================================================
+
 export const useTestimonials = (): Testimonial[] =>
-  useContent<Testimonial>('testimonials', testimonialsFallback, (r) => ({
+  useContent<Testimonial>('testimonials', seededTestimonials, (r) => ({
     quote: r.quote,
     name: r.name,
     event: r.event ?? '',
@@ -79,7 +125,7 @@ export const useTestimonials = (): Testimonial[] =>
 
 /** `n` (01, 02…) is derived from order, so the DB doesn't store display numbers. */
 export const useEvents = (): EventItem[] =>
-  useContent<EventItem>('events', eventsFallback, (r) => ({
+  useContent<EventItem>('events', seededEvents, (r) => ({
     n: '',
     title: r.title,
     blurb: r.blurb ?? '',
@@ -87,16 +133,51 @@ export const useEvents = (): EventItem[] =>
   })).map((e, i) => ({ ...e, n: String(i + 1).padStart(2, '0') }))
 
 export const useFaqs = (): Faq[] =>
-  useContent<Faq>('faqs', faqsFallback, (r) => ({
-    q: r.question,
-    a: r.answer,
-  }))
+  useContent<Faq>('faqs', seededFaqs, (r) => ({ q: r.question, a: r.answer }))
 
 export const useGallery = (): GalleryTileData[] =>
-  useContent<GalleryTileData>('gallery', galleryFallback, (r) => ({
+  useContent<GalleryTileData>('gallery', seededGallery, (r) => ({
     label: r.label,
     cat: r.cat,
     src: r.src,
     span: r.span ?? null,
     featured: !!r.featured,
   }))
+
+export const useAmenities = (): Amenity[] =>
+  useContent<Amenity>('amenities', seededAmenities, (r) => ({
+    icon: r.icon ?? '',
+    title: r.title,
+    sub: r.sub ?? '',
+  }))
+
+/**
+ * One of the flat string lists in `list_items` — `included` or `event_types`.
+ * They share a table because neither has any structure beyond order.
+ */
+export const useList = (list: string): string[] => {
+  const [items, setItems] = useState<string[]>(() => seededList(list))
+
+  useEffect(() => {
+    let active = true
+    import('@/lib/supabase')
+      .then(({ supabase }) =>
+        supabase
+          .from('list_items')
+          .select('value')
+          .eq('list', list)
+          .eq('published', true)
+          .order('sort', { ascending: true }),
+      )
+      .then(({ data, error }) => {
+        if (active && !error && data && data.length > 0) {
+          setItems(data.map((r) => r.value as string))
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [list])
+
+  return items
+}
