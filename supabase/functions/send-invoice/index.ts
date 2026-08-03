@@ -1,6 +1,13 @@
-// send-invoice — emails a client a link to their invoice via Resend.
+// send-invoice — emails a client their invoice link via Resend, with the filled
+// rental agreement attached when the invoice belongs to a client.
 //
-// Invoked from the admin panel: supabase.functions.invoke('send-invoice', { body: { id } }).
+// Invoked from the admin panel:
+//   supabase.functions.invoke('send-invoice', { body: { id } })            → sends
+//   supabase.functions.invoke('send-invoice', { body: { id, preview: 1 } }) → returns
+//     the filled agreement as a PDF instead of emailing anything, so the owner
+//     can check a contract before a client sees it. Same code path as the send,
+//     deliberately: a preview that took a different route would prove nothing.
+//
 // Requires a logged-in ADMIN caller (verify_jwt on + admin_users check below).
 // Reads the invoice with the service-role key (invoices are admin-only under RLS).
 //
@@ -9,6 +16,9 @@
 // Optional: INVOICE_REPLY_TO (where client replies should land, e.g. the venue's inbox).
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
+
+import { agreementFileName, buildAgreement } from '../_shared/agreement.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const INVOICE_FROM = Deno.env.get('INVOICE_FROM')          // e.g. "Infinity at Rio Ranch <invoices@infinityrioranch.com>"
@@ -31,11 +41,6 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    // Graceful "not configured" — the admin UI shows a friendly message on any error.
-    if (!RESEND_API_KEY || !INVOICE_FROM) {
-      return json({ error: 'Email service is not configured (missing RESEND_API_KEY or INVOICE_FROM).' }, 503)
-    }
-
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE)
 
     // Authorize: the caller must be a logged-in admin.
@@ -47,21 +52,59 @@ Deno.serve(async (req) => {
       .from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle()
     if (!allow) return json({ error: 'Forbidden — admins only.' }, 403)
 
-    const { id } = await req.json().catch(() => ({}))
+    const { id, preview } = await req.json().catch(() => ({}))
     if (!id) return json({ error: 'Missing invoice id.' }, 400)
 
     const { data: inv, error } = await admin
       .from('invoices')
-      .select('number, client_name, client_email, issue_date, due_date, tax_rate, notes, public_token, invoice_items(description, qty, unit_price, sort)')
+      .select('number, client_name, client_email, issue_date, due_date, tax_rate, advance_paid, notes, public_token, invoice_items(description, qty, unit_price, sort), clients(name, event_date, event_type)')
       .eq('id', id)
       .single()
     if (error || !inv) return json({ error: 'Invoice not found.' }, 404)
+
+    // The agreement is per booking, so it only exists for an invoice raised
+    // against a client. A standalone invoice simply goes out without one.
+    const client = (inv as { clients?: { name: string; event_date: string | null; event_type: string | null } | null }).clients
+    const agreement = client
+      ? await buildAgreement(admin, {
+          clientName: client.name,
+          eventDate: client.event_date,
+          eventType: client.event_type,
+        })
+      : null
+
+    if (preview) {
+      if (!client) return json({ error: 'This invoice is not linked to a client.' }, 400)
+      if (!agreement)
+        return json(
+          { error: 'No agreement template uploaded yet — add it to the documents bucket.' },
+          404,
+        )
+      return new Response(agreement, {
+        headers: {
+          ...cors,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="${agreementFileName(client.name)}"`,
+        },
+      })
+    }
+
+    // Checked here rather than at the top so `preview` still works before the
+    // owner has set up Resend — nothing about generating a PDF needs email.
+    // Graceful "not configured": the admin UI shows a friendly message on any error.
+    if (!RESEND_API_KEY || !INVOICE_FROM) {
+      return json({ error: 'Email service is not configured (missing RESEND_API_KEY or INVOICE_FROM).' }, 503)
+    }
     if (!inv.client_email) return json({ error: 'This invoice has no client email.' }, 400)
 
     const items = (inv.invoice_items ?? []).slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0)
     const tax = subtotal * ((Number(inv.tax_rate) || 0) / 100)
     const total = subtotal + tax
+    // Mirrors computeTotals() in src/lib/invoice.ts — an advance over the total is
+    // an overpayment to refund, never a negative amount due.
+    const advance = Math.max(0, Number(inv.advance_paid) || 0)
+    const balance = Math.max(0, total - advance)
     const link = `${SITE_URL}/invoice/${inv.public_token}`
 
     const rowsHtml = items.map((it) => `
@@ -80,6 +123,7 @@ Deno.serve(async (req) => {
       <p style="font-size:14px;line-height:1.6;color:#6b6155;margin:0 0 20px">
         Hi ${escapeHtml(inv.client_name)}, thank you for choosing Infinity at Rio Ranch.
         Your invoice is ready — the full itemized copy is below and always available at your private link.
+        ${agreement ? 'Your rental agreement is attached to this email: please print it, sign and date it, and return it to us.' : ''}
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
         <thead>
@@ -95,7 +139,11 @@ Deno.serve(async (req) => {
       <div style="margin-top:16px;font-size:13px;font-family:Arial,sans-serif;color:#6b6155">
         <div style="text-align:right">Subtotal: ${money(subtotal)}</div>
         <div style="text-align:right">Tax (${Number(inv.tax_rate) || 0}%): ${money(tax)}</div>
-        <div style="text-align:right;font-size:16px;color:#1a1512;margin-top:6px"><strong>Total: ${money(total)}</strong></div>
+        <div style="text-align:right;margin-top:6px">Total: ${money(total)}</div>
+        ${advance > 0 ? `
+        <div style="text-align:right">Advance paid: &minus; ${money(advance)}</div>
+        <div style="text-align:right;font-size:16px;color:#1a1512;margin-top:6px"><strong>Balance due: ${money(balance)}</strong></div>`
+        : `<div style="text-align:right;font-size:16px;color:#1a1512;margin-top:6px"><strong>Amount due: ${money(total)}</strong></div>`}
       </div>
       <div style="margin:28px 0">
         <a href="${link}" style="display:inline-block;background:#b08d3f;color:#fff;text-decoration:none;padding:12px 26px;font-family:Arial,sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase">View &amp; print invoice</a>
@@ -111,6 +159,11 @@ Deno.serve(async (req) => {
       html,
     }
     if (INVOICE_REPLY_TO) payload.reply_to = INVOICE_REPLY_TO
+    if (agreement && client) {
+      payload.attachments = [
+        { filename: agreementFileName(client.name), content: encodeBase64(agreement) },
+      ]
+    }
 
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -122,7 +175,10 @@ Deno.serve(async (req) => {
       const detail = await resp.text()
       return json({ error: 'Resend rejected the email.', detail }, 502)
     }
-    return json({ ok: true })
+    // `agreement: false` is not an error — it means either a standalone invoice
+    // or no template uploaded yet. The caller surfaces it so a silent omission
+    // never looks like a successful send.
+    return json({ ok: true, agreement: Boolean(agreement) })
   } catch (e) {
     return json({ error: String(e) }, 500)
   }

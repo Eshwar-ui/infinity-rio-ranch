@@ -15,6 +15,7 @@ const named = (factory: () => Promise<Record<string, any>>, name: string) =>
 
 const AdminLogin = named(() => import('@/pages/admin/login'), 'AdminLogin')
 const RequireAdmin = named(() => import('@/pages/admin/admin-layout'), 'RequireAdmin')
+const CmsLayout = named(() => import('@/pages/admin/cms-layout'), 'CmsLayout')
 const LeadsPage = named(() => import('@/pages/admin/leads'), 'LeadsPage')
 const AdminClients = named(() => import('@/pages/admin/clients'), 'AdminClients')
 const AdminTestimonials = named(() => import('@/pages/admin/testimonials'), 'AdminTestimonials')
@@ -52,15 +53,22 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/admin/leads" replace /> },
       { path: 'leads', element: <LeadsPage /> },
       { path: 'clients', element: <AdminClients /> },
-      { path: 'content', element: <AdminPageCopy /> },
-      { path: 'stats', element: <AdminStats /> },
-      { path: 'amenities', element: <AdminAmenities /> },
-      { path: 'included', element: <AdminIncluded /> },
-      { path: 'event-types', element: <AdminEventTypes /> },
-      { path: 'testimonials', element: <AdminTestimonials /> },
-      { path: 'events', element: <AdminEvents /> },
-      { path: 'faqs', element: <AdminFaqs /> },
-      { path: 'gallery', element: <AdminGallery /> },
+      // Pathless layout route: the nine website editors keep their own URLs and
+      // gain the shared CMS tab bar.
+      {
+        element: <CmsLayout />,
+        children: [
+          { path: 'content', element: <AdminPageCopy /> },
+          { path: 'stats', element: <AdminStats /> },
+          { path: 'amenities', element: <AdminAmenities /> },
+          { path: 'included', element: <AdminIncluded /> },
+          { path: 'event-types', element: <AdminEventTypes /> },
+          { path: 'testimonials', element: <AdminTestimonials /> },
+          { path: 'events', element: <AdminEvents /> },
+          { path: 'faqs', element: <AdminFaqs /> },
+          { path: 'gallery', element: <AdminGallery /> },
+        ],
+      },
       { path: 'invoices', element: <AdminInvoices /> },
       { path: 'invoices/new', element: <InvoiceEditor /> },
       { path: 'invoices/:id', element: <InvoiceEditor /> },

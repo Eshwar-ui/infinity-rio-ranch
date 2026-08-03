@@ -24,6 +24,8 @@ const rowTotal = (r: Row) => {
   return sub * (1 + (Number(r.tax_rate) || 0) / 100)
 }
 
+const rowAdvance = (r: Row) => Math.max(0, Number(r.advance_paid) || 0)
+
 export const AdminInvoices = () => {
   const navigate = useNavigate()
   const [rows, setRows] = useState<Row[]>([])
@@ -91,7 +93,14 @@ export const AdminInvoices = () => {
                       {r.status}
                     </span>
                   </td>
-                  <td className="py-3.5 text-right font-medium text-cream">{money(rowTotal(r))}</td>
+                  <td className="py-3.5 text-right font-medium text-cream">
+                    {money(rowTotal(r))}
+                    {rowAdvance(r) > 0 && (
+                      <span className="block text-[11px] font-normal text-muted">
+                        {money(Math.max(0, rowTotal(r) - rowAdvance(r)))} due
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

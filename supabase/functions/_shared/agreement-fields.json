@@ -1,0 +1,60 @@
+{
+  "_readme": [
+    "Where each value is stamped onto INFINITY RIO RANCH - Rental Agreement.pdf.",
+    "",
+    "The template has NO form fields — the blanks are literal underscores in flat",
+    "text — so every value is drawn at a fixed coordinate. These numbers came from",
+    "the document's own text positions (pdfjs), not from eyeballing:",
+    "  page 1 blanks are their own text runs, so x/y are taken straight from them;",
+    "  page 4 blanks sit inside the label run, so x is the label's x plus the width",
+    "  of the label text in Times-Bold at that size.",
+    "",
+    "IF THE TEMPLATE IS EVER RE-EXPORTED, THESE ARE ALL WRONG AND NOTHING WILL SAY",
+    "SO — the values will simply land in the wrong place on a contract a client",
+    "receives. Re-run `node scripts/agreement-preview.mjs` after any change to the",
+    "PDF and look at the output before shipping it.",
+    "",
+    "Origin is bottom-left, PDF points, page is A4 (595.32 x 841.92).",
+    "`y` is the baseline of the underscores plus a small lift so the text sits on",
+    "the line rather than through it. `maxWidth` is the blank's own width — longer",
+    "values are shrunk to fit rather than running over the neighbouring text."
+  ],
+
+  "pageSize": { "width": 595.32, "height": 841.92 },
+  "pageCount": 4,
+
+  "fields": {
+    "clientName": {
+      "page": 0,
+      "x": 242,
+      "y": 171,
+      "size": 13,
+      "maxWidth": 273,
+      "_from": "run '___…' at x=238.8 y=168.0, size 16"
+    },
+    "eventDate": {
+      "page": 0,
+      "x": 181,
+      "y": 148.7,
+      "size": 13,
+      "maxWidth": 273,
+      "_from": "run '___…' at x=177.9 y=145.7, size 16"
+    },
+    "eventType": {
+      "page": 0,
+      "x": 182,
+      "y": 126.4,
+      "size": 13,
+      "maxWidth": 273,
+      "_from": "run '___…' at x=179.1 y=123.4, size 16"
+    },
+    "signatureClientName": {
+      "page": 3,
+      "x": 181,
+      "y": 171.3,
+      "size": 12,
+      "maxWidth": 238,
+      "_from": "run 'Client Name: ___…' at x=94.5 y=168.3 size 14; 'Client Name: ' is 83.2pt in Times-Bold@14"
+    }
+  }
+}

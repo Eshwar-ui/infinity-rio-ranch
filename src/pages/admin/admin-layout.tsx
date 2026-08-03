@@ -1,24 +1,28 @@
-import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
+import { CMS_TABS } from '@/pages/admin/cms-tabs'
 import { PublishBar } from '@/components/admin/publish-bar'
 
-/** Sidebar items. Only built routes are links; the rest show the roadmap. */
+/**
+ * Sidebar items. Only built routes are links; the rest show the roadmap.
+ *
+ * `match` widens the active highlight past the item's own `to` — the CMS entry
+ * lands on Page content but has to stay lit across all nine of its tabs, which
+ * `NavLink`'s own `isActive` (a prefix test against one path) can't express.
+ */
 const NAV = [
   { group: 'Pipeline' },
   { to: '/admin/leads', label: 'Leads', ready: true },
   { to: '/admin/clients', label: 'Clients', ready: true },
   { group: 'Website' },
-  { to: '/admin/content', label: 'Page content', ready: true },
-  { to: '/admin/gallery', label: 'Gallery', ready: true },
-  { to: '/admin/events', label: 'Events & Packages', ready: true },
-  { to: '/admin/testimonials', label: 'Testimonials', ready: true },
-  { to: '/admin/faqs', label: 'FAQs', ready: true },
-  { to: '/admin/stats', label: 'Venue numbers', ready: true },
-  { to: '/admin/amenities', label: 'Amenities', ready: true },
-  { to: '/admin/included', label: "What's included", ready: true },
-  { to: '/admin/event-types', label: 'Event types', ready: true },
+  {
+    to: '/admin/content',
+    label: 'CMS',
+    ready: true,
+    match: CMS_TABS.map((t) => t.to),
+  },
   { group: 'Billing' },
   { to: '/admin/invoices', label: 'Invoices', ready: true },
 ] as const
@@ -69,10 +73,15 @@ const NotAuthorized = () => {
 
 const AdminShell = () => {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const signOut = async () => {
     await supabase.auth.signOut()
     navigate('/admin/login', { replace: true })
   }
+
+  const under = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
+  const isActive = (item: { to: string; match?: readonly string[] }) =>
+    item.match ? item.match.some(under) : under(item.to)
 
   return (
     <div className="flex min-h-screen bg-ink text-cream">
@@ -99,13 +108,11 @@ const AdminShell = () => {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={({ isActive }) =>
-                  `block rounded-[2px] px-3 py-2.5 text-[13px] tracking-wide transition-colors ${
-                    isActive
-                      ? 'bg-[rgba(201,168,106,0.1)] text-brass2'
-                      : 'text-cream/80 hover:text-brass2'
-                  }`
-                }
+                className={`block rounded-[2px] px-3 py-2.5 text-[13px] tracking-wide transition-colors ${
+                  isActive(item)
+                    ? 'bg-[rgba(201,168,106,0.1)] text-brass2'
+                    : 'text-cream/80 hover:text-brass2'
+                }`}
               >
                 {item.label}
               </NavLink>

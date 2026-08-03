@@ -13,7 +13,11 @@ const fmt = (d?: string | null) =>
 /** White, print-ready invoice. Reused by the admin preview and the public page. */
 export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   const contact = useContact()
-  const { subtotal, tax, total } = computeTotals(data.items, data.tax_rate)
+  const { subtotal, tax, total, advance, balance } = computeTotals(
+    data.items,
+    data.tax_rate,
+    Number(data.advance_paid) || 0,
+  )
 
   return (
     <div className="invoice-print mx-auto max-w-[820px] bg-white p-[clamp(24px,5vw,56px)] font-sans text-[#2a2320] shadow-sm print:shadow-none">
@@ -101,10 +105,28 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
             <span>Tax ({Number(data.tax_rate) || 0}%)</span>
             <span>{money(tax)}</span>
           </div>
-          <div className="mt-1 flex justify-between border-t-2 border-[#e6ddcf] py-2.5 text-[16px] font-semibold text-[#1a1512]">
+          <div
+            className={`mt-1 flex justify-between border-t-2 border-[#e6ddcf] py-2.5 font-semibold text-[#1a1512] ${
+              advance > 0 ? 'text-[14px]' : 'text-[16px]'
+            }`}
+          >
             <span>Total</span>
             <span>{money(total)}</span>
           </div>
+          {/* Only shown once a deposit exists — a "Balance due" line equal to the
+              total reads like a second charge on a fully-unpaid invoice. */}
+          {advance > 0 && (
+            <>
+              <div className="flex justify-between py-1.5 text-[#6b6155]">
+                <span>Advance paid</span>
+                <span>− {money(advance)}</span>
+              </div>
+              <div className="mt-1 flex justify-between border-t border-[#e6ddcf] py-2.5 text-[16px] font-semibold text-[#1a1512]">
+                <span>Balance due</span>
+                <span>{money(balance)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

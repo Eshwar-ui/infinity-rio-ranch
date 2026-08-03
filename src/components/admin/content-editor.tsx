@@ -124,7 +124,7 @@ export const ContentEditor = ({
   const singular = title.replace(/s$/, '')
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-line px-8 py-6">
         <div>
           <h1 className="font-serif text-2xl text-cream">{title}</h1>

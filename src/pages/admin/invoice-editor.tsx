@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
@@ -21,12 +21,24 @@ type Form = {
   due_date: string
   status: string
   tax_rate: string
+  advance_paid: string
   notes: string
 }
+
+/** `event_date` is a bare date — parsing it without a time zone shifts it a day. */
+const fmtEventDate = (d: string) =>
+  new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
 
 export const InvoiceEditor = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  // `?client=<uuid>` — set by the Clients page's "Generate invoice" button.
+  const [params] = useSearchParams()
+  const fromClient = params.get('client')
 
   const [form, setForm] = useState<Form>({
     client_name: '',
@@ -36,13 +48,48 @@ export const InvoiceEditor = () => {
     due_date: '',
     status: 'draft',
     tax_rate: '0',
+    advance_paid: '0',
     notes: '',
   })
   const [items, setItems] = useState<InvoiceItem[]>([emptyItem()])
   const [number, setNumber] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [clientId, setClientId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [sending, setSending] = useState(false)
+
+  // Prefill a brand-new invoice from the client it's being raised for. Runs only
+  // when there's no invoice id — on an existing invoice the saved row wins, so a
+  // stale link can never overwrite what was already sent to the client.
+  useEffect(() => {
+    if (id || !fromClient) return
+    ;(async () => {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', fromClient)
+        .maybeSingle()
+      if (!client) {
+        toast.error('That client no longer exists.')
+        return
+      }
+      setClientId(client.id)
+      setForm((f) => ({
+        ...f,
+        client_name: client.name ?? '',
+        client_email: client.email ?? '',
+        advance_paid: String(Number(client.advance_amount) || 0),
+        notes: client.event_date
+          ? `Event date: ${fmtEventDate(client.event_date)}`
+          : f.notes,
+      }))
+      // One starting line for the booking. Never assume the package or amount is
+      // set — either can be blank, and an empty row is edited, not deleted.
+      const description =
+        [client.package, client.event_type].find((v) => (v ?? '').trim()) ?? ''
+      setItems([{ description, qty: 1, unit_price: Number(client.amount) || 0 }])
+    })()
+  }, [id, fromClient])
 
   useEffect(() => {
     if (!id) return
@@ -60,10 +107,12 @@ export const InvoiceEditor = () => {
         due_date: inv.due_date ?? '',
         status: inv.status ?? 'draft',
         tax_rate: String(inv.tax_rate ?? 0),
+        advance_paid: String(inv.advance_paid ?? 0),
         notes: inv.notes ?? '',
       })
       setNumber(inv.number)
       setToken(inv.public_token)
+      setClientId(inv.client_id ?? null)
       const { data: its } = await supabase
         .from('invoice_items')
         .select('*')
@@ -79,8 +128,15 @@ export const InvoiceEditor = () => {
   const addItem = () => setItems((prev) => [...prev, emptyItem()])
   const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i))
 
-  const data: InvoiceData = { number, ...form, tax_rate: Number(form.tax_rate) || 0, items }
-  const { total } = computeTotals(items, Number(form.tax_rate) || 0)
+  const advancePaid = Number(form.advance_paid) || 0
+  const data: InvoiceData = {
+    number,
+    ...form,
+    tax_rate: Number(form.tax_rate) || 0,
+    advance_paid: advancePaid,
+    items,
+  }
+  const { total, balance } = computeTotals(items, Number(form.tax_rate) || 0, advancePaid)
 
   const save = async (): Promise<string | null> => {
     if (!form.client_name.trim()) {
@@ -96,6 +152,8 @@ export const InvoiceEditor = () => {
       due_date: form.due_date || null,
       status: form.status,
       tax_rate: Number(form.tax_rate) || 0,
+      advance_paid: Math.max(0, Number(form.advance_paid) || 0),
+      client_id: clientId,
       notes: form.notes || null,
     }
 
@@ -142,7 +200,9 @@ export const InvoiceEditor = () => {
     const invoiceId = await save()
     if (!invoiceId) return
     setSending(true)
-    const { error } = await supabase.functions.invoke('send-invoice', { body: { id: invoiceId } })
+    const { data, error } = await supabase.functions.invoke('send-invoice', {
+      body: { id: invoiceId },
+    })
     setSending(false)
     if (error) {
       toast.error('Email not sent — the email service may not be configured yet.')
@@ -150,7 +210,13 @@ export const InvoiceEditor = () => {
     }
     await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoiceId)
     set({ status: 'sent' })
-    toast.success('Invoice emailed to the client.')
+    // Only invoices linked to a client carry an agreement; say which happened
+    // rather than letting a missing attachment pass as a plain success.
+    toast.success(
+      data?.agreement
+        ? 'Invoice and rental agreement emailed to the client.'
+        : 'Invoice emailed to the client.',
+    )
   }
 
   return (
@@ -166,6 +232,11 @@ export const InvoiceEditor = () => {
           <h1 className="mt-1 font-serif text-xl text-cream">
             {number ?? 'New invoice'}{' '}
             <span className="ml-2 text-[13px] text-brass2">{money(total)}</span>
+            {advancePaid > 0 && (
+              <span className="ml-2 text-[12px] text-muted">
+                · {money(balance)} due after advance
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-3">
@@ -245,6 +316,22 @@ export const InvoiceEditor = () => {
           </div>
 
           <div>
+            <label className={label}>Advance paid</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.advance_paid}
+              onChange={(e) => set({ advance_paid: e.target.value })}
+              className={field}
+            />
+            <p className="mt-1 text-[11px] text-muted">
+              Deducted from the total as a credit. Prefilled from the client's advance —
+              clear it on a follow-up invoice so the same deposit isn't credited twice.
+            </p>
+          </div>
+
+          <div>
             <div className="mb-2 flex items-center justify-between">
               <label className={label}>Line items</label>
               <button onClick={addItem} className="text-[11px] uppercase tracking-[0.16em] text-brass2 hover:text-brass">
@@ -252,28 +339,36 @@ export const InvoiceEditor = () => {
               </button>
             </div>
             <div className="space-y-2">
+              {/* Sized by the wrappers — `field` carries w-full, which Tailwind
+                  emits after w-16/w-24 and wins over them on the input itself. */}
               {items.map((it, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    placeholder="Description"
-                    value={it.description}
-                    onChange={(e) => updateItem(i, { description: e.target.value })}
-                    className={`${field} flex-1`}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    value={it.qty}
-                    onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
-                    className={`${field} w-16`}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={it.unit_price}
-                    onChange={(e) => updateItem(i, { unit_price: Number(e.target.value) })}
-                    className={`${field} w-24`}
-                  />
+                <div key={i} className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <input
+                      placeholder="Description"
+                      value={it.description}
+                      onChange={(e) => updateItem(i, { description: e.target.value })}
+                      className={field}
+                    />
+                  </div>
+                  <div className="w-20 shrink-0">
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      value={it.qty}
+                      onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
+                      className={field}
+                    />
+                  </div>
+                  <div className="w-28 shrink-0">
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      value={it.unit_price}
+                      onChange={(e) => updateItem(i, { unit_price: Number(e.target.value) })}
+                      className={field}
+                    />
+                  </div>
                   <button
                     onClick={() => removeItem(i)}
                     aria-label="Remove row"

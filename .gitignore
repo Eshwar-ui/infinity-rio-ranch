@@ -29,3 +29,6 @@ dist-ssr
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Local calibration output from scripts/agreement-preview.mjs
+.agreement-preview.pdf

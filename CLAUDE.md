@@ -53,6 +53,11 @@ Supabase backend, deployed to Vercel.
   (`list` = `included` | `event_types`), plus the pre-existing `testimonials`,
   `events`, `faqs`, `gallery`. Admin UI: `/admin/content` for copy,
   `ContentEditor` (with its `scope` prop for `list_items`) for the rest.
+  All nine editors sit behind the single **CMS** sidebar entry as a tab bar
+  (`pages/admin/cms-layout.tsx`, a pathless layout route in `App.tsx` — the
+  per-editor URLs are unchanged). A new website editor needs a row in
+  `pages/admin/cms-tabs.ts` and a child of that layout route; nothing in
+  `admin-layout.tsx` changes.
   **Add a copy key to `src/data/copy.defaults.json` first** — it is the single
   source for the render fallback, the migration seed and the admin field list.
 - **Anything editable must survive being deleted or emptied.** The prerender step
@@ -73,6 +78,43 @@ Supabase backend, deployed to Vercel.
   `converted` status is owned by that function — the admin UI deliberately can't
   set it by hand. `clients.lead_id` is UNIQUE (one conversion per lead) and
   `ON DELETE SET NULL` (deleting an old lead never removes a booked client).
+- **The advance is two columns, not one.** `clients.advance_amount` is what the
+  couple actually paid to hold the date and belongs to the booking;
+  `invoices.advance_paid` is what *one* invoice credits against its total. The
+  second is copied from the first when an invoice is raised, then editable —
+  otherwise a follow-up invoice credits the same deposit twice, which is why the
+  client profile prefills it with the *uncredited* remainder. Balance is
+  `max(0, total − advance)` everywhere (`computeTotals`) — an advance over the
+  total is an overpayment to refund, never a negative amount due — and the
+  Advance/Balance rows only render once an advance exists.
+  `invoices.client_id` is `ON DELETE SET NULL`, never CASCADE: an invoice is a
+  financial record, and `client_name`/`client_email` are denormalised onto it so
+  it still reads correctly after the client row is edited or deleted.
+- **`clients.payment_status` is hand-set, not derived.** unpaid/partial/paid,
+  a deliberate owner decision (0006): cash and transfers never touch this app,
+  so the amounts on a client row aren't a complete payment record. The cost is
+  that the flag *can* contradict the balance — nothing reconciles them, and the
+  profile prints a plain note when they disagree instead of correcting either.
+  Don't "fix" this by computing it from `amount`/`advance_amount`. It's separate
+  from `status` (booked/completed/cancelled) and from an invoice's own
+  draft/sent/paid.
+- **`/admin/clients` is a profile, not a form.** Read-only by default behind an
+  Edit toggle; status writes straight through on click. Invoices are raised in
+  place via `components/admin/client-invoice-panel.tsx`, which only ever
+  *creates* — editing an existing invoice stays in `invoice-editor.tsx`, which
+  owns the number, the public token and the send state. `/admin/invoices/new`
+  also takes `?client=<uuid>` and prefills from that client.
+- **The rental agreement is stamped, not templated.** Emailing an invoice that
+  belongs to a client attaches the venue's own agreement PDF with the client
+  name, event date and event type drawn onto it
+  (`supabase/functions/_shared/agreement.ts`). The template has **no form
+  fields**, so every value sits at a fixed coordinate in
+  `agreement-fields.json`; re-exporting the PDF silently invalidates all of them
+  and nothing errors. `node scripts/agreement-preview.mjs` renders a local copy
+  from that same JSON — look at it after any change. The blank template lives in
+  the private `documents` bucket (0007), not the repo, so replacing it is an
+  upload. No template = invoice still sends, toast says so. Signing dates are
+  deliberately left blank for hand-signing. Full procedure in `RUNBOOK.md`.
 - **Invoice numbers are DB-assigned.** A `BEFORE INSERT` trigger pulls from a
   sequence (`INV-YYYY-0001`) — never generate numbers in JS (races).
 - **Client-facing invoice** (`/invoice/:token`) reads via the `get_invoice_by_token`
@@ -125,6 +167,12 @@ Supabase backend, deployed to Vercel.
   featured trigger, `updated_at`, indexes. `0003_page_content.sql` = `site_copy`,
   `stats`, `amenities`, `list_items`, `site_settings` + RLS + copy seeds. `0004_clients.sql` = `clients`
   table, the `converted` lead status and `convert_lead_to_client()`.
+  `0005_client_advance_invoices.sql` = `clients.advance_amount`,
+  `invoices.client_id` + `invoices.advance_paid`, and `get_invoice_by_token()`
+  recreated to carry the advance. `0006_client_payment_status.sql` =
+  `clients.payment_status`, seeded once from the existing amounts.
+  `0007_documents_bucket.sql` = the private `documents` bucket holding the
+  rental-agreement template.
   `RUNBOOK.md` — key rotation + new-project setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
   **Its source is not in the repo** (deployed directly) — must be rebuilt from

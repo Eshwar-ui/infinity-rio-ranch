@@ -24,9 +24,12 @@ Do this when the Supabase project is gone or you're moving to a fresh one.
    `updated_at`), then `0003_page_content.sql` (`site_copy`, `stats`,
    `amenities`, `list_items`, `site_settings` + the shipped page copy), then
    `0004_clients.sql` (`clients`, the `converted` lead status and the
-   `convert_lead_to_client()` RPC).
-   All four are safe to re-run — seeds are `NOT EXISTS` / `ON CONFLICT`-guarded,
-   so re-running never overwrites copy the owner has edited.
+   `convert_lead_to_client()` RPC), then `0005_client_advance_invoices.sql`
+   (`clients.advance_amount`, `invoices.client_id` + `advance_paid`), then
+   `0006_client_payment_status.sql` (`clients.payment_status`), then
+   `0007_documents_bucket.sql` (the private `documents` bucket).
+   All are safe to re-run — seeds are `NOT EXISTS` / `ON CONFLICT` / status-guarded,
+   so re-running never overwrites copy or states the owner has edited.
 3. **Create the admin user** — Dashboard → Authentication → Users → Add user,
    tick **Auto Confirm User**. (Passwords are the owner's to set — never scripted.)
 4. **Promote them to admin** — SQL Editor, with the real email:
@@ -79,15 +82,52 @@ curl -s -w "\nHTTP %{http_code}\n" \
 
 ## Invoice email (`send-invoice` edge function)
 
-- **The function source is NOT in this repo** — it was deployed directly to the
-  old (now-deleted) project via MCP. On a fresh project it must be **rebuilt from
-  scratch.** What it did: take `{ id }`, load the invoice, and email the client
-  (via Resend) a link to `/invoice/<public_token>`. See `admin-plan.md` Phase 5.
-- Until it exists, the admin "Email client" button fails gracefully
+- Source lives at `supabase/functions/send-invoice/index.ts` (rebuilt in-repo
+  after the original project was deleted). Deploy with
+  `supabase functions deploy send-invoice` — it pulls in
+  `supabase/functions/_shared/agreement.ts` and `agreement-fields.json`.
+- Takes `{ id }` → emails the client a link to `/invoice/<public_token>` with the
+  filled rental agreement attached. `{ id, preview: 1 }` returns that PDF instead
+  of sending, which is what the admin panel's per-invoice **Agreement** button uses.
+- Until it's deployed, the admin "Email client" button fails gracefully
   ("email service may not be configured") — everything else works.
 - Secrets it needs (Dashboard → Edge Functions → send-invoice → Secrets):
   `RESEND_API_KEY`, `INVOICE_FROM` (e.g. `Infinity Rio Ranch <invoices@domain>`,
   domain verified in Resend), `SITE_URL` (e.g. the Vercel URL).
+  Optional: `INVOICE_REPLY_TO`.
+
+---
+
+## Rental agreement PDF
+
+Every invoice emailed for a **client** carries that client's rental agreement,
+with their name, event date and event type stamped onto the venue's own PDF.
+
+1. **Upload the template** — Dashboard → Storage → `documents` (created by
+   `0007_documents_bucket.sql`, private) → upload the blank agreement as exactly
+   **`rental-agreement-template.pdf`**. Without it, invoices still send; the
+   toast says "no agreement attached (no template uploaded)".
+2. **Check one** — admin → Clients → pick a client → Invoices → **Agreement**.
+   That downloads the exact PDF the email would attach.
+
+**If the template is ever re-exported or re-edited, recalibrate.** The PDF has no
+form fields, so each value is drawn at a fixed coordinate in
+`supabase/functions/_shared/agreement-fields.json`. Change the document and those
+coordinates go silently wrong — a client receives a contract with their name
+across the middle of a sentence, and nothing errors. After any change:
+
+```bash
+node scripts/agreement-preview.mjs "Client Name" 2027-06-12 Wedding
+```
+
+That writes `.agreement-preview.pdf` (gitignored) using the same JSON the
+function reads. **Open it and look**, adjust the coordinates, repeat. Then
+re-upload the template and redeploy the function.
+
+Only the three page-1 blanks and the page-4 client name are filled. The
+"day of ____, 20__" line and both `Date:` lines are left blank on purpose —
+they're the date of *signing*, which isn't known when the email goes out, and
+the client fills them in by hand with the signatures.
 
 ---
 
