@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Trash, CaretUp, CaretDown } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
@@ -83,8 +83,17 @@ export const AdminBlog = () => {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [preview, setPreview] = useState(false)
-  const [picking, setPicking] = useState(false)
+  /**
+   * Which field the gallery picker is filling — `null` when it's closed.
+   *
+   * One picker, two destinations: the cover and the body. A body image is the
+   * same decision as a cover ("which of the venue's photos"), so it gets the
+   * same grid rather than an author pasting a URL into markdown and guessing
+   * whether it resolves.
+   */
+  const [picking, setPicking] = useState<'cover' | 'body' | null>(null)
   const [gallery, setGallery] = useState<Row[] | null>(null)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<StatusFilter>('all')
 
@@ -156,8 +165,8 @@ export const AdminBlog = () => {
    * has derivatives for the bundled `/assets` paths, not for Storage URLs.
    * Picking reuses both. Fetched on first open rather than with the page.
    */
-  const openPicker = () => {
-    setPicking(true)
+  const openPicker = (target: 'cover' | 'body') => {
+    setPicking(target)
     if (gallery) return
     void supabase
       .from('gallery')
@@ -170,15 +179,117 @@ export const AdminBlog = () => {
       })
   }
 
+  /**
+   * Drop `![alt](src)` into the body at the caret.
+   *
+   * At the caret, not appended: an author picking an image is almost always
+   * partway through a paragraph, and an image that lands at the bottom of the
+   * document has to be cut and repasted every time. Blank lines around it
+   * because markdown only treats an image as its own block when it stands
+   * alone — inline, it renders inside the surrounding paragraph.
+   */
+  const insertIntoBody = (photo: Row) => {
+    const el = bodyRef.current
+    const body = String(draft?.body ?? '')
+    // No ref means the preview pane is showing instead of the textarea; append.
+    const at = el ? el.selectionStart : body.length
+    const end = el ? el.selectionEnd : body.length
+
+    const before = body.slice(0, at)
+    const after = body.slice(end)
+    const md = `![${photo.label}](${photo.src})`
+    // Only add the separating newlines that aren't already there, so picking
+    // two images in a row doesn't build up a stack of blank lines.
+    const lead = before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n'
+    const tail = after === '' || after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n'
+    const snippet = `${lead}${md}${tail}`
+
+    patch({ body: before + snippet + after })
+    setPicking(null)
+
+    // Put the caret after the image. The value is React-controlled, so this has
+    // to wait for the re-render that the patch above triggers.
+    const caret = before.length + snippet.length
+    requestAnimationFrame(() => {
+      const node = bodyRef.current
+      if (!node) return
+      node.focus()
+      node.setSelectionRange(caret, caret)
+    })
+  }
+
   const chooseFromGallery = (photo: Row) => {
+    if (picking === 'body') return insertIntoBody(photo)
     patch({
       cover_image: photo.src,
       // Only fills a blank alt — an alt the owner has already written for this
       // post is more specific than the gallery's generic caption.
       cover_alt: String(draft?.cover_alt ?? '').trim() || photo.label,
     })
-    setPicking(false)
+    setPicking(null)
   }
+
+  /**
+   * The picker grid itself, rendered under whichever field opened it.
+   *
+   * One definition used twice: under the cover, and under the body toolbar. It
+   * appears next to the thing it fills rather than as a modal, so the field
+   * stays visible while you choose.
+   */
+  const galleryPicker = (
+    <div className="rounded-md border border-line bg-panel/40 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[12px] font-medium text-cream">
+          {picking === 'body' ? 'Insert a photo into the body' : 'Venue gallery'}
+        </span>
+        <button onClick={() => setPicking(null)} className={btnQuiet}>
+          Close
+        </button>
+      </div>
+
+      {gallery === null ? (
+        <p className="py-6 text-center text-[13px] text-muted">Loading…</p>
+      ) : gallery.length === 0 ? (
+        <p className="py-6 text-center text-[13px] text-muted">
+          No published photos in the gallery yet.
+        </p>
+      ) : (
+        <div className="grid max-h-[320px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
+          {gallery.map((photo) => {
+            // Only the cover has a persistent "chosen" state — a body image is
+            // inserted and then belongs to the text, not to this control.
+            const chosen = picking === 'cover' && draft?.cover_image === photo.src
+            return (
+              <button
+                key={photo.src}
+                onClick={() => chooseFromGallery(photo)}
+                title={photo.label}
+                aria-label={
+                  picking === 'body'
+                    ? `Insert "${photo.label}" into the body`
+                    : `Use "${photo.label}" as the cover`
+                }
+                aria-pressed={chosen}
+                className={`group relative aspect-[3/2] overflow-hidden rounded-[3px] border-2 transition-colors ${
+                  chosen ? 'border-brass' : 'border-transparent hover:border-line'
+                }`}
+              >
+                <img
+                  src={photo.src}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] text-white">
+                  {photo.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 
   // ---- FAQ repeater --------------------------------------------------------
   const faqs = (draft?.faqs ?? []) as QandA[]
@@ -455,7 +566,7 @@ export const AdminBlog = () => {
                     />
                   )}
                   <div className="flex flex-wrap items-center gap-3">
-                    <button onClick={openPicker} className={btnGhost}>
+                    <button onClick={() => openPicker('cover')} className={btnGhost}>
                       Choose from gallery
                     </button>
                     <label className={`${btnGhost} cursor-pointer`}>
@@ -481,54 +592,7 @@ export const AdminBlog = () => {
                     )}
                   </div>
 
-                  {picking && (
-                    <div className="rounded-md border border-line bg-panel/40 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-[12px] font-medium text-cream">
-                          Venue gallery
-                        </span>
-                        <button onClick={() => setPicking(false)} className={btnQuiet}>
-                          Close
-                        </button>
-                      </div>
-
-                      {gallery === null ? (
-                        <p className="py-6 text-center text-[13px] text-muted">Loading…</p>
-                      ) : gallery.length === 0 ? (
-                        <p className="py-6 text-center text-[13px] text-muted">
-                          No published photos in the gallery yet.
-                        </p>
-                      ) : (
-                        <div className="grid max-h-[320px] grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
-                          {gallery.map((photo) => {
-                            const chosen = draft.cover_image === photo.src
-                            return (
-                              <button
-                                key={photo.src}
-                                onClick={() => chooseFromGallery(photo)}
-                                title={photo.label}
-                                aria-label={`Use "${photo.label}" as the cover`}
-                                aria-pressed={chosen}
-                                className={`group relative aspect-[3/2] overflow-hidden rounded-[3px] border-2 transition-colors ${
-                                  chosen ? 'border-brass' : 'border-transparent hover:border-line'
-                                }`}
-                              >
-                                <img
-                                  src={photo.src}
-                                  alt=""
-                                  loading="lazy"
-                                  className="h-full w-full object-cover"
-                                />
-                                <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] text-white">
-                                  {photo.label}
-                                </span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {picking === 'cover' && galleryPicker}
                   <div>
                     <label className={label}>Alt text</label>
                     <input
@@ -543,12 +607,22 @@ export const AdminBlog = () => {
 
               {/* ---- Body ---- */}
               <div className="mt-8">
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5 flex items-center justify-between gap-3">
                   <span className={label}>Body (Markdown)</span>
-                  <button onClick={() => setPreview((p) => !p)} className={btnQuiet}>
-                    {preview ? 'Edit' : 'Preview'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {/* Hidden in preview: there is no caret to insert at, and
+                        an image appended to the end is rarely where it goes. */}
+                    {!preview && (
+                      <button onClick={() => openPicker('body')} className={btnQuiet}>
+                        Insert photo
+                      </button>
+                    )}
+                    <button onClick={() => setPreview((p) => !p)} className={btnQuiet}>
+                      {preview ? 'Edit' : 'Preview'}
+                    </button>
+                  </div>
                 </div>
+                {picking === 'body' && <div className="mb-3">{galleryPicker}</div>}
                 {preview ? (
                   <div className={`min-h-[320px] p-6 ${card}`}>
                     {draft.body?.trim() ? (
@@ -559,6 +633,7 @@ export const AdminBlog = () => {
                   </div>
                 ) : (
                   <textarea
+                    ref={bodyRef}
                     rows={20}
                     value={draft.body ?? ''}
                     onChange={(e) => patch({ body: e.target.value })}
@@ -571,7 +646,8 @@ export const AdminBlog = () => {
                   <strong className="font-medium text-cream/80"> **bold**</strong> bolds,
                   <strong className="font-medium text-cream/80"> -</strong> starts a bullet,
                   and <strong className="font-medium text-cream/80">[text](/contact)</strong> links.
-                  Preview shows exactly what visitors see.
+                  <strong className="font-medium text-cream/80"> Insert photo</strong> adds a
+                  gallery image at the cursor. Preview shows exactly what visitors see.
                 </p>
               </div>
 
