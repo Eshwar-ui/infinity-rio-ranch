@@ -6,6 +6,10 @@
 // served by the `public-agreement` function. Both are keyed on the same
 // `public_token`, so the client holds one credential, not three.
 //
+// The agreement button appears on the booking's FIRST invoice only — a couple
+// signs one contract, and a balance invoice carrying a second copy invites them
+// to sign it twice. Follow-ups go out as invoice alone.
+//
 // Invoked from the admin panel:
 //   supabase.functions.invoke('send-invoice', { body: { id } })            → sends
 //   supabase.functions.invoke('send-invoice', { body: { id, preview: 1 } }) → returns
@@ -22,7 +26,7 @@
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-import { agreementFileName, buildAgreement } from '../_shared/agreement.ts'
+import { agreementFileName, buildAgreement, formatEventDate } from '../_shared/agreement.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const INVOICE_FROM = Deno.env.get('INVOICE_FROM')          // e.g. "Infinity at Rio Ranch <invoices@infinityrioranch.com>"
@@ -61,7 +65,7 @@ Deno.serve(async (req) => {
 
     const { data: inv, error } = await admin
       .from('invoices')
-      .select('number, client_name, client_email, issue_date, due_date, tax_rate, advance_paid, notes, public_token, invoice_items(description, qty, unit_price, sort), clients(name, event_date, event_type)')
+      .select('client_id, number, client_name, client_email, issue_date, due_date, tax_rate, advance_paid, notes, public_token, invoice_items(description, qty, unit_price, sort), clients(name, event_date, event_type)')
       .eq('id', id)
       .single()
     if (error || !inv) return json({ error: 'Invoice not found.' }, 404)
@@ -69,13 +73,45 @@ Deno.serve(async (req) => {
     // The agreement is per booking, so it only exists for an invoice raised
     // against a client. A standalone invoice simply goes out without one.
     const client = (inv as { clients?: { name: string; event_date: string | null; event_type: string | null } | null }).clients
-    const agreement = client
-      ? await buildAgreement(admin, {
-          clientName: client.name,
-          eventDate: client.event_date,
-          eventType: client.event_type,
-        })
-      : null
+
+    /*
+     * The agreement rides with the booking's FIRST invoice only.
+     *
+     * A couple signs one contract. A balance invoice arriving months later with
+     * a second copy of it reads as "sign this again", and the one they return
+     * might be the wrong one. The follow-up carries the invoice alone.
+     *
+     * First is decided by the row, not by the caller: any send path (this panel,
+     * the full editor, a resend of the same invoice) has to reach the same
+     * answer, and a resend of invoice one must still carry the agreement.
+     * `created_at` then `id` so two invoices raised in the same second still
+     * resolve to exactly one first.
+     */
+    const clientId = (inv as { client_id: string | null }).client_id
+    let firstForBooking = true
+    if (clientId) {
+      const { data: earliest } = await admin
+        .from('invoices')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      firstForBooking = !earliest || earliest.id === id
+    }
+
+    // A preview builds regardless: it is the owner checking their own
+    // paperwork, and the contract belongs to the booking whichever invoice is
+    // open in front of them.
+    const agreement =
+      client && (preview || firstForBooking)
+        ? await buildAgreement(admin, {
+            clientName: client.name,
+            eventDate: client.event_date,
+            eventType: client.event_type,
+          })
+        : null
 
     if (preview) {
       if (!client) return json({ error: 'This invoice is not linked to a client.' }, 400)
@@ -109,6 +145,16 @@ Deno.serve(async (req) => {
     // an overpayment to refund, never a negative amount due.
     const advance = Math.max(0, Number(inv.advance_paid) || 0)
     const balance = Math.max(0, total - advance)
+    /*
+     * The first invoice for a booking is also the confirmation email: it is the
+     * one that tells the couple the date is theirs, and the one that carries the
+     * agreement to sign. A standalone invoice has no booking to confirm, so it
+     * stays a plain invoice.
+     */
+    const confirming = Boolean(client) && firstForBooking
+    const eventDate = formatEventDate(client?.event_date)
+    const eventLine = [eventDate, client?.event_type].filter(Boolean).join(', ')
+
     const link = `${SITE_URL}/invoice/${inv.public_token}`
     // Served by the `public-agreement` function, proxied through the venue's own
     // domain by a rewrite in vercel.json. A contract download pointing at a
@@ -128,10 +174,16 @@ Deno.serve(async (req) => {
     <div style="max-width:600px;margin:0 auto;font-family:Georgia,'Times New Roman',serif;color:#2a2320;background:#ffffff;padding:32px">
       <div style="font-size:22px;color:#1a1512">Infinity at Rio Ranch</div>
       <div style="font-size:12px;color:#a99a86;margin-top:2px">326 Rio Pk Dr, Liberty Hill, TX 78642</div>
-      <h1 style="font-size:20px;color:#b08d3f;margin:28px 0 4px">Invoice ${escapeHtml(inv.number ?? '')}</h1>
-      <p style="font-size:14px;line-height:1.6;color:#6b6155;margin:0 0 20px">
-        Hi ${escapeHtml(inv.client_name)}, thank you for choosing Infinity at Rio Ranch.
-        Your invoice is ready — the full itemized copy is below and always available at your private link.
+      <h1 style="font-size:20px;color:#b08d3f;margin:28px 0 4px">${
+        confirming ? 'Your booking is confirmed' : `Invoice ${escapeHtml(inv.number ?? '')}`
+      }</h1>
+      ${confirming ? `<div style="font-size:12px;color:#a99a86;margin-top:2px">Invoice ${escapeHtml(inv.number ?? '')}${eventLine ? ` &middot; ${escapeHtml(eventLine)}` : ''}</div>` : ''}
+      <p style="font-size:14px;line-height:1.6;color:#6b6155;margin:${confirming ? '16px' : '0'} 0 20px">
+        Hi ${escapeHtml(inv.client_name)}, ${
+          confirming
+            ? `thank you for choosing Infinity at Rio Ranch. ${eventLine ? `Your date is held for ${escapeHtml(eventLine)}.` : 'Your date is held.'} The invoice below secures it, and it stays available at your private link.`
+            : 'here is your invoice. The full itemized copy is below and always available at your private link.'
+        }
         ${agreement ? 'Your rental agreement is ready to download below: please print it, sign and date it, and return it to us.' : ''}
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
@@ -179,7 +231,9 @@ Deno.serve(async (req) => {
     const payload: Record<string, unknown> = {
       from: INVOICE_FROM,
       to: [inv.client_email],
-      subject: `Invoice ${inv.number ?? ''} from Infinity at Rio Ranch`,
+      subject: confirming
+        ? `Booking confirmed: invoice ${inv.number ?? ''} from Infinity at Rio Ranch`
+        : `Invoice ${inv.number ?? ''} from Infinity at Rio Ranch`,
       html,
     }
     if (INVOICE_REPLY_TO) payload.reply_to = INVOICE_REPLY_TO
@@ -200,10 +254,22 @@ Deno.serve(async (req) => {
       const detail = await resp.text()
       return json({ error: 'Resend rejected the email.', detail }, 502)
     }
-    // `agreement: false` is not an error — it means either a standalone invoice
-    // or no template uploaded yet. The caller surfaces it so a silent omission
-    // never looks like a successful send.
-    return json({ ok: true, agreement: Boolean(agreement) })
+    /*
+     * `agreement: false` is not an error, but the three reasons for it are not
+     * the same thing and the caller says so out loud. "No template uploaded" is
+     * a job to finish; "the client already has it" is the design working.
+     */
+    return json({
+      ok: true,
+      agreement: Boolean(agreement),
+      reason: agreement
+        ? null
+        : !client
+          ? 'no-client'
+          : !firstForBooking
+            ? 'follow-up'
+            : 'no-template',
+    })
   } catch (e) {
     return json({ error: String(e) }, 500)
   }

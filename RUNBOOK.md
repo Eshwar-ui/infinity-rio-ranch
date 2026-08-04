@@ -40,11 +40,12 @@ Do this when the Supabase project is gone or you're moving to a fresh one.
 5. **Update env vars** (both places — see next section).
 6. **Redeploy** on Vercel so production picks up the new keys.
 7. **Rebuild the edge function** if invoice email is needed (see below).
-8. **Set the deploy hook** — Vercel → Project Settings → Git → Deploy Hooks →
-   create one, then paste it into the admin sidebar's "Publish to live site"
-   panel (stored in `site_settings`). Without it, CMS edits stay invisible to
-   crawlers until someone deploys by hand: the prerendered HTML is only rewritten
-   during a build, when `pull:content` snapshots the tables. See SEO.md §5b.
+8. **Know that publishing content means deploying.** There is no in-app publish
+   button — the sidebar's deploy-hook panel was removed. CMS edits are live for
+   human visitors at once but stay invisible to crawlers until a build runs,
+   because the prerendered HTML is only rewritten when `pull:content` snapshots
+   the tables. After a content change that matters for search, push to `main` or
+   redeploy from the Vercel dashboard. See SEO.md §5b.
 
 ---
 
@@ -94,11 +95,25 @@ Both pull in `supabase/functions/_shared/agreement.ts` and
 `agreement-fields.json`. Deploy from the repo root or the `_shared` import
 doesn't resolve and the function dies with `BOOT_ERROR` at first call.
 
+**The billing flow it serves:** invoice 1 confirms the booking and asks for the
+advance, and is the only one that carries the agreement. After the event come
+the extras invoice and the final payment invoice. The admin composer prefills
+per stage; this function only distinguishes the first invoice from the rest.
+
 - **`send-invoice`** — ADMIN ONLY. `{ id }` emails the client two buttons:
   **Download invoice** → `/invoice/<public_token>`, and **Download agreement** →
   `/agreement/<public_token>`. Neither document is attached. `{ id, preview: 1 }`
   returns the agreement PDF to the caller instead of sending anything, which is
-  what the admin panel's per-invoice **Agreement** button uses.
+  what the admin panel's per-invoice **Agreement** tab uses.
+  **The agreement button only appears on a booking's first invoice** — decided
+  from the rows (earliest `created_at`, then `id`), not from what the caller
+  asks for, so every send path and any resend of that first invoice agree. A
+  balance invoice goes out as invoice alone: one contract per booking, signed
+  once. The reply carries `{ agreement, reason }` where reason is
+  `follow-up` | `no-template` | `no-client`, because "the client already has it"
+  and "nobody uploaded the template" must not read the same in the panel.
+  A follow-up's `/agreement/<token>` URL still works if the client kept the
+  earlier link; nothing is revoked, it just isn't advertised twice.
 - **`public-agreement`** — deliberately UNAUTHENTICATED. `GET ?token=<public_token>`
   rebuilds that client's agreement and returns it as a download. The token is the
   credential, exactly as it already is for the invoice page. It is a separate
