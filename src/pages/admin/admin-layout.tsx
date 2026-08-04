@@ -3,7 +3,6 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-route
 import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
 import { CMS_TABS } from '@/pages/admin/cms-tabs'
-import { PublishBar } from '@/components/admin/publish-bar'
 import { btnGhost, eyebrow } from '@/lib/admin-ui'
 
 /**
@@ -123,8 +122,6 @@ const AdminShell = () => {
             ),
           )}
         </nav>
-
-        <PublishBar />
 
         <button
           onClick={signOut}

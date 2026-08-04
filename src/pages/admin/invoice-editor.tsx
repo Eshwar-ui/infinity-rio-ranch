@@ -4,8 +4,16 @@ import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { btnGhost, btnPrimary, btnQuiet, field, hint, label } from '@/lib/admin-ui'
-import { computeTotals, money, type InvoiceData, type InvoiceItem } from '@/lib/invoice'
+import {
+  computeTotals,
+  money,
+  sentMessage,
+  type InvoiceData,
+  type InvoiceItem,
+  type SendResult,
+} from '@/lib/invoice'
 import { InvoiceDocument } from '@/components/invoice/invoice-document'
+import { Select } from '@/components/ui/select'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const emptyItem = (): InvoiceItem => ({ description: '', qty: 1, unit_price: 0 })
@@ -208,13 +216,10 @@ export const InvoiceEditor = () => {
     }
     await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoiceId)
     set({ status: 'sent' })
-    // Only invoices linked to a client carry an agreement; say which happened
-    // rather than letting a missing attachment pass as a plain success.
-    toast.success(
-      data?.agreement
-        ? 'Invoice and rental agreement emailed to the client.'
-        : 'Invoice emailed to the client.',
-    )
+    // Which of the two happened, in the same words the client panel uses: the
+    // agreement goes with a booking's first invoice, and its absence is either
+    // the design or a template nobody has uploaded yet.
+    toast.success(sentMessage(data as SendResult))
   }
 
   return (
@@ -301,11 +306,17 @@ export const InvoiceEditor = () => {
           <div className="flex gap-4">
             <div className="flex-1">
               <label className={label}>Status</label>
-              <select value={form.status} onChange={(e) => set({ status: e.target.value })} className={field}>
-                <option value="draft" className="bg-ink">draft</option>
-                <option value="sent" className="bg-ink">sent</option>
-                <option value="paid" className="bg-ink">paid</option>
-              </select>
+              <Select
+                value={form.status}
+                onChange={(status) => set({ status })}
+                ariaLabel="Status"
+                className={field}
+                options={[
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'sent', label: 'Sent' },
+                  { value: 'paid', label: 'Paid' },
+                ]}
+              />
             </div>
             <div className="w-28">
               <label className={label}>Tax %</label>

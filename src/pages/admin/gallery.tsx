@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { btnDanger, btnPrimary, btnQuiet, field, label, pageTitle } from '@/lib/admin-ui'
+import { Select } from '@/components/ui/select'
 
 type Row = Record<string, any>
 
@@ -216,33 +217,25 @@ export const AdminGallery = () => {
                     <label className={label}>
                       Category
                     </label>
-                    <select
+                    <Select
                       value={draft.cat}
-                      onChange={(e) => setDraft({ ...draft, cat: e.target.value })}
+                      onChange={(cat) => setDraft({ ...draft, cat })}
+                      ariaLabel="Category"
                       className={field}
-                    >
-                      {CATS.map((c) => (
-                        <option key={c} value={c} className="bg-ink">
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                      options={CATS.map((c) => ({ value: c, label: c }))}
+                    />
                   </div>
                   <div className="flex-1">
                     <label className={label}>
                       Size
                     </label>
-                    <select
+                    <Select
                       value={draft.span ?? ''}
-                      onChange={(e) => setDraft({ ...draft, span: e.target.value })}
+                      onChange={(span) => setDraft({ ...draft, span })}
+                      ariaLabel="Size"
                       className={field}
-                    >
-                      {SPANS.map((s) => (
-                        <option key={s.value} value={s.value} className="bg-ink">
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={SPANS.map((s) => ({ value: s.value, label: s.label }))}
+                    />
                   </div>
                 </div>
 

@@ -14,7 +14,7 @@
  *    almost invisible against the dark theme.
  */
 
-/** Text input, textarea and select. */
+/** Text input, textarea, and the trigger of a `<Select>` / `<SuggestInput>`. */
 export const field =
   'w-full rounded-md border border-line bg-panel/30 px-3 py-2 text-[14px] leading-normal text-cream outline-none transition-colors placeholder:text-muted/50 focus:border-brass focus:bg-panel/60 focus:ring-2 focus:ring-brass/25'
 

@@ -18,6 +18,7 @@ import {
   pill,
 } from '@/lib/admin-ui'
 import { ClientInvoicePanel, type ClientInvoice } from '@/components/admin/client-invoice-panel'
+import { SuggestInput } from '@/components/ui/select'
 import {
   PAYMENT_STATUSES,
   STATUSES,
@@ -391,19 +392,16 @@ export const AdminClientDetail = () => {
                 </div>
                 <div className="flex-1">
                   <label className={label}>Event type</label>
-                  {/* A datalist, not a select: the list is CMS-editable and old
-                      clients keep types that were since renamed or removed. */}
-                  <input
-                    list="client-event-types"
+                  {/* Suggestions, not a fixed list: the event types are
+                      CMS-editable and old clients keep ones that were since
+                      renamed or removed, so anything typed is accepted. */}
+                  <SuggestInput
                     value={draft.event_type ?? ''}
-                    onChange={(e) => set({ event_type: e.target.value })}
+                    onChange={(event_type) => set({ event_type })}
+                    suggestions={eventTypes}
+                    ariaLabel="Event type"
                     className={field}
                   />
-                  <datalist id="client-event-types">
-                    {eventTypes.map((t) => (
-                      <option key={t} value={t} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="w-28">
                   <label className={label}>Guests</label>

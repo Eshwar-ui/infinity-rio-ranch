@@ -315,9 +315,12 @@ is why the address in the footer and the address in the JSON-LD can no longer
 disagree.
 
 **Publishing is therefore a rebuild.** Saving in the admin panel is instant for
-human visitors and invisible to answer engines until a deploy runs. The
-"Publish to live site" button in the admin sidebar POSTs a Vercel deploy hook
-(stored in the admin-only `site_settings` table) to close that gap.
+human visitors and invisible to answer engines until a deploy runs. There is no
+in-app button for this — a sidebar "Publish to live site" control backed by a
+Vercel deploy hook was removed at the owner's request. After a content edit that
+matters for search, deploy: push to `main`, or redeploy from the Vercel
+dashboard. Until then the prerendered HTML answer engines read is the previous
+build's.
 
 **Watch out:** anything the CMS can delete must not be read positionally.
 `glanceFacts` used `stats[0]`/`stats[1]`/`stats[2]`, so removing one statistic

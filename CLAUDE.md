@@ -93,11 +93,16 @@ Supabase backend, deployed to Vercel.
     disagree and hydration breaks.
   - FAQ pairs render *and* emit `FAQPage` JSON-LD; Google drops the enhancement
     if the markup and the schema disagree, so both come from `post.faqs`.
-- **Publishing is a rebuild.** Saving in the admin panel updates the DB — instant
-  for JS visitors, invisible to crawlers until the next build. The "Publish to
-  live site" button (`components/admin/publish-bar.tsx`) POSTs a Vercel deploy
-  hook stored in the admin-only `site_settings` table (never a `VITE_` var — the
-  admin chunk is lazy but still public).
+- **Publishing is a rebuild, and there is no button for it.** Saving in the admin
+  panel updates the DB — instant for JS visitors, invisible to crawlers until the
+  next build, because only a build runs `pull:content` and rewrites the
+  prerendered HTML. Closing that gap is a deploy: push to `main` (Vercel builds
+  from it) or redeploy in the Vercel dashboard. There *was* a "Publish to live
+  site" button in the sidebar backed by a deploy hook in `site_settings`; it was
+  removed at the owner's request, never configured in practice. If it comes back,
+  the hook belongs in `site_settings` and **never** in a `VITE_` var — the admin
+  chunk is lazy but still served to anyone, so that would be a public rebuild
+  button. The `site_settings` table and its RLS remain in 0003.
 - **Leads and clients are two tables, not one.** `leads` is the anon-writable
   contact-form inbox; `clients` (`0004_clients.sql`) is the booked side and is
   admin-only with **no public INSERT policy** — nothing on the public site ever
@@ -136,6 +141,21 @@ Supabase backend, deployed to Vercel.
   which is how they drifted. Nothing structural is set in ALL CAPS with wide
   tracking any more — that treatment costs legibility at 12px. The
   client-facing invoice document keeps the serif deliberately.
+- **No native `<select>` or `<datalist>`, anywhere, admin or public.**
+  `src/components/ui/select.tsx` owns both replacements: `<Select>` (a listbox)
+  and `<SuggestInput>` (an input that suggests but accepts anything typed, where
+  the list is CMS-editable and old rows keep values since renamed). The OS draws
+  a native popup in system colours, so it ignored the theme in both directions —
+  a white menu falling out of the dark public form, unreadable light-on-light
+  options in the dark admin — and an `<option>` holds text and nothing else,
+  which is why the filter counts had to be crammed into the label string.
+  What the native control gave free is built back rather than dropped: the full
+  keyboard model (arrows, Home/End, Enter, Escape, Tab, type-ahead), the listbox
+  ARIA pattern with `aria-activedescendant` so focus stays on the trigger, and a
+  **portal to `document.body`** — every one of these sits inside a scrolling pane
+  or an `overflow-hidden` card that would otherwise clip it. Pass `className` for
+  the trigger (`field` in the admin) and always an `ariaLabel`: the trigger is a
+  `<button>`, so a nearby `<label>` doesn't name it.
 - **Appending a width to a shared class string doesn't work.** `field` carries
   `w-full`, and Tailwind emits `.w-full` *after* `.w-16`/`.w-24` in the sheet, so
   `` `${field} w-24` `` silently renders full width — this shipped twice (the
@@ -193,6 +213,34 @@ Supabase backend, deployed to Vercel.
   `send-invoice` even though it's no longer attached — whether it can be built
   is what decides if the button is rendered, and a dead link to a contract is
   worse than no link.
+- **A booking is billed in three stages, and the composer knows them.** The
+  venue's own flow, not an invented taxonomy:
+  1. **Advance** — sent when the booking is taken. Bills the deposit that holds
+     the date, credits nothing (this invoice *is* the request for that money),
+     and its email doubles as the booking confirmation and carries the agreement
+     to sign.
+  2. **Extra charges** — after the event, for anything beyond the package.
+     Deliberately prefills empty: only the owner knows what happened on the night.
+  3. **Final payment** — bills the agreed amount and credits the deposit that
+     hasn't been credited anywhere else, so the document reconciles the whole
+     booking ("$500 total, less $300 advance, $200 due") and the invoices add up
+     to the booking rather than to twice it.
+  `Purpose` in `client-invoice-panel.tsx` is the stage; the composer picks a
+  default from the rows (no invoices → advance; a balance left → final;
+  otherwise extras) and states what it prefilled and why, because an amount that
+  appears by itself has to explain itself. All three are defaults, overwritable
+  by typing.
+- **The agreement goes out once per booking, with the first invoice.** A couple
+  signs one contract; a balance invoice carrying a second copy invites them to
+  sign it twice, and the one they return may be the wrong one. `send-invoice`
+  decides from the rows (the booking's earliest invoice by `created_at`, then
+  `id`), never from a flag the caller passes, so the client panel, the full
+  editor and a resend of that first invoice all reach the same answer. It
+  answers `{ agreement, reason }` and the panel prints a different sentence for
+  each reason — `follow-up` is the design working, `no-template` is a job left
+  undone, and one message for both is how an owner learns to ignore the message.
+  A preview always builds, whichever invoice is open: that's the owner checking
+  their own paperwork.
 - **The rental agreement is stamped, not templated.** The agreement PDF carries
   the client name, event date and event type drawn onto the venue's own template
   (`supabase/functions/_shared/agreement.ts`). The template has **no form

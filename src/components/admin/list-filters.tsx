@@ -1,4 +1,6 @@
-import { CaretDown, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, X } from '@phosphor-icons/react'
+
+import { Select } from '@/components/ui/select'
 
 /**
  * Search + filter toolbar that sits directly above a list rail.
@@ -19,25 +21,22 @@ export type FilterOption<T extends string> = {
 }
 
 /**
- * A native `<select>`, not a custom popup.
+ * One filter, as a dropdown.
  *
  * The segmented row this replaced grew with the option list — five booking
  * statuses next to four payment ones filled the whole bar and still didn't read
  * as controls. A dropdown states the *current* filter in one place and hides
  * the rest until asked, which is what a filter should do.
  *
- * Native because it gets keyboard handling, type-ahead, mobile pickers and
- * labelling for free, and because the option popup is drawn by the OS — no
- * portal, no outside-click handling, nothing to escape an `overflow` ancestor.
- * The trade is that the popup ignores most styling, so the only colours set on
- * `<option>` are a solid background and text: left to inherit, several browsers
- * render the list light-on-light under the dark theme.
+ * The counts are why it can't be a native `<select>`: an `<option>` takes text
+ * and nothing else, so "Cancelled" and its count had to be crammed into one
+ * string, and the OS popup ignored the theme around it. Our own listbox sets
+ * the count as its own column and the whole thing in the site's colours.
  */
-const selectClass =
-  'w-full appearance-none rounded-md border border-line bg-panel/30 py-1.5 pl-2.5 pr-7 text-[12px] font-medium text-cream outline-none transition-colors hover:border-brass/40 focus:border-brass focus:bg-panel/60 focus:ring-2 focus:ring-brass/25 [&>option]:bg-panel [&>option]:text-cream'
+const triggerClass =
+  'rounded-md border border-line bg-panel/30 py-1.5 pl-2.5 pr-2 text-[12px] font-medium text-cream outline-none transition-colors hover:border-brass/40 focus-visible:border-brass focus-visible:ring-2 focus-visible:ring-brass/25'
 
-/** Options come through lowercase (`'all'`, `'booked'`); `capitalize` doesn't
- *  reach into a native option list, so do it in the string. */
+/** Options come through lowercase (`'all'`, `'booked'`). */
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export function FilterGroup<T extends string>({
@@ -52,33 +51,24 @@ export function FilterGroup<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <label className="flex min-w-[172px] max-w-[280px] flex-1 items-center gap-2">
+    <div className="flex min-w-[172px] max-w-[280px] flex-1 items-center gap-2">
       <span className="shrink-0 text-[11px] font-medium text-muted/70">{label}</span>
-      {/* The caret is absolute inside this wrapper, so the width has to be set
-          here — `selectClass` carries `w-full` and would win over any width
-          appended to it. */}
-      <div className="relative min-w-0 flex-1">
-        <select
+      <div className="min-w-0 flex-1">
+        <Select
           value={value}
-          onChange={(e) => onChange(e.target.value as T)}
-          className={selectClass}
-        >
-          {options.map((o) => (
-            // Zero counts stay listed — "Cancelled (0)" is information, and
-            // dropping the option would hide a status that exists.
-            <option key={o.value} value={o.value}>
-              {titleCase(o.label)} ({o.count})
-            </option>
-          ))}
-        </select>
-        <CaretDown
-          size={12}
-          weight="bold"
-          aria-hidden
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted"
+          onChange={onChange}
+          ariaLabel={label}
+          className={triggerClass}
+          // Zero counts stay listed — "Cancelled 0" is information, and dropping
+          // the option would hide a status that exists.
+          options={options.map((o) => ({
+            value: o.value,
+            label: titleCase(o.label),
+            hint: String(o.count),
+          }))}
         />
       </div>
-    </label>
+    </div>
   )
 }
 

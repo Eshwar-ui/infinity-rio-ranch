@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { CaretDown } from '@phosphor-icons/react'
 
 import { cn } from '@/lib/utils'
 import { venueImg } from '@/data/site'
@@ -13,6 +12,7 @@ import { inquirySchema, type InquiryValues } from '@/lib/inquiry-schema'
 import { Reveal } from '@/components/effects/reveal'
 import { PageHero } from '@/components/layout/page-hero'
 import { SectionHeading } from '@/components/ui/section-heading'
+import { Select } from '@/components/ui/select'
 import {
   Accordion,
   AccordionContent,
@@ -42,6 +42,8 @@ export const ContactPage = () => {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitSuccessful, isSubmitting },
   } = useForm<InquiryValues>({
     resolver: zodResolver(inquirySchema),
@@ -138,29 +140,23 @@ export const ContactPage = () => {
                 <label className="mt-[18px] flex flex-col gap-2.5">
                   <span className={labelText}>Event Type</span>
                   {/*
-                   * A native select paints its own dropdown arrow in the OS
-                   * colours and sizes the control to its own metrics, so it
-                   * ignored the theme and sat taller than the inputs beside it.
-                   * `appearance-none` drops both; the caret below replaces the
-                   * arrow and follows the accent like every other icon here.
-                   * `pointer-events-none` keeps clicks falling through to the
-                   * select, so the native menu still opens when you hit it.
+                   * Our own listbox, not a native select: the OS popup paints
+                   * itself in system colours, which on this page meant a stark
+                   * white menu dropping out of a dark, serif form. Registered
+                   * by hand because it isn't an input — the value is written
+                   * back through `setValue` and validated on the same schema.
+                   *
+                   * The trigger keeps the site's square-cornered field styling;
+                   * only the caret is ours, and it follows the accent like every
+                   * other icon here.
                    */}
-                  <div className="relative">
-                    <select className={cn(fieldClass, 'appearance-none pr-10')} {...register('type')}>
-                      {eventTypes.map((t) => (
-                        <option key={t} className="bg-ink text-cream">
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    <CaretDown
-                      size={16}
-                      weight="light"
-                      aria-hidden
-                      className="pointer-events-none absolute right-[15px] top-1/2 -translate-y-1/2 text-brass"
-                    />
-                  </div>
+                  <Select
+                    value={watch('type')}
+                    onChange={(type) => setValue('type', type, { shouldValidate: true })}
+                    ariaLabel="Event type"
+                    className={cn(fieldClass, 'py-[13px] [&>svg]:text-brass')}
+                    options={eventTypes.map((t) => ({ value: t, label: t }))}
+                  />
                 </label>
 
                 <label className="mt-[18px] flex flex-col gap-2.5">

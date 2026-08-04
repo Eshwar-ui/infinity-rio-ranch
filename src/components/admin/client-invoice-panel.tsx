@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
-import { computeTotals, money, type InvoiceItem } from '@/lib/invoice'
+import { computeTotals, money, sentMessage, type InvoiceItem, type SendResult } from '@/lib/invoice'
 import { btnPrimary, btnQuiet, chip, field, label, pill, sectionTitle } from '@/lib/admin-ui'
 
 /** The slice of an invoice this panel lists and totals up. */
@@ -57,17 +57,34 @@ const totalsOf = (inv: ClientInvoice) =>
     Number(inv.advance_paid) || 0,
   )
 
+/**
+ * The three stages a booking is billed in.
+ *
+ * The venue's flow, not an invented taxonomy: confirm the booking and invoice
+ * the advance (this one carries the agreement to sign), then after the event
+ * invoice any extras, then the final payment.
+ */
+type Purpose = 'advance' | 'extras' | 'final'
+
+const PURPOSES: { value: Purpose; label: string }[] = [
+  { value: 'advance', label: 'Advance' },
+  { value: 'extras', label: 'Extra charges' },
+  { value: 'final', label: 'Final payment' },
+]
+
 type Draft = {
   issue_date: string
   due_date: string
   tax_rate: string
   advance_paid: string
   notes: string
+  purpose: Purpose
   items: InvoiceItem[]
 }
 
 /** The two documents a client receives, and the two tabs of the viewer. */
 type PreviewTab = 'invoice' | 'agreement'
+
 
 /** The client-facing invoice URL, absolute so it can be copied and pasted. */
 const publicInvoiceUrl = (token: string) => new URL(`/invoice/${token}`, location.origin).href
@@ -123,32 +140,77 @@ export const ClientInvoicePanel = ({
     [],
   )
 
-  // What the advance has already been credited against. Prefilling a second
-  // invoice with the full deposit would credit the same money twice.
+  const agreed = Math.max(0, Number(booking.amount) || 0)
+  // `deposit`, not `advance`: each invoice row below destructures an `advance`
+  // of its own, meaning the part of the deposit that one invoice credits.
+  const deposit = Math.max(0, Number(booking.advance_amount) || 0)
+  // What the deposit has already been credited against. Crediting it a second
+  // time would discount the same money twice.
   const credited = invoices.reduce((s, i) => s + (Number(i.advance_paid) || 0), 0)
-  const uncredited = Math.max(0, (Number(booking.advance_amount) || 0) - credited)
+  const uncredited = Math.max(0, deposit - credited)
+  const isFollowUp = invoices.length > 0
+  const base = [booking.package, booking.event_type].find((v) => (v ?? '').trim()) ?? ''
+
+  /**
+   * What a new invoice starts out billing, per stage of the booking.
+   *
+   *  - **advance** — sent with the booking confirmation and the agreement. Bills
+   *    the deposit that holds the date, and credits nothing: this invoice *is*
+   *    the request for that money.
+   *  - **extras** — raised after the event for anything beyond the package.
+   *    Deliberately empty; only the owner knows what happened on the night.
+   *  - **final** — bills the agreed amount and credits the advance that hasn't
+   *    been credited anywhere else, so the document reconciles the whole booking
+   *    ("$500 total, less $300 advance, $200 due") and the two invoices add up
+   *    to the booking rather than to twice it.
+   *
+   * All three are defaults. An invoice for something else is a matter of typing
+   * over the line.
+   */
+  const stageDefaults = (purpose: Purpose): Pick<Draft, 'items' | 'advance_paid'> => {
+    if (purpose === 'advance')
+      return {
+        advance_paid: '0',
+        items: [
+          {
+            description: base ? `Advance payment: ${base}` : 'Advance payment to secure the date',
+            qty: 1,
+            unit_price: deposit,
+          },
+        ],
+      }
+    if (purpose === 'extras')
+      return { advance_paid: '0', items: [{ description: '', qty: 1, unit_price: 0 }] }
+    return {
+      advance_paid: String(uncredited),
+      items: [
+        {
+          description: base || 'Event package',
+          qty: 1,
+          unit_price: Math.max(0, agreed - credited),
+        },
+      ],
+    }
+  }
+
+  /** Where the booking is up to, as far as the rows can tell. */
+  const defaultPurpose: Purpose = !isFollowUp ? 'advance' : agreed - credited - uncredited > 0 ? 'final' : 'extras'
 
   const startDraft = () => {
-    const description =
-      [booking.package, booking.event_type].find((v) => (v ?? '').trim()) ?? ''
     setDraft({
       issue_date: today(),
       due_date: '',
       tax_rate: '0',
-      advance_paid: String(uncredited),
       notes: booking.event_date ? `Event date: ${fmtDate(booking.event_date)}` : '',
-      // The first invoice bills the booking; later ones start empty rather than
-      // silently re-billing the whole amount.
-      items: [
-        {
-          description,
-          qty: 1,
-          unit_price: invoices.length === 0 ? Number(booking.amount) || 0 : 0,
-        },
-      ],
+      purpose: defaultPurpose,
+      ...stageDefaults(defaultPurpose),
     })
     setOpen(true)
   }
+
+  /** Switching stage re-prefills the money; the dates and notes stay put. */
+  const setPurpose = (purpose: Purpose) =>
+    setDraft((d) => (d ? { ...d, purpose, ...stageDefaults(purpose) } : d))
 
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d))
   const setItem = (i: number, patch: Partial<InvoiceItem>) =>
@@ -271,15 +333,10 @@ export const ClientInvoicePanel = ({
     }
     await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoice.id)
     onStatusChange(invoice.id, 'sent')
-    // Say when the agreement button wasn't included — a missing template would
-    // otherwise look exactly like a successful send. `agreement` means the
-    // document could be built, which is what decides whether the email shows
-    // the button at all; it is no longer an attachment.
-    toast.success(
-      data?.agreement
-        ? 'Emailed — the client can download the invoice and the agreement.'
-        : 'Invoice emailed — no agreement link (no template uploaded).',
-    )
+    // Say when the agreement button wasn't included, and why. Left as one
+    // message, "no agreement" reads as a fault every time — including on a
+    // follow-up, where leaving it out is the whole point.
+    toast.success(sentMessage(data as SendResult))
   }
 
   /**
@@ -362,9 +419,10 @@ export const ClientInvoicePanel = ({
               ? 'Nothing raised yet for this booking.'
               : `${invoices.length} raised${uncredited > 0 ? ` · ${money(uncredited)} of the advance still uncredited` : ''}`}
           </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-muted/80">
-            Emailing an invoice gives the client a download button for it and one for
-            this client&apos;s rental agreement, filled in and ready to print and sign.
+          <p className="mt-1 max-w-[68ch] text-[12px] leading-relaxed text-muted/80">
+            {isFollowUp
+              ? 'Emailing this one gives the client a download button for the invoice. The agreement went with the first invoice for this booking and is not sent again.'
+              : 'The first email confirms the booking: a download button for the invoice, and one for this client’s rental agreement, filled in and ready to print, sign and return.'}
           </p>
         </div>
         {!open && (
@@ -576,6 +634,59 @@ export const ClientInvoicePanel = ({
 
       {open && draft && preview && (
         <div className="mt-5 rounded-lg border border-brass/30 bg-panel/40 p-5">
+          {/* Which stage this invoice is, and what that prefills. An amount
+              that appears by itself has to explain itself: this is the
+              booking's money, not a guess. */}
+          <div className="mb-5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className={`${label} mb-0`}>This invoice is for</span>
+              <div className="flex flex-wrap items-center gap-1">
+                {PURPOSES.map((p) => (
+                  <button
+                    key={p.value}
+                    onClick={() => setPurpose(p.value)}
+                    aria-pressed={draft.purpose === p.value}
+                    className={chip(draft.purpose === p.value)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="mt-2 max-w-[68ch] text-[13px] leading-relaxed text-muted">
+              {draft.purpose === 'advance' &&
+                (deposit > 0 ? (
+                  <>
+                    The <span className="font-medium text-cream">{money(deposit)}</span> deposit
+                    that holds the date, nothing credited against it. This one confirms the booking
+                    and carries the agreement to sign.
+                  </>
+                ) : (
+                  <>
+                    No advance is recorded on this booking, so there is no amount to prefill. Type
+                    the deposit here, or set it on the booking first.
+                  </>
+                ))}
+              {draft.purpose === 'extras' && (
+                <>Empty on purpose: add what the extras were, and what each one cost.</>
+              )}
+              {draft.purpose === 'final' &&
+                (agreed > 0 ? (
+                  <>
+                    The {money(agreed)} agreed
+                    {uncredited > 0 && `, less the ${money(uncredited)} advance already paid`}:{' '}
+                    <span className="font-medium text-cream">
+                      {money(Math.max(0, agreed - credited - uncredited))}
+                    </span>{' '}
+                    due.
+                    {credited > 0 && ` ${money(credited)} of the advance was credited earlier.`}
+                  </>
+                ) : (
+                  <>No agreed amount on this booking, so there is nothing to prefill.</>
+                ))}
+            </p>
+          </div>
+
           {/* Four across once there's room for it. Two below that, never one:
               a date input squeezed into a third of a narrow column clips its
               own picker. */}

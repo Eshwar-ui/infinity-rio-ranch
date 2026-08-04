@@ -39,3 +39,32 @@ export const computeTotals = (
   const advance = Math.max(0, Number(advancePaid) || 0)
   return { subtotal, tax, total, advance, balance: Math.max(0, total - advance) }
 }
+
+/** What `send-invoice` answers after a successful send. */
+export type SendResult = {
+  agreement?: boolean
+  reason?: 'no-client' | 'follow-up' | 'no-template' | null
+}
+
+/**
+ * What the owner is told once an invoice email has gone out.
+ *
+ * Lives here, with the money helpers, because both send paths use it — the
+ * client panel and the full editor — and neither should own the wording.
+ *
+ * The agreement being absent is either the design (it went with the booking's
+ * first invoice, or there is no booking behind this invoice) or a job left
+ * undone (no template uploaded). One sentence covering both taught the owner to
+ * ignore the sentence.
+ */
+export const sentMessage = (result?: SendResult) => {
+  if (result?.agreement) return 'Emailed. The client can download the invoice and the agreement.'
+  switch (result?.reason) {
+    case 'follow-up':
+      return 'Invoice emailed. No agreement: it went with the first invoice for this booking.'
+    case 'no-template':
+      return 'Invoice emailed — no agreement link, because no template is uploaded yet.'
+    default:
+      return 'Invoice emailed to the client.'
+  }
+}
