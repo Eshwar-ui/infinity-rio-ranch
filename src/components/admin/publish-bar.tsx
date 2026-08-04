@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnQuiet, hint, label } from '@/lib/admin-ui'
 
 const SETTING_KEY = 'vercel_deploy_hook'
 
@@ -79,22 +80,20 @@ export const PublishBar = () => {
   if (hook === null) return null
 
   return (
-    <div className="border-t border-line px-6 py-4">
+    <div className="border-t border-line px-5 py-4">
       {editing || !hook ? (
         <div>
-          <label className="mb-1.5 block text-[9px] uppercase tracking-[0.2em] text-muted">
-            Vercel deploy hook
-          </label>
+          <label className={label}>Vercel deploy hook</label>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="https://api.vercel.com/v1/integrations/deploy/…"
-            className="w-full rounded-[1px] border border-line bg-transparent px-2.5 py-2 text-[11px] text-cream outline-none focus:border-brass"
+            className="w-full rounded-md border border-line bg-panel/30 px-2.5 py-1.5 text-[12px] text-cream outline-none transition-colors placeholder:text-muted/50 focus:border-brass focus:ring-2 focus:ring-brass/25"
           />
           <div className="mt-2 flex items-center gap-3">
             <button
               onClick={saveHook}
-              className="text-[10px] uppercase tracking-[0.18em] text-brass2 hover:text-brass"
+              className="text-[13px] font-semibold text-brass2 transition-colors hover:text-brass"
             >
               Save
             </button>
@@ -104,13 +103,13 @@ export const PublishBar = () => {
                   setDraft(hook)
                   setEditing(false)
                 }}
-                className="text-[10px] uppercase tracking-[0.18em] text-muted hover:text-cream"
+                className={btnQuiet}
               >
                 Cancel
               </button>
             )}
           </div>
-          <p className="mt-2 text-[10px] leading-relaxed text-muted/80">
+          <p className={hint}>
             Vercel → Project Settings → Git → Deploy Hooks. Without it, edits stay
             invisible to search engines until the next deploy.
           </p>
@@ -120,13 +119,13 @@ export const PublishBar = () => {
           <button
             onClick={publish}
             disabled={busy}
-            className="w-full bg-brass px-4 py-2.5 text-[10px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2 disabled:opacity-50"
+            className="w-full rounded-md bg-brass px-4 py-2 text-[13px] font-semibold text-onbrass transition-colors hover:bg-brass2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 disabled:opacity-50"
           >
             {busy ? 'Requesting…' : 'Publish to live site'}
           </button>
           <button
             onClick={() => setEditing(true)}
-            className="mt-2 w-full text-[9px] uppercase tracking-[0.16em] text-muted hover:text-brass2"
+            className="mt-2 w-full text-[12px] font-medium text-muted transition-colors hover:text-brass2"
           >
             Change deploy hook
           </button>

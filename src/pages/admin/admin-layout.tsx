@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAdmin } from '@/hooks/use-admin'
 import { CMS_TABS } from '@/pages/admin/cms-tabs'
 import { PublishBar } from '@/components/admin/publish-bar'
+import { btnGhost, eyebrow } from '@/lib/admin-ui'
 
 /**
  * Sidebar items. Only built routes are links; the rest show the roadmap.
@@ -36,8 +37,8 @@ export const RequireAdmin = () => {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-ink text-muted">
-        <span className="text-sm uppercase tracking-[0.24em]">Loading…</span>
+      <div className="admin-ui grid min-h-screen place-items-center bg-ink text-muted">
+        <span className="text-sm">Loading…</span>
       </div>
     )
   }
@@ -54,16 +55,13 @@ const NotAuthorized = () => {
     navigate('/admin/login', { replace: true })
   }
   return (
-    <div className="grid min-h-screen place-items-center bg-ink px-6 text-center">
+    <div className="admin-ui grid min-h-screen place-items-center bg-ink px-6 text-center">
       <div>
-        <h1 className="font-serif text-2xl text-cream">Not authorized</h1>
-        <p className="mt-3 max-w-sm text-sm text-muted">
+        <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-cream">Not authorized</h1>
+        <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-muted">
           This account isn&apos;t an admin for Infinity Rio Ranch.
         </p>
-        <button
-          onClick={signOut}
-          className="mt-6 text-xs uppercase tracking-[0.22em] text-brass2 hover:text-brass"
-        >
+        <button onClick={signOut} className={`mt-6 ${btnGhost}`}>
           Sign out
         </button>
       </div>
@@ -84,34 +82,32 @@ const AdminShell = () => {
     item.match ? item.match.some(under) : under(item.to)
 
   return (
-    <div className="flex min-h-screen bg-ink text-cream">
+    <div className="admin-ui flex min-h-screen bg-ink text-cream">
       <aside className="flex w-60 flex-col border-r border-line bg-panel">
-        <div className="border-b border-line px-6 py-6">
-          <div className="font-serif text-lg leading-tight text-cream">
+        <div className="border-b border-line px-5 py-5">
+          <div className="text-[15px] font-semibold leading-tight tracking-[-0.01em] text-cream">
             Infinity Rio Ranch
           </div>
-          <div className="mt-1 text-[10px] uppercase tracking-[0.24em] text-muted">
-            Admin
-          </div>
+          <div className="mt-0.5 text-[12px] text-muted">Admin panel</div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
           {NAV.map((item) =>
             'group' in item ? (
-              <div
-                key={item.group}
-                className="px-3 pb-1.5 pt-5 text-[9px] uppercase tracking-[0.24em] text-muted/70"
-              >
+              <div key={item.group} className={`px-3 pb-1 pt-4 ${eyebrow}`}>
                 {item.group}
               </div>
             ) : item.ready ? (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`block rounded-[2px] px-3 py-2.5 text-[13px] tracking-wide transition-colors ${
+                /* The active item gets a brass edge as well as a tint — colour
+                   alone is a weak signal at this size, and fails outright for
+                   anyone who can't separate the brass from the cream. */
+                className={`mt-0.5 flex items-center rounded-md border-l-2 px-3 py-2 text-[14px] transition-colors ${
                   isActive(item)
-                    ? 'bg-[rgba(201,168,106,0.1)] text-brass2'
-                    : 'text-cream/80 hover:text-brass2'
+                    ? 'border-brass bg-brass/10 font-semibold text-brass2'
+                    : 'border-transparent font-medium text-cream/75 hover:bg-panel2/60 hover:text-cream'
                 }`}
               >
                 {item.label}
@@ -120,7 +116,7 @@ const AdminShell = () => {
               <span
                 key={item.to}
                 title="Coming soon"
-                className="block cursor-default px-3 py-2.5 text-[13px] tracking-wide text-muted/50"
+                className="mt-0.5 flex cursor-default items-center rounded-md px-3 py-2 text-[14px] text-muted/50"
               >
                 {item.label}
               </span>
@@ -132,7 +128,7 @@ const AdminShell = () => {
 
         <button
           onClick={signOut}
-          className="border-t border-line px-6 py-4 text-left text-[11px] uppercase tracking-[0.22em] text-muted hover:text-brass2"
+          className="border-t border-line px-5 py-3.5 text-left text-[13px] font-medium text-muted transition-colors hover:text-cream"
         >
           Sign out
         </button>

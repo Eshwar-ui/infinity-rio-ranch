@@ -20,7 +20,7 @@ export const CmsLayout = () => (
           key={tab.to}
           to={tab.to}
           className={({ isActive }) =>
-            `shrink-0 whitespace-nowrap rounded-[2px] px-3 py-2 text-[11px] uppercase tracking-[0.14em] transition-colors ${
+            `shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
               isActive ? 'bg-brass/15 text-brass2' : 'text-muted hover:text-cream'
             }`
           }

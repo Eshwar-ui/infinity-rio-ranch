@@ -1,5 +1,6 @@
 import { useContact } from '@/hooks/use-site-content'
 import { computeTotals, money, type InvoiceData } from '@/lib/invoice'
+import { SmartImage } from '@/components/ui/smart-image'
 
 const statusStyle: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
@@ -20,7 +21,23 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   )
 
   return (
-    <div className="invoice-print mx-auto max-w-[820px] bg-white p-[clamp(24px,5vw,56px)] font-sans text-[#2a2320] shadow-sm print:shadow-none">
+    <div className="invoice-print relative isolate mx-auto max-w-[820px] overflow-hidden bg-white p-[clamp(24px,5vw,56px)] font-sans text-[#2a2320] shadow-sm print:shadow-none">
+      {/* Decorative only. `isolate` + `-z-10` paints it above the white page but
+          under every line of the invoice, so nothing here can cover the numbers.
+          Eager, because a lazy image may not have decoded when window.print() fires. */}
+      <div
+        aria-hidden="true"
+        className="invoice-watermark pointer-events-none absolute inset-0 -z-10 flex select-none items-center justify-center"
+      >
+        <SmartImage
+          src="/assets/logo-cutout-dark.png"
+          alt=""
+          sizes="420px"
+          priority
+          className="w-[62%] max-w-[420px] opacity-[0.055]"
+        />
+      </div>
+
       <div className="flex flex-wrap items-start justify-between gap-6 border-b border-[#e6ddcf] pb-8">
         <div>
           <div className="font-serif text-2xl text-[#1a1512]">Infinity at Rio Ranch</div>

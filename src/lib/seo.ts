@@ -29,8 +29,11 @@ import {
  */
 import {
   contactSnapshot as contact,
+  postBySlug,
   seededList,
+  seededPosts,
   seededStats as stats,
+  type Post,
 } from '@/lib/content-snapshot'
 
 const included = seededList('included')
@@ -66,9 +69,32 @@ export const abs = (path: string) =>
 export const BRAND = 'Infinity at Rio Ranch'
 export const LEGAL_NAME = 'Infinity Weddings & Events'
 
-/** Every indexable public route. Drives prerendering and the sitemap. */
-export const PUBLIC_ROUTES = ['/', '/about', '/gallery', '/contact'] as const
-export type PublicRoute = (typeof PUBLIC_ROUTES)[number]
+/** The blog index. Post URLs hang off it as `/blog/<slug>`. */
+export const BLOG_ROUTE = '/blog'
+
+export const postRoute = (slug: string) => `${BLOG_ROUTE}/${slug}`
+
+/** True for `/blog/<slug>`, false for `/blog` itself. */
+const isPostRoute = (pathname: string) =>
+  pathname.startsWith(`${BLOG_ROUTE}/`) && pathname.length > BLOG_ROUTE.length + 1
+
+const postSlug = (pathname: string) => pathname.slice(BLOG_ROUTE.length + 1)
+
+/** The routes that exist regardless of what the CMS holds. */
+const STATIC_ROUTES = ['/', '/about', '/gallery', '/contact', BLOG_ROUTE] as const
+
+/**
+ * Every indexable public route. Drives prerendering and the sitemap.
+ *
+ * No longer a fixed tuple: one entry per published post is appended from the
+ * build-time snapshot, which is what makes `dist/blog/<slug>/index.html` exist
+ * at all. `scripts/prerender.mjs` iterates this, so a post that reaches the
+ * snapshot gets real HTML, a sitemap entry and an llms.txt line automatically.
+ */
+export const PUBLIC_ROUTES: string[] = [
+  ...STATIC_ROUTES,
+  ...seededPosts.map((post) => postRoute(post.slug)),
+]
 
 /**
  * Rendered to `dist/404.html`, which Vercel serves — with a real 404 status —
@@ -192,7 +218,37 @@ const ROUTE_META: Record<string, RouteMeta> = {
     description:
       'Check your date at Infinity at Rio Ranch, 326 Rio Pk Dr, Liberty Hill, TX 78642. Send an inquiry or call (512) 630-2236 — we reply within one business day.',
   },
+  [BLOG_ROUTE]: {
+    title: 'Wedding & Event Venue Guides | Infinity at Rio Ranch',
+    crumb: 'Blog',
+    description:
+      'Planning guides for weddings and events in the Texas Hill Country — choosing a venue, indoor and outdoor options, capacity, budgets and what to ask before you book.',
+  },
 }
+
+/**
+ * Route metadata for one post, from the fields the owner edits.
+ *
+ * Every value falls back rather than interpolating a possibly-empty one: an
+ * emptied SEO description must yield the excerpt, and an emptied excerpt must
+ * yield the venue description — never an empty `<meta>` or the string
+ * "undefined". The prerenderer fails the build on a throw, so this is the
+ * difference between a blank field and a dead deploy.
+ */
+const postMeta = (post: Post): RouteMeta => ({
+  title: post.seoTitle || `${post.title} | ${BRAND}`,
+  description: post.seoDescription || post.excerpt || VENUE_DESCRIPTION,
+  crumb: post.title,
+  /*
+   * Covers are CMS uploads, so their intrinsic size is unknown. `image.width` /
+   * `height` are still required by the type, and `buildHead` drops the OG
+   * dimension tags when they are zero — a wrong dimension makes scrapers
+   * mis-crop, which is worse than making them measure the file themselves.
+   */
+  image: post.coverImage
+    ? { url: post.coverImage, width: 0, height: 0, alt: post.coverAlt || post.title }
+    : undefined,
+})
 
 /** Routes that must never be indexed (token/auth surfaces). */
 const isPrivateRoute = (pathname: string) =>
@@ -303,29 +359,107 @@ const logoNode = () => ({
   caption: BRAND,
 })
 
+/**
+ * Breadcrumb trail for a route, as `{name, url}` pairs after Home.
+ *
+ * Posts are two levels deep (Blog › Post title), which is why this takes a
+ * trail rather than the single `crumb` it started with. The visible breadcrumb
+ * on the page must match this exactly — Google treats a BreadcrumbList that
+ * disagrees with the rendered trail as a mismatch and drops the enhancement.
+ */
+export const breadcrumbTrail = (pathname: string, crumb?: string) => {
+  if (isPostRoute(pathname)) {
+    const post = postBySlug(postSlug(pathname))
+    return [
+      { name: 'Blog', url: abs(BLOG_ROUTE) },
+      // Falls back to the crumb `buildHead` computed, so an unknown slug still
+      // produces a well-formed trail instead of `undefined`.
+      { name: post?.title || crumb || 'Post', url: abs(pathname) },
+    ]
+  }
+  return crumb ? [{ name: crumb, url: abs(pathname) }] : []
+}
+
 const breadcrumbNode = (pathname: string, crumb?: string) => ({
   '@type': 'BreadcrumbList',
   '@id': `${abs(pathname)}#breadcrumb`,
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE_URL}/` },
-    ...(crumb
-      ? [{ '@type': 'ListItem', position: 2, name: crumb, item: abs(pathname) }]
-      : []),
+    ...breadcrumbTrail(pathname, crumb).map((step, i) => ({
+      '@type': 'ListItem',
+      position: i + 2,
+      name: step.name,
+      item: step.url,
+    })),
   ],
 })
 
 /** Element key for the FAQ block, shared by the prerenderer and the runtime hook. */
 export const FAQ_JSONLD_ID = 'faq'
 
-/** FAQPage node — exported so the contact page can refresh it from live CMS data. */
-export const faqPageNode = (list: { q: string; a: string }[] = [...faqs]) => ({
+/**
+ * FAQPage node — exported so the contact page and each post can refresh it from
+ * live CMS data.
+ *
+ * `pathname` exists because posts carry their own FAQ block; the `@id` has to
+ * name the page the questions are actually on, or two URLs claim the same node.
+ */
+export const faqPageNode = (
+  list: { q: string; a: string }[] = [...faqs],
+  pathname = '/contact',
+) => ({
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  '@id': `${abs('/contact')}#faq`,
+  '@id': `${abs(pathname)}#faq`,
   mainEntity: list.map((f) => ({
     '@type': 'Question',
     name: f.q,
     acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+})
+
+/**
+ * The article node for a post.
+ *
+ * `dateModified` comes from the row's `updated_at` and `datePublished` from
+ * `published_at`, which the database stamps once on first publish (0008) — so
+ * fixing a typo doesn't re-date the article. Both are omitted rather than
+ * guessed when absent: a fabricated publication date is worse than none.
+ */
+const blogPostingNode = (post: Post, url: string) => ({
+  '@type': 'BlogPosting',
+  '@id': `${url}#article`,
+  headline: post.seoTitle || post.title,
+  name: post.title,
+  description: post.seoDescription || post.excerpt || VENUE_DESCRIPTION,
+  url,
+  mainEntityOfPage: { '@id': `${url}#webpage` },
+  inLanguage: 'en-US',
+  isPartOf: { '@id': `${abs(BLOG_ROUTE)}#blog` },
+  ...(post.coverImage ? { image: abs(post.coverImage) } : {}),
+  ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
+  ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
+  author: post.author
+    ? { '@type': 'Person', name: post.author }
+    : { '@id': VENUE_ID },
+  publisher: { '@id': VENUE_ID },
+  about: { '@id': VENUE_ID },
+})
+
+const blogNode = () => ({
+  '@type': 'Blog',
+  '@id': `${abs(BLOG_ROUTE)}#blog`,
+  url: abs(BLOG_ROUTE),
+  name: `${BRAND} — venue and planning guides`,
+  description: ROUTE_META[BLOG_ROUTE].description,
+  inLanguage: 'en-US',
+  publisher: { '@id': VENUE_ID },
+  blogPost: seededPosts.map((post) => ({
+    '@type': 'BlogPosting',
+    '@id': `${abs(postRoute(post.slug))}#article`,
+    headline: post.seoTitle || post.title,
+    url: abs(postRoute(post.slug)),
+    ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
   })),
 })
 
@@ -336,7 +470,9 @@ const pageTypeFor = (pathname: string) =>
       ? 'ContactPage'
       : pathname === '/gallery'
         ? 'CollectionPage'
-        : 'WebPage'
+        : pathname === BLOG_ROUTE
+          ? 'CollectionPage'
+          : 'WebPage'
 
 const galleryNodes = () => [
   {
@@ -389,13 +525,20 @@ const jsonLdFor = (pathname: string, meta: RouteMeta) => {
   ]
 
   if (pathname === '/gallery') graph.push(...galleryNodes())
+  if (pathname === BLOG_ROUTE) graph.push(blogNode())
+
+  const post = isPostRoute(pathname) ? postBySlug(postSlug(pathname)) : undefined
+  if (post) graph.push(blogPostingNode(post, url))
 
   const docs: JsonLdDoc[] = [
     { doc: { '@context': 'https://schema.org', '@graph': graph } },
   ]
-  // Keyed so the contact page can rewrite it from live CMS answers without
-  // ending up with two FAQPage blocks on the same URL.
+  // Keyed so the contact page and post pages can rewrite it from live CMS
+  // answers without ending up with two FAQPage blocks on the same URL.
   if (pathname === '/contact') docs.push({ id: FAQ_JSONLD_ID, doc: faqPageNode() })
+  if (post && post.faqs.length > 0) {
+    docs.push({ id: FAQ_JSONLD_ID, doc: faqPageNode(post.faqs, pathname) })
+  }
   return docs
 }
 
@@ -453,11 +596,40 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
     }
   }
 
-  const meta = ROUTE_META[pathname] ?? ROUTE_META['/']
+  /*
+   * A post's metadata is built from its row rather than looked up. An unknown
+   * slug falls through to the blog index's metadata, which matters because the
+   * client renders the 404 page at that URL — but the URL itself is only ever
+   * reachable client-side, since an unbuilt slug has no file to serve.
+   */
+  const post = isPostRoute(pathname) ? postBySlug(postSlug(pathname)) : undefined
+  const meta = post
+    ? postMeta(post)
+    : (ROUTE_META[pathname] ?? ROUTE_META[isPostRoute(pathname) ? BLOG_ROUTE : '/'])
+
   const image = meta.image ?? OG_IMAGE
   const canonical = pathname === '/' ? `${SITE_URL}/` : abs(pathname)
   const robots =
     'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+
+  // CMS uploads have no known intrinsic size — see postMeta.
+  const imageDimensions: Record<string, string> =
+    image.width > 0 && image.height > 0
+      ? {
+          'og:image:width': String(image.width),
+          'og:image:height': String(image.height),
+        }
+      : {}
+
+  // Article timestamps, only where they exist. Never invented.
+  const articleMeta: Record<string, string> = post
+    ? {
+        'og:type': 'article',
+        ...(post.publishedAt ? { 'article:published_time': post.publishedAt } : {}),
+        ...(post.updatedAt ? { 'article:modified_time': post.updatedAt } : {}),
+        ...(post.author ? { 'article:author': post.author } : {}),
+      }
+    : {}
 
   return {
     title: meta.title,
@@ -478,8 +650,12 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
       'twitter:image:alt': image.alt,
     },
     metaProperty: {
-      // 'website' on every page: none of these are timestamped articles, and a
-      // wrong og:type makes scrapers hunt for publish dates that don't exist.
+      /*
+       * 'website' everywhere except posts: the marketing pages are not
+       * timestamped articles, and a wrong og:type makes scrapers hunt for
+       * publish dates that don't exist. Posts genuinely are articles, so
+       * `articleMeta` overrides this below.
+       */
       'og:type': 'website',
       'og:site_name': BRAND,
       'og:locale': 'en_US',
@@ -487,8 +663,7 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
       'og:description': meta.description,
       'og:url': canonical,
       'og:image': abs(image.url),
-      'og:image:width': String(image.width),
-      'og:image:height': String(image.height),
+      ...imageDimensions,
       'og:image:alt': image.alt,
       'business:contact_data:street_address': ADDRESS.street,
       'business:contact_data:locality': ADDRESS.city,
@@ -496,6 +671,7 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
       'business:contact_data:postal_code': ADDRESS.postalCode,
       'business:contact_data:country_name': 'USA',
       'business:contact_data:phone_number': primaryPhone,
+      ...articleMeta,
     },
     jsonLd: jsonLdFor(pathname, meta),
   }
@@ -551,6 +727,15 @@ export type SitemapEntry = {
   route: string
   loc: string
   images: { loc: string; title: string }[]
+  /**
+   * ISO timestamp, or null to let the prerenderer fall back to git history.
+   *
+   * Only posts set this. They have no `src/pages/<route>.tsx`, so `git log`
+   * legitimately knows nothing about them — but the database does, via the
+   * `updated_at` its trigger maintains. Every other route stays on git, where
+   * the last commit touching the page really is when the page last changed.
+   */
+  lastmod: string | null
 }
 
 /**
@@ -564,6 +749,16 @@ export type SitemapEntry = {
  */
 const routeImages = (route: string): { src: string; title: string }[] => {
   const tag = (label: string) => `${label} — ${BRAND}, ${ADDRESS.city}, ${ADDRESS.region}`
+
+  if (isPostRoute(route)) {
+    const post = postBySlug(postSlug(route))
+    // The cover renders as a real <img> on the post page, so it is declarable.
+    // Body images aren't listed: they come from markdown the owner writes, and
+    // we can't verify each one resolves.
+    return post?.coverImage
+      ? [{ src: post.coverImage, title: post.coverAlt || tag(post.title) }]
+      : []
+  }
 
   switch (route) {
     case '/':
@@ -594,15 +789,19 @@ const routeImages = (route: string): { src: string; title: string }[] => {
  * self-assigned — every site claims 1.0 for its homepage, so it carries no
  * information. Omitting them is not a downgrade; it is removing noise.
  *
- * `lastmod` is not set here either. It is filled in by scripts/prerender.mjs
- * from each route's real git history, because a `lastmod` of "today" on every
- * URL at every deploy is a lie that gets the signal ignored site-wide.
+ * `lastmod` is set only for posts, from the `updated_at` the database maintains.
+ * Every other route is left null and filled in by scripts/prerender.mjs from
+ * real git history, because a `lastmod` of "today" on every URL at every deploy
+ * is a lie that gets the signal ignored site-wide.
  */
 export const sitemapEntries = (): SitemapEntry[] =>
   PUBLIC_ROUTES.map((route) => ({
     route,
     loc: route === '/' ? `${SITE_URL}/` : abs(route),
     images: routeImages(route).map((img) => ({ loc: abs(img.src), title: img.title })),
+    lastmod: isPostRoute(route)
+      ? (postBySlug(postSlug(route))?.updatedAt ?? null)
+      : null,
   }))
 
 /**
@@ -721,12 +920,33 @@ export const llmsTxt = () =>
     '',
     '## Pages',
     '',
-    ...PUBLIC_ROUTES.map((route) => {
+    /*
+     * Static routes only — ROUTE_META has no entry for a post, and posts get
+     * their own section below with dates. Indexing ROUTE_META by every entry in
+     * PUBLIC_ROUTES stopped being safe the moment that array grew post URLs.
+     */
+    ...STATIC_ROUTES.map((route) => {
       const meta = ROUTE_META[route]
       const loc = route === '/' ? `${SITE_URL}/` : abs(route)
       return `- [${meta.title.split('|')[0].trim()}](${loc}): ${meta.description}`
     }),
     '',
+    // Omitted entirely rather than left as an empty heading when nothing is
+    // published — a bare "## Articles" reads as a broken page to a model.
+    ...(seededPosts.length > 0
+      ? [
+          '## Articles',
+          '',
+          ...seededPosts.map((post) => {
+            const date = post.publishedAt ? ` (${post.publishedAt.slice(0, 10)})` : ''
+            const summary = post.seoDescription || post.excerpt
+            return `- [${post.title}](${abs(postRoute(post.slug))})${date}${
+              summary ? `: ${summary}` : ''
+            }`
+          }),
+          '',
+        ]
+      : []),
     '## Key facts',
     '',
     `- Venue type: wedding and event venue (${eventTypes.join(', ')})`,
@@ -786,6 +1006,30 @@ export const llmsFullTxt = () =>
     '## Frequently asked questions',
     '',
     ...faqs.flatMap((f) => [`### ${f.q}`, '', f.a, '']),
+    /*
+     * Posts contribute their FAQ pairs, not their bodies. This file is a facts
+     * digest — pasting whole articles in would bury the venue details it exists
+     * to make extractable, and the articles are already in the prerendered HTML.
+     */
+    ...(seededPosts.some((p) => p.faqs.length > 0)
+      ? [
+          '## Article questions',
+          '',
+          ...seededPosts.flatMap((post) =>
+            post.faqs.flatMap((f) => [`### ${f.q}`, '', f.a, '']),
+          ),
+        ]
+      : []),
+    '## Articles',
+    '',
+    ...(seededPosts.length > 0
+      ? seededPosts.map(
+          (post) =>
+            `- ${post.title} (${abs(postRoute(post.slug))})` +
+            (post.excerpt ? `: ${post.excerpt}` : ''),
+        )
+      : ['None published yet.']),
+    '',
     '## Booking',
     '',
     `Send an inquiry at ${abs('/contact')} or call ${primaryPhone}. ` +

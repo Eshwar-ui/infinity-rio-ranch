@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { computeTotals, money, type InvoiceItem } from '@/lib/invoice'
+import { btnPrimary, btnQuiet, field, label, pill, sectionTitle } from '@/lib/admin-ui'
 
 /** The slice of an invoice this panel lists and totals up. */
 export type ClientInvoice = {
@@ -30,9 +31,6 @@ export type InvoiceBooking = {
   advance_amount: number | null
 }
 
-const field =
-  'w-full rounded-[1px] border border-line bg-transparent px-[12px] py-2 text-sm text-cream outline-none transition-colors focus:border-brass'
-const label = 'mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted'
 
 const statusClass: Record<string, string> = {
   draft: 'border-line text-muted',
@@ -245,24 +243,26 @@ export const ClientInvoicePanel = ({
   }
 
   return (
-    <section className="mt-10 border-t border-line pt-7">
-      <div className="flex items-end justify-between gap-4">
+    /* A card, not a section divider: this now sits in its own column beside the
+       booking, where a top rule would read as a break in the wrong place. */
+    <section className="rounded-lg border border-line bg-panel/20 p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="font-serif text-lg text-cream">Invoices</h3>
-          <p className="mt-0.5 text-[12px] text-muted">
+          <h3 className={sectionTitle}>Invoices</h3>
+          <p className="mt-0.5 text-[13px] text-muted">
             {invoices.length === 0
               ? 'Nothing raised yet for this booking.'
               : `${invoices.length} raised${uncredited > 0 ? ` · ${money(uncredited)} of the advance still uncredited` : ''}`}
           </p>
-          <p className="mt-0.5 text-[11px] text-muted/70">
-            Emailing an invoice attaches this client's rental agreement, filled in and
+          <p className="mt-1 text-[12px] leading-relaxed text-muted/80">
+            Emailing an invoice attaches this client&apos;s rental agreement, filled in and
             ready to print and sign.
           </p>
         </div>
         {!open && (
           <button
             onClick={startDraft}
-            className="shrink-0 border border-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-brass2 transition-colors hover:bg-brass hover:text-onbrass"
+            className={`shrink-0 ${btnPrimary}`}
           >
             + New invoice
           </button>
@@ -276,34 +276,43 @@ export const ClientInvoicePanel = ({
             return (
               <li
                 key={inv.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-line px-4 py-3"
+                className="rounded-md border border-line bg-panel/20 px-3 py-2.5"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] text-cream">{inv.number ?? 'Draft'}</span>
+                {/* Three stacked rows, not one flex line. In a ~420px column the
+                    number, the pill, the money and four actions all competed for
+                    the same row, and `flex-1 min-w-0` resolved it by wrapping
+                    "INV-2026-0004" one character at a time. */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="whitespace-nowrap text-[14px] font-medium text-cream">
+                      {inv.number ?? 'Draft'}
+                    </span>
                     <span
-                      className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em] ${
-                        statusClass[inv.status] ?? statusClass.draft
-                      }`}
+                      className={`shrink-0 ${pill} ${statusClass[inv.status] ?? statusClass.draft}`}
                     >
                       {inv.status}
                     </span>
                   </div>
-                  <div className="mt-1 text-[11px] text-muted">
-                    Issued {fmtDate(inv.issue_date)}
-                    {inv.due_date && ` · due ${fmtDate(inv.due_date)}`}
-                  </div>
+                  <span className="shrink-0 text-[14px] font-medium text-cream">
+                    {money(total)}
+                  </span>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-[13px] text-cream">{money(total)}</div>
+                <div className="mt-0.5 flex items-baseline justify-between gap-2 text-[12px] text-muted">
+                  <span className="truncate">
+                    Issued {fmtDate(inv.issue_date)}
+                    {inv.due_date && ` · due ${fmtDate(inv.due_date)}`}
+                  </span>
                   {advance > 0 && (
-                    <div className="text-[11px] text-muted">{money(balance)} due</div>
+                    <span className="shrink-0 text-brass2">{money(balance)} due</span>
                   )}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3 text-[10px] uppercase tracking-[0.14em]">
-                  <Link to={`/admin/invoices/${inv.id}`} className="text-muted hover:text-brass2">
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line/70 pt-2 text-[13px] font-medium">
+                  <Link
+                    to={`/admin/invoices/${inv.id}`}
+                    className="text-muted transition-colors hover:text-brass2"
+                  >
                     Open
                   </Link>
                   {inv.public_token && (
@@ -311,7 +320,7 @@ export const ClientInvoicePanel = ({
                       href={`/invoice/${inv.public_token}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-muted hover:text-brass2"
+                      className="text-muted transition-colors hover:text-brass2"
                     >
                       Link
                     </a>
@@ -320,14 +329,14 @@ export const ClientInvoicePanel = ({
                     onClick={() => previewAgreement(inv)}
                     disabled={previewId === inv.id}
                     title="Download the rental agreement exactly as this email would attach it"
-                    className="uppercase tracking-[0.14em] text-muted hover:text-brass2 disabled:opacity-50"
+                    className="text-muted transition-colors hover:text-brass2 disabled:opacity-50"
                   >
                     {previewId === inv.id ? 'Building…' : 'Agreement'}
                   </button>
                   <button
                     onClick={() => email(inv)}
                     disabled={sendingId === inv.id}
-                    className="uppercase tracking-[0.14em] text-muted hover:text-brass2 disabled:opacity-50"
+                    className="ml-auto text-brass2 transition-colors hover:text-brass disabled:opacity-50"
                   >
                     {sendingId === inv.id ? 'Sending…' : 'Email'}
                   </button>
@@ -339,9 +348,11 @@ export const ClientInvoicePanel = ({
       )}
 
       {open && draft && preview && (
-        <div className="mt-5 border border-brass/30 bg-panel/40 p-5">
-          <div className="flex gap-4">
-            <div className="flex-1">
+        <div className="mt-5 rounded-lg border border-brass/30 bg-panel/40 p-5">
+          {/* Two across, not four: this panel is a ~420px column now, and a
+              date input squeezed under a third of that clips its own picker. */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
               <label className={label}>Issue date</label>
               <input
                 type="date"
@@ -350,7 +361,7 @@ export const ClientInvoicePanel = ({
                 className={field}
               />
             </div>
-            <div className="flex-1">
+            <div>
               <label className={label}>Due date</label>
               <input
                 type="date"
@@ -359,7 +370,7 @@ export const ClientInvoicePanel = ({
                 className={field}
               />
             </div>
-            <div className="w-24">
+            <div>
               <label className={label}>Tax %</label>
               <input
                 type="number"
@@ -370,66 +381,7 @@ export const ClientInvoicePanel = ({
                 className={field}
               />
             </div>
-          </div>
-
-          <div className="mt-5">
-            <div className="mb-2 flex items-center justify-between">
-              <span className={label}>Line items</span>
-              <button
-                onClick={addItem}
-                className="text-[11px] uppercase tracking-[0.16em] text-brass2 hover:text-brass"
-              >
-                + Add row
-              </button>
-            </div>
-            <div className="space-y-2">
-              {/* The inputs are sized by their wrappers, not by width classes on
-                  the inputs themselves: `field` already carries w-full, which
-                  Tailwind emits after w-16/w-28 and would win regardless of the
-                  order they're written in. */}
-              {draft.items.map((it, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="min-w-0 flex-1">
-                    <input
-                      placeholder="Description"
-                      value={it.description}
-                      onChange={(e) => setItem(i, { description: e.target.value })}
-                      className={field}
-                    />
-                  </div>
-                  <div className="w-20 shrink-0">
-                    <input
-                      type="number"
-                      aria-label="Quantity"
-                      value={it.qty}
-                      onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
-                      className={field}
-                    />
-                  </div>
-                  <div className="w-28 shrink-0">
-                    <input
-                      type="number"
-                      aria-label="Unit price"
-                      step="0.01"
-                      value={it.unit_price}
-                      onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })}
-                      className={field}
-                    />
-                  </div>
-                  <button
-                    onClick={() => removeItem(i)}
-                    aria-label="Remove row"
-                    className="shrink-0 px-2 text-muted hover:text-[#d98a6a]"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-6">
-            <div className="w-44">
+            <div>
               <label className={label}>Advance credited</label>
               <input
                 type="number"
@@ -440,7 +392,63 @@ export const ClientInvoicePanel = ({
                 className={field}
               />
             </div>
-            <dl className="ml-auto w-56 text-[12px]">
+          </div>
+
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className={label}>Line items</span>
+              <button
+                onClick={addItem}
+                className="text-[13px] font-semibold text-brass2 transition-colors hover:text-brass"
+              >
+                + Add row
+              </button>
+            </div>
+            <div className="space-y-2">
+              {/* The inputs are sized by their wrappers, not by width classes on
+                  the inputs themselves: `field` already carries w-full, which
+                  Tailwind emits after w-16/w-28 and would win regardless of the
+                  order they're written in. */}
+              {draft.items.map((it, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[minmax(0,1fr)_56px_84px_20px] items-center gap-2"
+                >
+                  <input
+                    placeholder="Description"
+                    value={it.description}
+                    onChange={(e) => setItem(i, { description: e.target.value })}
+                    className={field}
+                  />
+                  <input
+                    type="number"
+                    aria-label="Quantity"
+                    value={it.qty}
+                    onChange={(e) => setItem(i, { qty: Number(e.target.value) })}
+                    className={field}
+                  />
+                  <input
+                    type="number"
+                    aria-label="Unit price"
+                    step="0.01"
+                    value={it.unit_price}
+                    onChange={(e) => setItem(i, { unit_price: Number(e.target.value) })}
+                    className={field}
+                  />
+                  <button
+                    onClick={() => removeItem(i)}
+                    aria-label="Remove row"
+                    className="text-[18px] leading-none text-muted transition-colors hover:text-[#e0916f]"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-md border border-line bg-ink/30 px-3 py-2">
+            <dl className="text-[13px]">
               <div className="flex justify-between py-0.5 text-muted">
                 <dt>Subtotal</dt>
                 <dd>{money(preview.subtotal)}</dd>
@@ -484,14 +492,14 @@ export const ClientInvoicePanel = ({
                 setOpen(false)
                 setDraft(null)
               }}
-              className="text-[11px] uppercase tracking-[0.16em] text-muted hover:text-cream"
+              className={btnQuiet}
             >
               Cancel
             </button>
             <button
               onClick={create}
               disabled={creating}
-              className="ml-auto bg-brass px-5 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass hover:bg-brass2 disabled:opacity-50"
+              className={`ml-auto ${btnPrimary}`}
             >
               {creating ? 'Creating…' : 'Create invoice'}
             </button>

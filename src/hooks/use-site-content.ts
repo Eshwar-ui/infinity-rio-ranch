@@ -4,18 +4,21 @@ import { DEFAULT_COPY } from '@/data/copy'
 import {
   SEEDED_COPY,
   contactFrom,
+  postBySlug,
   seededAmenities,
   seededEvents,
   seededFaqs,
   seededGallery,
   seededList,
+  seededPosts,
   seededTestimonials,
   type ContactDetails,
   type GalleryTileData,
+  type Post,
 } from '@/lib/content-snapshot'
 import type { Amenity, EventItem, Faq, Testimonial } from '@/data/site'
 
-export type { GalleryTileData, Stat } from '@/lib/content-snapshot'
+export type { GalleryTileData, Post, Stat } from '@/lib/content-snapshot'
 
 /**
  * Reads a published, ordered content list from Supabase, starting from the
@@ -150,6 +153,108 @@ export const useAmenities = (): Amenity[] =>
     title: r.title,
     sub: r.sub ?? '',
   }))
+
+// ============================================================================
+//  Blog posts
+// ============================================================================
+
+/**
+ * Postgres row → the shape the snapshot and the pages use.
+ *
+ * Kept identical to the mapping in `scripts/pull-content.mjs`: the prerendered
+ * markup comes from that one and the browser's re-render from this one, so any
+ * difference between them is a hydration mismatch.
+ */
+export const mapPostRow = (r: Record<string, any>): Post => ({
+  slug: r.slug,
+  title: r.title,
+  excerpt: r.excerpt ?? '',
+  body: r.body ?? '',
+  coverImage: r.cover_image ?? '',
+  coverAlt: r.cover_alt ?? '',
+  seoTitle: r.seo_title ?? '',
+  seoDescription: r.seo_description ?? '',
+  author: r.author ?? '',
+  faqs: Array.isArray(r.faqs)
+    ? r.faqs.filter((f: any) => f?.q && f?.a).map((f: any) => ({ q: String(f.q), a: String(f.a) }))
+    : [],
+  ctaHeading: r.cta_heading ?? '',
+  ctaBody: r.cta_body ?? '',
+  publishedAt: r.published_at ?? null,
+  updatedAt: r.updated_at ?? null,
+})
+
+const POST_COLUMNS =
+  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,author,faqs,cta_heading,cta_body,published_at,updated_at'
+
+/** Published posts, newest first — seeded from the snapshot, then refreshed. */
+export const usePosts = (): Post[] => {
+  const [posts, setPosts] = useState<Post[]>(seededPosts)
+
+  useEffect(() => {
+    let active = true
+    void import('@/lib/supabase')
+      .then(({ supabase }) =>
+        supabase
+          .from('posts')
+          .select(POST_COLUMNS)
+          .eq('published', true)
+          .order('published_at', { ascending: false }),
+      )
+      .then(({ data, error }) => {
+        // Unlike the other lists, an empty result is meaningful here: the owner
+        // may have unpublished the only post. Only a genuine error is ignored.
+        if (active && !error && data) setPosts(data.map(mapPostRow))
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  return posts
+}
+
+/**
+ * A single post by slug.
+ *
+ * `loading` exists so the page can tell "no such post" from "haven't looked
+ * yet". On a prerendered post the snapshot already holds it, so the first
+ * client render matches the server's and hydration holds; only a client-side
+ * navigation to a slug published since the last build ever waits.
+ */
+export const usePost = (slug: string | undefined): { post?: Post; loading: boolean } => {
+  const seeded = slug ? postBySlug(slug) : undefined
+  const [post, setPost] = useState<Post | undefined>(seeded)
+  const [loading, setLoading] = useState(!seeded)
+
+  useEffect(() => {
+    if (!slug) return
+    let active = true
+    setPost(postBySlug(slug))
+    setLoading(!postBySlug(slug))
+
+    void import('@/lib/supabase')
+      .then(({ supabase }) =>
+        supabase
+          .from('posts')
+          .select(POST_COLUMNS)
+          .eq('slug', slug)
+          .eq('published', true)
+          .maybeSingle(),
+      )
+      .then(({ data, error }) => {
+        if (!active) return
+        if (!error && data) setPost(mapPostRow(data))
+        else if (!error && !data) setPost(undefined)
+        setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [slug])
+
+  return { post, loading }
+}
 
 /**
  * One of the flat string lists in `list_items` — `included` or `event_types`.

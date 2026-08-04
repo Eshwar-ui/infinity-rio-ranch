@@ -8,8 +8,14 @@ import { SmartImage } from '@/components/ui/smart-image'
 import { ThemeProvider } from '@/components/layout/theme-provider'
 import { logoFor, useThemeStore } from '@/store/theme'
 
-const field =
-  'w-full rounded-[1px] border border-line bg-transparent px-[15px] py-3 text-sm text-cream outline-none transition-colors focus:border-brass'
+/**
+ * Roomier than the panel's `field` — this form is the whole screen. Written out
+ * rather than composed from `field`, because appending `px-3.5 text-[15px]` to a
+ * string that already carries `px-3 text-[14px]` leaves the winner to stylesheet
+ * order, not to the order they're written here.
+ */
+const loginField =
+  'w-full rounded-md border border-line bg-panel/30 px-3.5 py-2.5 text-[15px] text-cream outline-none transition-colors placeholder:text-muted/50 focus:border-brass focus:bg-panel/60 focus:ring-2 focus:ring-brass/25'
 
 export const AdminLogin = () => {
   const navigate = useNavigate()
@@ -56,7 +62,7 @@ export const AdminLogin = () => {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-ink px-6">
+    <div className="admin-ui grid min-h-screen place-items-center bg-ink px-6">
       {/*
        * `/admin/login` sits outside RootLayout, so nothing had ever set
        * <html data-theme> on a direct load — the page fell through to the dark
@@ -88,14 +94,12 @@ export const AdminLogin = () => {
               className="h-24 w-auto transition-opacity duration-300 group-hover:opacity-75"
             />
           </Link>
-          <div className="mt-3 text-[10px] uppercase tracking-[0.24em] text-muted">
-            Admin sign in
-          </div>
+          <div className="mt-3 text-[15px] font-medium text-cream">Admin sign in</div>
           <Link
             to="/"
-            className="mt-5 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted transition-colors hover:text-brass2"
+            className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-brass2"
           >
-            <ArrowLeft size={12} aria-hidden />
+            <ArrowLeft size={14} aria-hidden />
             Back to website
           </Link>
         </div>
@@ -108,7 +112,7 @@ export const AdminLogin = () => {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={field}
+            className={loginField}
           />
           <div className="relative">
             <input
@@ -118,7 +122,7 @@ export const AdminLogin = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`${field} pr-11`}
+              className={`${loginField} pr-11`}
             />
             <button
               type="button"
@@ -131,12 +135,12 @@ export const AdminLogin = () => {
             </button>
           </div>
 
-          {error && <p className="text-[12px] text-[#d98a6a]">{error}</p>}
+          {error && <p className="text-[13px] text-[#e0916f]">{error}</p>}
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full bg-brass px-6 py-3 text-xs uppercase tracking-[0.22em] text-onbrass transition-colors hover:bg-brass2 disabled:opacity-50"
+            className="w-full rounded-md bg-brass px-6 py-2.5 text-[14px] font-semibold text-onbrass transition-colors hover:bg-brass2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:opacity-50"
           >
             {busy ? 'Signing in…' : 'Sign in'}
           </button>

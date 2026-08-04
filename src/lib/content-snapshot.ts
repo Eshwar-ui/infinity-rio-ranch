@@ -29,6 +29,34 @@ export type GalleryTileData = {
 
 export type Stat = { value: string; label: string }
 
+/** A question/answer pair, shared by the contact FAQ and per-post FAQ blocks. */
+export type QandA = { q: string; a: string }
+
+/**
+ * A blog post as the build-time snapshot carries it.
+ *
+ * Every field is non-optional and defaults to an empty string rather than being
+ * absent: `seo.ts` reads these at module scope to build titles, meta tags and
+ * JSON-LD for the prerenderer, which fails the build on a throw. An absent
+ * `excerpt` must render as nothing, never as "undefined".
+ */
+export type Post = {
+  slug: string
+  title: string
+  excerpt: string
+  body: string
+  coverImage: string
+  coverAlt: string
+  seoTitle: string
+  seoDescription: string
+  author: string
+  faqs: QandA[]
+  ctaHeading: string
+  ctaBody: string
+  publishedAt: string | null
+  updatedAt: string | null
+}
+
 type Snapshot = {
   pulledAt: string | null
   copy: Record<string, string>
@@ -39,6 +67,7 @@ type Snapshot = {
   events: EventItem[]
   faqs: Faq[]
   gallery: GalleryTileData[]
+  posts: Post[]
 }
 
 /**
@@ -99,6 +128,17 @@ const LIST_FALLBACKS: Record<string, readonly string[]> = {
 
 export const seededList = (list: string): string[] =>
   seed(snapshot.lists?.[list], LIST_FALLBACKS[list] ?? [])
+
+/**
+ * Published posts, newest first — the only content here with no `site.ts`
+ * fallback, because there is nothing sensible to invent. An empty array is the
+ * correct state for a site that hasn't blogged yet, and every consumer
+ * (`PUBLIC_ROUTES`, the index page, the sitemap) already handles it.
+ */
+export const seededPosts: Post[] = Array.isArray(snapshot.posts) ? snapshot.posts : []
+
+export const postBySlug = (slug: string): Post | undefined =>
+  seededPosts.find((p) => p.slug === slug)
 
 /**
  * Contact details assembled from the editable copy keys.

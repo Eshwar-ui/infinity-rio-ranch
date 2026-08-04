@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnPrimary, pageTitle, pill, th } from '@/lib/admin-ui'
 import { money } from '@/lib/invoice'
 
 type Row = Record<string, any>
@@ -47,12 +48,12 @@ export const AdminInvoices = () => {
     <div className="flex h-screen flex-col">
       <header className="flex items-center justify-between border-b border-line px-8 py-6">
         <div>
-          <h1 className="font-serif text-2xl text-cream">Invoices</h1>
-          <p className="mt-1 text-[12px] text-muted">{rows.length} total</p>
+          <h1 className={pageTitle}>Invoices</h1>
+          <p className="mt-1 text-[13px] text-muted">{rows.length} total</p>
         </div>
         <button
           onClick={() => navigate('/admin/invoices/new')}
-          className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2"
+          className={btnPrimary}
         >
           + New invoice
         </button>
@@ -66,12 +67,12 @@ export const AdminInvoices = () => {
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line text-[10px] uppercase tracking-[0.14em] text-muted">
-                <th className="py-3 font-medium">Number</th>
-                <th className="py-3 font-medium">Client</th>
-                <th className="py-3 font-medium">Issued</th>
-                <th className="py-3 font-medium">Status</th>
-                <th className="py-3 text-right font-medium">Total</th>
+              <tr className="border-b border-line">
+                <th className={th}>Number</th>
+                <th className={th}>Client</th>
+                <th className={th}>Issued</th>
+                <th className={th}>Status</th>
+                <th className={`${th} text-right`}>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -86,9 +87,7 @@ export const AdminInvoices = () => {
                   <td className="py-3.5 text-muted">{fmt(r.issue_date)}</td>
                   <td className="py-3.5">
                     <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.1em] ${
-                        statusClass[r.status] ?? statusClass.draft
-                      }`}
+                      className={`${pill} ${statusClass[r.status] ?? statusClass.draft}`}
                     >
                       {r.status}
                     </span>

@@ -30,6 +30,7 @@ export const navLinks: NavLink[] = [
   { key: 'home', label: 'Home', to: '/' },
   { key: 'about', label: 'About', to: '/about' },
   { key: 'gallery', label: 'Gallery', to: '/gallery' },
+  { key: 'blog', label: 'Blog', to: '/blog' },
   { key: 'contact', label: 'Contact', to: '/contact' },
 ]
 

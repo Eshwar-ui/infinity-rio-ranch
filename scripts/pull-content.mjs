@@ -62,17 +62,54 @@ const select = async (path) => {
   const res = await fetch(`${url}/rest/v1/${path}`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
   })
-  if (!res.ok) throw new Error(`${path} → ${res.status} ${await res.text()}`)
+  if (!res.ok) {
+    const error = new Error(`${path} → ${res.status} ${await res.text()}`)
+    error.status = res.status
+    throw error
+  }
   return res.json()
 }
 
+/**
+ * A table that PostgREST reports as absent is treated as empty; anything else
+ * still takes the whole pull down.
+ *
+ * The distinction matters. A 404 (PGRST205, "could not find the table") is a
+ * migration this project hasn't had applied — a known, local, permanent state
+ * that the app already handles by falling back to its shipped defaults. A
+ * timeout or a 5xx is transient, and quietly writing an empty section for it
+ * would overwrite good committed content with nothing.
+ *
+ * This used to be all-or-nothing, and the cost was invisible: a project missing
+ * one migration produced an *entirely* empty snapshot, so every other table's
+ * content silently stopped reaching the prerendered HTML too.
+ */
+const optional = async (label, path) => {
+  try {
+    return await select(path)
+  } catch (err) {
+    if (err.status === 404) {
+      console.warn(`[pull-content] ⚠ no ${label} table on this project — treating as empty.`)
+      return []
+    }
+    throw err
+  }
+}
+
 const published = (table, columns) =>
-  select(`${table}?select=${columns}&published=eq.true&order=sort.asc`)
+  optional(table, `${table}?select=${columns}&published=eq.true&order=sort.asc`)
+
+/** Posts are ordered by publication date, not by a `sort` column. */
+const POST_COLUMNS =
+  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,author,faqs,cta_heading,cta_body,published_at,updated_at'
+
+const pullPosts = () =>
+  optional('posts', `posts?select=${POST_COLUMNS}&published=eq.true&order=published_at.desc`)
 
 try {
-  const [copyRows, stats, amenities, listRows, testimonials, events, faqs, gallery] =
+  const [copyRows, stats, amenities, listRows, testimonials, events, faqs, gallery, posts] =
     await Promise.all([
-      select('site_copy?select=key,value'),
+      optional('site_copy', 'site_copy?select=key,value'),
       published('stats', 'value,label'),
       published('amenities', 'icon,title,sub'),
       published('list_items', 'list,value'),
@@ -80,6 +117,7 @@ try {
       published('events', 'title,blurb,image'),
       published('faqs', 'question,answer'),
       published('gallery', 'label,cat,src,span,featured'),
+      pullPosts(),
     ])
 
   const copy = {}
@@ -119,9 +157,47 @@ try {
       span: r.span ?? null,
       featured: !!r.featured,
     })),
+    posts: posts.map((r) => ({
+      slug: r.slug,
+      title: r.title,
+      excerpt: r.excerpt ?? '',
+      body: r.body ?? '',
+      coverImage: r.cover_image ?? '',
+      coverAlt: r.cover_alt ?? '',
+      seoTitle: r.seo_title ?? '',
+      seoDescription: r.seo_description ?? '',
+      author: r.author ?? '',
+      // Defensive: jsonb comes back parsed, but a hand-edited row could hold
+      // anything, and a malformed entry here would throw inside the prerender.
+      faqs: Array.isArray(r.faqs)
+        ? r.faqs
+            .filter((f) => f && f.q && f.a)
+            .map((f) => ({ q: String(f.q), a: String(f.a) }))
+        : [],
+      ctaHeading: r.cta_heading ?? '',
+      ctaBody: r.cta_body ?? '',
+      publishedAt: r.published_at ?? null,
+      updatedAt: r.updated_at ?? null,
+    })),
   }
 
   writeFileSync(OUT, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8')
+
+  /*
+   * Post bodies are bundled for the browser, not just baked into the HTML: the
+   * blog pages can't be lazy chunks without breaking hydration against the
+   * prerendered markup. That's fine at a venue blog's scale and quietly awful
+   * at ten times it, and the failure mode is a slow first paint nobody
+   * attributes to the CMS — so say something before it gets there.
+   */
+  const bodyBytes = posts.reduce((n, r) => n + Buffer.byteLength(r.body ?? ''), 0)
+  if (bodyBytes > 200_000) {
+    console.warn(
+      `[pull-content] ⚠ ${(bodyBytes / 1024).toFixed(0)} kB of post bodies are now ` +
+        'bundled for every visitor. Past ~200 kB it is worth moving the blog to ' +
+        'its own lazily-fetched route — see the note in CLAUDE.md.',
+    )
+  }
 
   const counts = [
     `${Object.keys(copy).length} copy keys`,
@@ -132,6 +208,7 @@ try {
     `${events.length} events`,
     `${faqs.length} faqs`,
     `${gallery.length} photos`,
+    `${posts.length} posts`,
   ]
   console.log(`[pull-content] ${counts.join(', ')} → src/data/content.generated.json`)
 } catch (err) {

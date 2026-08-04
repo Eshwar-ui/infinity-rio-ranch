@@ -100,6 +100,16 @@ Every page emits a `@graph` containing:
 - **`/contact`** emits `FAQPage`. It is keyed (`data-seo-id="faq"`) and rebuilt
   on the client from whatever the CMS is actually serving, so the schema can
   never claim answers that differ from the visible ones.
+- **`/blog`** emits `Blog` with a `blogPost` list; **`/blog/<slug>`** emits
+  `BlogPosting` (`headline`, `description`, `image`, `datePublished`,
+  `dateModified`, `author`, `publisher` → the venue node) plus its own keyed
+  `FAQPage` when the post has questions. `datePublished` comes from the
+  `published_at` a database trigger stamps on first publish, so editing a post
+  never re-dates the article; `dateModified` comes from `updated_at`. Both are
+  omitted rather than guessed when absent.
+- **Breadcrumbs are three levels on posts** — Home › Blog › title — and the
+  visible trail in `blog-post.tsx` is built from the same route shape as the
+  `BreadcrumbList`. Google drops the enhancement when they disagree.
 
 **Deliberately omitted** — adding these without verified values would be
 fabricated structured data, which is a manual-action risk:
@@ -312,6 +322,36 @@ human visitors and invisible to answer engines until a deploy runs. The
 **Watch out:** anything the CMS can delete must not be read positionally.
 `glanceFacts` used `stats[0]`/`stats[1]`/`stats[2]`, so removing one statistic
 threw during prerender — and the prerender step fails the build by design.
+
+### 5c. The blog
+
+Posts go through the same snapshot, with one difference that matters: they don't
+just change a page's content, they change **which pages exist**. `PUBLIC_ROUTES`
+is computed as the static routes plus one `/blog/<slug>` per published post, so
+publishing an article is what causes `dist/blog/<slug>/index.html`, its sitemap
+row and its `llms.txt` line to appear at the next build.
+
+Three consequences that have already bitten or nearly did:
+
+- **`ROUTE_META` has no entry for a post.** `llms.txt` used to map over
+  `PUBLIC_ROUTES` and index `ROUTE_META` — the moment posts joined that array
+  it would have thrown and failed the build. It iterates `STATIC_ROUTES` now,
+  and posts get their own section.
+- **`lastmod` can't come from git for a post.** There is no
+  `src/pages/blog/<slug>.tsx` for `git log` to look at, so every post would have
+  shipped without one. `sitemapEntries()` carries `updated_at` from the database
+  and the prerenderer prefers it over the git lookup.
+- **One rewrite covers every post.** `vercel.json` gets `/blog/:slug`, not a
+  literal per post — the set changes whenever the owner publishes. A slug with
+  no built file falls through to `dist/404.html` and returns a real 404, which
+  is the required behaviour. `assertRewritesCoverRoutes()` enforces the pattern
+  exists and still rejects a catch-all.
+
+Per-post `seo_title` and `seo_description` are edited in `/admin/blog` and fall
+back to the title and excerpt, so an emptied field degrades to something sensible
+rather than an empty `<meta>`. Cover images are CMS uploads with no known
+intrinsic size, so `og:image:width`/`height` are omitted for them — a wrong
+dimension makes scrapers mis-crop, which is worse than making them measure.
 
 ### 6. Content for answer engines
 

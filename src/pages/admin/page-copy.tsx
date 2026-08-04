@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnPrimary, pageTitle } from '@/lib/admin-ui'
 import { COPY_DEFAULTS, type CopyEntry } from '@/data/copy'
 
 const PAGES: { key: string; label: string; hint: string }[] = [
@@ -114,7 +115,7 @@ export const AdminPageCopy = () => {
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-line px-8 py-6">
         <div>
-          <h1 className="font-serif text-2xl text-cream">Page content</h1>
+          <h1 className={pageTitle}>Page content</h1>
           <p className="mt-1 text-[12px] text-muted">
             {dirtyKeys.length === 0
               ? 'Every heading and paragraph on the public site.'
@@ -124,7 +125,7 @@ export const AdminPageCopy = () => {
         <button
           onClick={save}
           disabled={busy || dirtyKeys.length === 0}
-          className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2 disabled:cursor-not-allowed disabled:opacity-40"
+          className={btnPrimary}
         >
           {busy ? 'Saving…' : 'Save changes'}
         </button>
@@ -149,7 +150,7 @@ export const AdminPageCopy = () => {
                   <span className="mt-0.5 block truncate text-[11px] text-muted">{p.hint}</span>
                 </span>
                 {pending > 0 && (
-                  <span className="shrink-0 rounded-full border border-brass/40 px-2 py-0.5 text-[9px] text-brass2">
+                  <span className="shrink-0 rounded-full border border-brass/40 px-2 py-0.5 text-[11px] font-medium text-brass2">
                     {pending}
                   </span>
                 )}
@@ -162,8 +163,10 @@ export const AdminPageCopy = () => {
           {loading ? (
             <p className="px-10 py-10 text-sm text-muted">Loading…</p>
           ) : (
-            <div className="max-w-2xl px-10 py-8">
-              <h2 className="font-serif text-xl text-cream">{active?.label}</h2>
+            <div className="max-w-4xl px-8 py-7 2xl:px-10">
+              <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-cream">
+                {active?.label}
+              </h2>
               <p className="mt-1 text-[12px] text-muted">
                 Clearing a field restores the text the site shipped with.
               </p>
@@ -176,7 +179,7 @@ export const AdminPageCopy = () => {
                       <div className="mb-1.5 flex items-baseline justify-between gap-4">
                         <label
                           htmlFor={entry.key}
-                          className="text-[10px] uppercase tracking-[0.2em] text-muted"
+                          className="text-[12px] font-medium text-muted"
                         >
                           {entry.label}
                           {isDirty && <span className="ml-2 text-brass2">•</span>}
@@ -184,7 +187,7 @@ export const AdminPageCopy = () => {
                         <button
                           type="button"
                           onClick={() => revert(entry)}
-                          className="text-[10px] uppercase tracking-[0.14em] text-muted hover:text-brass2"
+                          className="text-[12px] font-medium text-muted transition-colors hover:text-brass2"
                         >
                           Reset
                         </button>

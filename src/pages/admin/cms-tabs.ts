@@ -8,6 +8,7 @@
  */
 export const CMS_TABS = [
   { to: '/admin/content', label: 'Page content' },
+  { to: '/admin/blog', label: 'Blog' },
   { to: '/admin/gallery', label: 'Gallery' },
   { to: '/admin/events', label: 'Events & Packages' },
   { to: '/admin/testimonials', label: 'Testimonials' },

@@ -20,6 +20,21 @@ const config: Config = {
         sans: ['Jost', 'system-ui', 'sans-serif'],
         serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         script: ['"Dancing Script"', 'cursive'],
+        // Admin panel only. A native UI stack, not the marketing faces: the
+        // admin is lazy-loaded behind auth, so a webfont would be a fresh
+        // download nobody sees, and system fonts are the most legible thing
+        // available at the 12–14px this UI actually runs at.
+        admin: [
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          '"Noto Sans"',
+          'sans-serif',
+        ],
       },
       maxWidth: {
         content: '1240px',

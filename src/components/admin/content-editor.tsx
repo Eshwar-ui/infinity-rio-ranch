@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnDanger, btnPrimary, btnQuiet, field, label, pageTitle, pill } from '@/lib/admin-ui'
 
 export type EditorField = {
   key: string
@@ -27,9 +28,6 @@ type Props = {
    */
   scope?: { column: string; value: string }
 }
-
-const inputClass =
-  'w-full rounded-[1px] border border-line bg-transparent px-[13px] py-2.5 text-sm text-cream outline-none transition-colors focus:border-brass'
 
 /**
  * Generic CRUD editor for the CMS content tables (testimonials, events, faqs).
@@ -127,21 +125,21 @@ export const ContentEditor = ({
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-line px-8 py-6">
         <div>
-          <h1 className="font-serif text-2xl text-cream">{title}</h1>
-          <p className="mt-1 text-[12px] text-muted">
+          <h1 className={pageTitle}>{title}</h1>
+          <p className="mt-1 text-[13px] text-muted">
             {rows.length} item{rows.length === 1 ? '' : 's'}
           </p>
         </div>
         <button
           onClick={() => setDraft(blank())}
-          className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2"
+          className={btnPrimary}
         >
           + New
         </button>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <div className="w-[420px] shrink-0 overflow-y-auto border-r border-line">
+        <div className="w-[clamp(280px,24vw,380px)] shrink-0 overflow-y-auto border-r border-line">
           {loading ? (
             <p className="px-8 py-10 text-sm text-muted">Loading…</p>
           ) : rows.length === 0 ? (
@@ -158,7 +156,7 @@ export const ContentEditor = ({
                   onClick={() => setDraft({ ...row })}
                   className="min-w-0 flex-1 text-left"
                 >
-                  <div className="truncate text-[14px] text-cream">{primary(row)}</div>
+                  <div className="truncate text-[14px] font-medium text-cream">{primary(row)}</div>
                   {subtitle && (
                     <div className="mt-0.5 truncate text-[12px] text-muted">{subtitle(row)}</div>
                   )}
@@ -166,8 +164,10 @@ export const ContentEditor = ({
                 <button
                   onClick={() => togglePublished(row)}
                   title="Toggle published"
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em] ${
-                    row.published ? 'border-brass/40 text-brass2' : 'border-line text-muted'
+                  className={`shrink-0 transition-colors ${pill} ${
+                    row.published
+                      ? 'border-brass/40 text-brass2 hover:bg-brass/10'
+                      : 'border-line text-muted hover:text-cream'
                   }`}
                 >
                   {row.published ? 'Live' : 'Draft'}
@@ -183,15 +183,15 @@ export const ContentEditor = ({
               Select an item, or add a new one.
             </div>
           ) : (
-            <div className="max-w-2xl px-10 py-8">
-              <h2 className="font-serif text-xl text-cream">
+            <div className="max-w-3xl px-8 py-7 2xl:px-10">
+              <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-cream">
                 {draft.id ? `Edit ${singular.toLowerCase()}` : `New ${singular.toLowerCase()}`}
               </h2>
 
               <div className="mt-6 space-y-5">
                 {fields.map((f) => (
                   <div key={f.key}>
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                    <label className={label}>
                       {f.label}
                       {f.required && ' *'}
                     </label>
@@ -200,35 +200,36 @@ export const ContentEditor = ({
                         rows={4}
                         value={draft[f.key] ?? ''}
                         onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
-                        className={inputClass}
+                        className={field}
                       />
                     ) : (
                       <input
                         value={draft[f.key] ?? ''}
                         onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })}
-                        className={inputClass}
+                        className={field}
                       />
                     )}
                   </div>
                 ))}
 
                 <div className="flex items-end gap-8">
-                  <div>
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
-                      Order
-                    </label>
+                  {/* Width lives on the wrapper: `field` already carries w-full,
+                      which Tailwind emits after w-24 and would override it. */}
+                  <div className="w-24">
+                    <label className={label}>Order</label>
                     <input
                       type="number"
                       value={draft.sort ?? 0}
                       onChange={(e) => setDraft({ ...draft, sort: e.target.value })}
-                      className={`${inputClass} w-24`}
+                      className={field}
                     />
                   </div>
-                  <label className="flex items-center gap-2 pb-2.5 text-sm text-cream">
+                  <label className="flex items-center gap-2 pb-2.5 text-[14px] text-cream">
                     <input
                       type="checkbox"
                       checked={!!draft.published}
                       onChange={(e) => setDraft({ ...draft, published: e.target.checked })}
+                      className="h-4 w-4 accent-[color:var(--brass)]"
                     />
                     Published
                   </label>
@@ -238,20 +239,20 @@ export const ContentEditor = ({
               <div className="mt-8 flex items-center gap-4 border-t border-line pt-6">
                 <button
                   onClick={save}
-                  className="bg-brass px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2"
+                  className={btnPrimary}
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setDraft(null)}
-                  className="text-[11px] uppercase tracking-[0.18em] text-muted hover:text-cream"
+                  className={btnQuiet}
                 >
                   Cancel
                 </button>
                 {draft.id && (
                   <button
                     onClick={() => remove(draft)}
-                    className="ml-auto text-[11px] uppercase tracking-[0.18em] text-muted hover:text-[#d98a6a]"
+                    className={`ml-auto ${btnDanger}`}
                   >
                     Delete
                   </button>

@@ -163,6 +163,46 @@
   }
 }
 
+/* ============================================================
+   Admin panel typography.
+
+   The public site's display faces (Cormorant Garamond, Dancing
+   Script) are branding; they don't belong in a tool the owner
+   reads for an hour at a time. `.admin-ui` switches the whole
+   panel to the OS UI font — it renders instantly, needs no
+   download behind the auth wall, and is far more legible at the
+   12–14px this UI runs at. Applied on the admin shell and the
+   login page; the client-facing invoice document deliberately
+   keeps the serif branding.
+   ============================================================ */
+.admin-ui {
+  @apply font-admin;
+  /* Tabular figures so money and dates line up column to column. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Form controls don't inherit font-family on their own. Only the family —
+   inheriting the shorthand would outrank the Tailwind size/weight classes. */
+.admin-ui input,
+.admin-ui textarea,
+.admin-ui select,
+.admin-ui button {
+  font-family: inherit;
+}
+
+/* Native date/number widgets render nearly black-on-black in the dark theme. */
+.admin-ui input::-webkit-calendar-picker-indicator,
+.admin-ui input::-webkit-inner-spin-button {
+  filter: invert(0.7);
+  opacity: 0.55;
+  cursor: pointer;
+}
+.admin-ui input::-webkit-calendar-picker-indicator:hover,
+.admin-ui input::-webkit-inner-spin-button:hover {
+  opacity: 1;
+}
+
 /* Respect the OS-level motion preference across every animation/transition on the site. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -268,5 +308,15 @@
     margin: 0;
     max-width: none;
     box-shadow: none;
+  }
+  /* Browsers strip "background" ink by default; without this the logo watermark
+     prints solid or not at all depending on the engine. */
+  .invoice-watermark img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* One watermark per page rather than one for the whole document. */
+  .invoice-watermark {
+    position: fixed;
   }
 }

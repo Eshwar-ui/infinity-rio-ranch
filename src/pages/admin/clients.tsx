@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { PencilSimple, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { money } from '@/lib/invoice'
 import { useList } from '@/hooks/use-site-content'
+import {
+  btnPrimary,
+  btnQuiet,
+  field,
+  iconBtn,
+  iconBtnDanger,
+  label,
+  pageTitle,
+  pill,
+} from '@/lib/admin-ui'
 import { ClientInvoicePanel, type ClientInvoice } from '@/components/admin/client-invoice-panel'
+import { FilterBar, FilterGroup, SearchBox } from '@/components/admin/list-filters'
 
 type ClientStatus = 'booked' | 'completed' | 'cancelled'
 type PaymentStatus = 'unpaid' | 'partial' | 'paid'
@@ -43,9 +55,6 @@ const paymentClass: Record<PaymentStatus, string> = {
   paid: 'bg-[#6a9a7a]/15 text-[#8fc0a0] border-[#6a9a7a]/40',
 }
 
-const field =
-  'w-full rounded-[1px] border border-line bg-transparent px-[12px] py-2 text-sm text-cream outline-none transition-colors focus:border-brass'
-const label = 'mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted'
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -60,16 +69,6 @@ const fmtEventDate = (d: string | null, opts?: Intl.DateTimeFormatOptions) =>
         ...opts,
       })
     : null
-
-/** Up to two initials for the monogram; falls back to a dash for a blank name. */
-const initials = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] ?? '')
-    .join('')
-    .toUpperCase() || '—'
 
 const blank = (): Client => ({
   id: '',
@@ -98,7 +97,7 @@ const nullable = (v: string | null | undefined) => {
 /** One read-only label/value pair on the profile. */
 const Fact = ({ label: name, value }: { label: string; value: React.ReactNode }) => (
   <div>
-    <dt className="text-[10px] uppercase tracking-[0.18em] text-muted">{name}</dt>
+    <dt className="text-[13px] font-medium text-muted">{name}</dt>
     <dd className="mt-1 text-[14px] text-cream">{value || <span className="text-muted">—</span>}</dd>
   </div>
 )
@@ -112,6 +111,7 @@ export const AdminClients = () => {
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState<'all' | ClientStatus>('all')
   const [payFilter, setPayFilter] = useState<'all' | PaymentStatus>('all')
+  const [query, setQuery] = useState('')
   const [invoices, setInvoices] = useState<ClientInvoice[]>([])
   const eventTypes = useList('event_types')
   // Set by the Leads page right after a conversion, so the new client opens
@@ -169,15 +169,48 @@ export const AdminClients = () => {
     }
   }, [selectedId])
 
-  const visible = useMemo(
-    () =>
-      clients.filter(
-        (c) =>
-          (filter === 'all' || c.status === filter) &&
-          (payFilter === 'all' || c.payment_status === payFilter),
-      ),
-    [clients, filter, payFilter],
-  )
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return clients.filter(
+      (c) =>
+        (filter === 'all' || c.status === filter) &&
+        (payFilter === 'all' || c.payment_status === payFilter) &&
+        (q === '' ||
+          [c.name, c.email, c.phone, c.event_type, c.package]
+            .some((v) => (v ?? '').toLowerCase().includes(q))),
+    )
+  }, [clients, filter, payFilter, query])
+
+  /* Counts per option, so an empty category is visible without clicking it.
+     Each dimension counts against the other active filters, not the whole
+     table — otherwise "Paid 6" next to a list of two is just wrong. */
+  const countBy = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const matchesQuery = (c: Client) =>
+      q === '' ||
+      [c.name, c.email, c.phone, c.event_type, c.package].some((v) =>
+        (v ?? '').toLowerCase().includes(q),
+      )
+    const forStatus = clients.filter(
+      (c) => matchesQuery(c) && (payFilter === 'all' || c.payment_status === payFilter),
+    )
+    const forPayment = clients.filter(
+      (c) => matchesQuery(c) && (filter === 'all' || c.status === filter),
+    )
+    return {
+      status: (v: 'all' | ClientStatus) =>
+        v === 'all' ? forStatus.length : forStatus.filter((c) => c.status === v).length,
+      payment: (v: 'all' | PaymentStatus) =>
+        v === 'all' ? forPayment.length : forPayment.filter((c) => c.payment_status === v).length,
+    }
+  }, [clients, filter, payFilter, query])
+
+  const filtersActive = filter !== 'all' || payFilter !== 'all' || query.trim() !== ''
+  const resetFilters = () => {
+    setFilter('all')
+    setPayFilter('all')
+    setQuery('')
+  }
 
   const select = (client: Client) => {
     setSelectedId(client.id)
@@ -310,93 +343,84 @@ export const AdminClients = () => {
     <div className="flex h-screen flex-col">
       <header className="flex items-center justify-between gap-4 border-b border-line px-8 py-6">
         <div>
-          <h1 className="font-serif text-2xl text-cream">Clients</h1>
-          <p className="mt-1 text-[12px] text-muted">
-            {clients.length} total{bookedCount > 0 && ` · ${bookedCount} booked`}
+          <h1 className={pageTitle}>Clients</h1>
+          <p className="mt-1 text-[13px] text-muted">
+            {bookedCount} booked
             {unpaidCount > 0 && ` · ${unpaidCount} not fully paid`}
           </p>
         </div>
-        <div className="flex items-center gap-5">
-          <div className="space-y-1.5 text-right">
-            <div className="flex justify-end gap-1">
-              {(['all', ...STATUSES] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setFilter(s)}
-                  className={`rounded-[2px] px-3 py-1 text-[11px] uppercase tracking-[0.12em] transition-colors ${
-                    filter === s ? 'bg-brass/15 text-brass2' : 'text-muted hover:text-cream'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-end gap-1">
-              <span className="mr-1 text-[9px] uppercase tracking-[0.16em] text-muted/60">
-                Payment
-              </span>
-              {(['all', ...PAYMENT_STATUSES] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setPayFilter(s)}
-                  className={`rounded-[2px] px-3 py-1 text-[11px] uppercase tracking-[0.12em] transition-colors ${
-                    payFilter === s ? 'bg-brass/15 text-brass2' : 'text-muted hover:text-cream'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            onClick={startNew}
-            className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2"
-          >
-            + New client
-          </button>
-        </div>
+        <button onClick={startNew} className={btnPrimary}>
+          + New client
+        </button>
       </header>
 
       <div className="flex min-h-0 flex-1">
         {/* List */}
-        <div className="w-[380px] shrink-0 overflow-y-auto border-r border-line">
+        <div className="flex w-[clamp(280px,24vw,360px)] shrink-0 flex-col border-r border-line">
+          <FilterBar
+            showing={visible.length}
+            total={clients.length}
+            active={filtersActive}
+            onReset={resetFilters}
+          >
+            <SearchBox value={query} onChange={setQuery} placeholder="Search clients" />
+            <FilterGroup
+              label="Booking"
+              value={filter}
+              onChange={setFilter}
+              options={(['all', ...STATUSES] as const).map((v) => ({
+                value: v,
+                label: v,
+                count: countBy.status(v),
+              }))}
+            />
+            <FilterGroup
+              label="Payment"
+              value={payFilter}
+              onChange={setPayFilter}
+              options={(['all', ...PAYMENT_STATUSES] as const).map((v) => ({
+                value: v,
+                label: v,
+                count: countBy.payment(v),
+              }))}
+            />
+          </FilterBar>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
-            <p className="px-8 py-10 text-sm text-muted">Loading…</p>
+            <p className="px-5 py-8 text-[13px] text-muted">Loading…</p>
           ) : visible.length === 0 ? (
-            <p className="px-8 py-10 text-sm text-muted">
-              No clients here yet. Convert a lead, or add one by hand.
+            <p className="px-5 py-8 text-[13px] leading-relaxed text-muted">
+              {filtersActive
+                ? 'Nothing matches those filters.'
+                : 'No clients here yet. Convert a lead, or add one by hand.'}
             </p>
           ) : (
             visible.map((client) => (
               <button
                 key={client.id}
                 onClick={() => select(client)}
-                className={`block w-full border-b border-line px-6 py-4 text-left transition-colors hover:bg-panel ${
+                className={`block w-full border-b border-line px-4 py-3 text-left transition-colors hover:bg-panel ${
                   selectedId === client.id ? 'bg-panel' : ''
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[14px] text-cream">{client.name}</span>
+                  <span className="truncate text-[14px] font-medium text-cream">{client.name}</span>
                   <span className="flex shrink-0 items-center gap-1">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em] ${paymentClass[client.payment_status]}`}
-                    >
+                    <span className={`${pill} ${paymentClass[client.payment_status]}`}>
                       {client.payment_status}
                     </span>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.1em] ${statusClass[client.status]}`}
-                    >
-                      {client.status}
-                    </span>
+                    <span className={`${pill} ${statusClass[client.status]}`}>{client.status}</span>
                   </span>
                 </div>
-                <div className="mt-1 flex items-center justify-between text-[11px] text-muted">
+                <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
                   <span className="truncate">{client.event_type || 'Event'}</span>
                   <span className="shrink-0">{fmtEventDate(client.event_date) ?? '—'}</span>
                 </div>
               </button>
             ))
           )}
+          </div>
         </div>
 
         {/* Profile */}
@@ -410,8 +434,8 @@ export const AdminClients = () => {
                Edit form — deliberately behind a toggle. The profile is what an
                owner looks at daily; the fields are for the rare correction.
                --------------------------------------------------------------- */
-            <div className="max-w-3xl px-10 py-8">
-              <h2 className="font-serif text-2xl text-cream">
+            <div className="max-w-4xl px-8 py-7 2xl:px-10">
+              <h2 className="text-[20px] font-semibold tracking-[-0.01em] text-cream">
                 {draft.id ? `Editing ${draft.name || 'client'}` : 'New client'}
               </h2>
 
@@ -527,7 +551,7 @@ export const AdminClients = () => {
                   </div>
                 </div>
                 {agreed > 0 && advance > agreed && (
-                  <p className="text-[11px] text-[#d98a6a]">
+                  <p className="text-[13px] text-[#e0916f]">
                     The advance is larger than the agreed amount — that's an overpayment to
                     refund, not a balance.
                   </p>
@@ -549,14 +573,14 @@ export const AdminClients = () => {
                 {!draft.id && (
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-20 text-[11px] uppercase tracking-[0.18em] text-muted">
+                      <span className="w-20 text-[13px] font-medium text-muted">
                         Booking
                       </span>
                       {STATUSES.map((s) => (
                         <button
                           key={s}
                           onClick={() => set({ status: s })}
-                          className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.1em] transition-colors ${
+                          className={`${pill} transition-colors ${
                             draft.status === s
                               ? statusClass[s]
                               : 'border-line text-muted hover:text-cream'
@@ -567,14 +591,14 @@ export const AdminClients = () => {
                       ))}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-20 text-[11px] uppercase tracking-[0.18em] text-muted">
+                      <span className="w-20 text-[13px] font-medium text-muted">
                         Payment
                       </span>
                       {PAYMENT_STATUSES.map((s) => (
                         <button
                           key={s}
                           onClick={() => set({ payment_status: s })}
-                          className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.1em] transition-colors ${
+                          className={`${pill} transition-colors ${
                             draft.payment_status === s
                               ? paymentClass[s]
                               : 'border-line text-muted hover:text-cream'
@@ -591,14 +615,14 @@ export const AdminClients = () => {
               <div className="mt-8 flex items-center gap-3 border-t border-line pt-6">
                 <button
                   onClick={cancelEdit}
-                  className="text-[11px] uppercase tracking-[0.16em] text-muted hover:text-cream"
+                  className={btnQuiet}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={save}
                   disabled={saving}
-                  className="ml-auto bg-brass px-5 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass hover:bg-brass2 disabled:opacity-50"
+                  className={`ml-auto ${btnPrimary}`}
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>
@@ -608,176 +632,189 @@ export const AdminClients = () => {
             /* ---------------------------------------------------------------
                Profile
                --------------------------------------------------------------- */
-            <div className="max-w-3xl px-10 py-8">
-              <div className="flex items-start gap-5">
-                <div
-                  aria-hidden
-                  className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-brass/40 bg-brass/10 font-serif text-xl text-brass2"
-                >
-                  {initials(draft.name)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="font-serif text-3xl text-cream">{draft.name}</h2>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.1em] ${statusClass[draft.status]}`}
-                    >
-                      {draft.status}
-                    </span>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-[10px] uppercase tracking-[0.1em] ${paymentClass[draft.payment_status]}`}
-                    >
+            /*
+             * Full width, two columns from 1280px up: the booking on the left,
+             * invoices alongside it rather than a screen below. On one narrow
+             * column the invoice panel was permanently under the fold, which is
+             * why raising one meant scrolling past the whole record first.
+             */
+            <div className="px-8 py-7 2xl:px-10">
+              <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
+                <div className="min-w-0 flex-1 basis-[360px]">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <h2 className="text-[26px] font-semibold tracking-[-0.015em] text-cream">
+                      {draft.name}
+                    </h2>
+                    <span className={`${pill} ${statusClass[draft.status]}`}>{draft.status}</span>
+                    <span className={`${pill} ${paymentClass[draft.payment_status]}`}>
                       {draft.payment_status}
                     </span>
+                    {/* Icon-only, so both need a label: the glyph is the entire
+                        control. Delete keeps its confirm() — an icon is easier to
+                        hit by accident than a word. */}
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        onClick={() => setEditing(true)}
+                        aria-label="Edit client"
+                        title="Edit client"
+                        className={iconBtn}
+                      >
+                        <PencilSimple size={16} aria-hidden />
+                      </button>
+                      <button
+                        onClick={() => remove(draft.id)}
+                        aria-label="Delete client"
+                        title="Delete client"
+                        className={iconBtnDanger}
+                      >
+                        <Trash size={16} aria-hidden />
+                      </button>
+                    </div>
                   </div>
-                  <p className="mt-1.5 text-[12px] text-muted">
+                  <p className="mt-1.5 text-[13px] text-muted">
                     {fmtEventDate(draft.event_date, { weekday: 'short', month: 'long' }) ??
                       'No event date set'}
                     {draft.guest_count != null && ` · ${draft.guest_count} guests`}
                     {draft.event_type && ` · ${draft.event_type}`}
                   </p>
-                  <p className="mt-1 text-[11px] text-muted/70">
+                  <p className="mt-1 text-[12px] text-muted/70">
                     Added {fmtDate(draft.created_at)}
                     {draft.lead_id && ' · converted from a lead'}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-4">
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="border border-line px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-cream transition-colors hover:border-brass hover:text-brass2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => remove(draft.id)}
-                    className="text-[11px] uppercase tracking-[0.16em] text-muted hover:text-[#d98a6a]"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
 
-              {/* Money */}
-              <div className="mt-8 border border-line">
-                <div className="grid grid-cols-3 divide-x divide-line">
-                  {[
-                    { k: 'Agreed', v: agreed },
-                    { k: 'Advance paid', v: advance },
-                    { k: 'Balance due', v: balanceDue },
-                  ].map(({ k, v }, i) => (
-                    <div key={k} className="px-5 py-4">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-muted">{k}</div>
-                      <div
-                        className={`mt-1 font-serif text-2xl ${i === 2 ? 'text-brass2' : 'text-cream'}`}
-                      >
-                        {agreed > 0 || v > 0 ? money(v) : '—'}
-                      </div>
+                {/* The money, alone on the right. */}
+                <div className="shrink-0">
+                  <div className="overflow-hidden rounded-lg border border-line bg-panel/30">
+                    <div className="flex divide-x divide-line">
+                      {[
+                        { k: 'Agreed', v: agreed },
+                        { k: 'Advance paid', v: advance },
+                        { k: 'Balance due', v: balanceDue },
+                      ].map(({ k, v }, i) => (
+                        <div key={k} className="min-w-[132px] px-4 py-3">
+                          <div className="text-[12px] font-medium text-muted">{k}</div>
+                          <div
+                            className={`mt-0.5 text-[21px] font-semibold tracking-[-0.01em] ${i === 2 ? 'text-brass2' : 'text-cream'}`}
+                          >
+                            {agreed > 0 || v > 0 ? money(v) : '—'}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {agreed > 0 && (
-                  <div className="h-[3px] w-full bg-line">
-                    <div
-                      className="h-full bg-brass transition-[width]"
-                      style={{ width: `${paidPct}%` }}
-                    />
+                    {agreed > 0 && (
+                      <div className="h-[3px] w-full bg-line">
+                        <div
+                          className="h-full bg-brass transition-[width]"
+                          style={{ width: `${paidPct}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {agreed > 0 && advance > agreed && (
-                <p className="mt-2 text-[11px] text-[#d98a6a]">
-                  The advance is larger than the agreed amount — that's an overpayment to refund,
-                  not a balance.
-                </p>
-              )}
-
-              {/* Facts */}
-              <dl className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-line pt-7 sm:grid-cols-3">
-                <Fact
-                  label="Email"
-                  value={
-                    draft.email && (
-                      <a href={`mailto:${draft.email}`} className="hover:text-brass2">
-                        {draft.email}
-                      </a>
-                    )
-                  }
-                />
-                <Fact
-                  label="Phone"
-                  value={
-                    draft.phone && (
-                      <a href={`tel:${draft.phone}`} className="hover:text-brass2">
-                        {draft.phone}
-                      </a>
-                    )
-                  }
-                />
-                <Fact label="Package" value={draft.package} />
-              </dl>
-
-              {draft.notes && (
-                <div className="mt-8 border-t border-line pt-7">
-                  <h3 className="text-[10px] uppercase tracking-[0.18em] text-muted">Notes</h3>
-                  <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-cream/90">
-                    {draft.notes}
-                  </p>
+                  {agreed > 0 && advance > agreed && (
+                    <p className="mt-2 max-w-[420px] text-[13px] text-[#e0916f]">
+                      The advance is larger than the agreed amount — that&apos;s an overpayment to
+                      refund, not a balance.
+                    </p>
+                  )}
                 </div>
-              )}
-
-              {/* Statuses — one click each, saved immediately. */}
-              <div className="mt-8 space-y-3 border-t border-line pt-7">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="w-20 text-[11px] uppercase tracking-[0.18em] text-muted">
-                    Booking
-                  </span>
-                  {STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => writeThrough({ status: s })}
-                      className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.1em] transition-colors ${
-                        draft.status === s
-                          ? statusClass[s]
-                          : 'border-line text-muted hover:text-cream'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="w-20 text-[11px] uppercase tracking-[0.18em] text-muted">
-                    Payment
-                  </span>
-                  {PAYMENT_STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => writeThrough({ payment_status: s })}
-                      className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.1em] transition-colors ${
-                        draft.payment_status === s
-                          ? paymentClass[s]
-                          : 'border-line text-muted hover:text-cream'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                {/* The flag is set by hand and nothing reconciles it with the
-                    money above, so say plainly when the two disagree. */}
-                {paymentMismatch && (
-                  <p className="text-[11px] text-muted">{paymentMismatch}</p>
-                )}
               </div>
 
-              <ClientInvoicePanel
-                booking={draft}
-                invoices={invoices}
-                onCreated={(inv) => setInvoices((prev) => [inv, ...prev])}
-                onStatusChange={(id, status) =>
-                  setInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)))
-                }
-              />
+              <div className="mt-7 grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(380px,460px)] 2xl:gap-9">
+                <div className="min-w-0">
+                  {/* Facts */}
+                  <dl className="mt-7 grid grid-cols-2 gap-x-8 gap-y-6 border-t border-line pt-6 sm:grid-cols-3">
+                    <Fact
+                      label="Email"
+                      value={
+                        draft.email && (
+                          <a href={`mailto:${draft.email}`} className="hover:text-brass2">
+                            {draft.email}
+                          </a>
+                        )
+                      }
+                    />
+                    <Fact
+                      label="Phone"
+                      value={
+                        draft.phone && (
+                          <a href={`tel:${draft.phone}`} className="hover:text-brass2">
+                            {draft.phone}
+                          </a>
+                        )
+                      }
+                    />
+                    <Fact label="Package" value={draft.package} />
+                  </dl>
+
+                  {draft.notes && (
+                    <div className="mt-8 border-t border-line pt-7">
+                      <h3 className="text-[13px] font-medium text-muted">Notes</h3>
+                      <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-cream/90">
+                        {draft.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Statuses — one click each, saved immediately. */}
+                  <div className="mt-8 space-y-3 border-t border-line pt-7">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="w-20 text-[13px] font-medium text-muted">
+                        Booking
+                      </span>
+                      {STATUSES.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => writeThrough({ status: s })}
+                          className={`${pill} transition-colors ${
+                            draft.status === s
+                              ? statusClass[s]
+                              : 'border-line text-muted hover:text-cream'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="w-20 text-[13px] font-medium text-muted">
+                        Payment
+                      </span>
+                      {PAYMENT_STATUSES.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => writeThrough({ payment_status: s })}
+                          className={`${pill} transition-colors ${
+                            draft.payment_status === s
+                              ? paymentClass[s]
+                              : 'border-line text-muted hover:text-cream'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    {/* The flag is set by hand and nothing reconciles it with the
+                        money above, so say plainly when the two disagree. */}
+                    {paymentMismatch && (
+                      <p className="text-[13px] text-muted">{paymentMismatch}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sticks alongside the record on a tall screen, so the booking
+                    stays readable while a long invoice list scrolls. */}
+                <div className="min-w-0 xl:sticky xl:top-7">
+                  <ClientInvoicePanel
+                    booking={draft}
+                    invoices={invoices}
+                    onCreated={(inv) => setInvoices((prev) => [inv, ...prev])}
+                    onStatusChange={(id, status) =>
+                      setInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)))
+                    }
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -3,15 +3,13 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnGhost, btnPrimary, btnQuiet, field, hint, label } from '@/lib/admin-ui'
 import { computeTotals, money, type InvoiceData, type InvoiceItem } from '@/lib/invoice'
 import { InvoiceDocument } from '@/components/invoice/invoice-document'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const emptyItem = (): InvoiceItem => ({ description: '', qty: 1, unit_price: 0 })
 
-const field =
-  'w-full rounded-[1px] border border-line bg-transparent px-[12px] py-2 text-sm text-cream outline-none transition-colors focus:border-brass'
-const label = 'mb-1 block text-[10px] uppercase tracking-[0.18em] text-muted'
 
 type Form = {
   client_name: string
@@ -225,11 +223,11 @@ export const InvoiceEditor = () => {
         <div>
           <button
             onClick={() => navigate('/admin/invoices')}
-            className="text-[11px] uppercase tracking-[0.18em] text-muted hover:text-cream"
+            className={btnQuiet}
           >
             ← Invoices
           </button>
-          <h1 className="mt-1 font-serif text-xl text-cream">
+          <h1 className="mt-1 text-[18px] font-semibold tracking-[-0.01em] text-cream">
             {number ?? 'New invoice'}{' '}
             <span className="ml-2 text-[13px] text-brass2">{money(total)}</span>
             {advancePaid > 0 && (
@@ -243,7 +241,7 @@ export const InvoiceEditor = () => {
           {token && (
             <button
               onClick={() => window.print()}
-              className="border border-line px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass2"
+              className={btnGhost}
             >
               Print / PDF
             </button>
@@ -253,7 +251,7 @@ export const InvoiceEditor = () => {
               href={`/invoice/${token}`}
               target="_blank"
               rel="noreferrer"
-              className="border border-line px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass2"
+              className={btnGhost}
             >
               Public link
             </a>
@@ -261,14 +259,14 @@ export const InvoiceEditor = () => {
           <button
             onClick={sendToClient}
             disabled={sending || saving}
-            className="border border-line px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cream hover:border-brass hover:text-brass2 disabled:opacity-50"
+            className={btnGhost}
           >
             {sending ? 'Sending…' : 'Email client'}
           </button>
           <button
             onClick={save}
             disabled={saving}
-            className="bg-brass px-5 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass hover:bg-brass2 disabled:opacity-50"
+            className={btnPrimary}
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -325,7 +323,7 @@ export const InvoiceEditor = () => {
               onChange={(e) => set({ advance_paid: e.target.value })}
               className={field}
             />
-            <p className="mt-1 text-[11px] text-muted">
+            <p className={hint}>
               Deducted from the total as a credit. Prefilled from the client's advance —
               clear it on a follow-up invoice so the same deposit isn't credited twice.
             </p>
@@ -334,7 +332,7 @@ export const InvoiceEditor = () => {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <label className={label}>Line items</label>
-              <button onClick={addItem} className="text-[11px] uppercase tracking-[0.16em] text-brass2 hover:text-brass">
+              <button onClick={addItem} className="text-[13px] font-semibold text-brass2 transition-colors hover:text-brass">
                 + Add row
               </button>
             </div>

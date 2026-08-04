@@ -17,6 +17,8 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+import { BlogPage } from '@/pages/blog'
+import { BlogPostPage } from '@/pages/blog-post'
 import { NotFoundPage } from '@/pages/not-found'
 import {
   buildHead,
@@ -49,6 +51,8 @@ const PublicRoutes = () => (
       <Route path="/" element={<HomePage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/gallery" element={<GalleryPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>

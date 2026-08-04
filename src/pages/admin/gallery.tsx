@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
+import { btnDanger, btnPrimary, btnQuiet, field, label, pageTitle } from '@/lib/admin-ui'
 
 type Row = Record<string, any>
 
@@ -12,8 +13,6 @@ const SPANS = [
   { value: 'wide', label: 'Wide (2 cols)' },
 ]
 
-const inputClass =
-  'w-full rounded-[1px] border border-line bg-transparent px-[13px] py-2.5 text-sm text-cream outline-none transition-colors focus:border-brass'
 
 export const AdminGallery = () => {
   const [rows, setRows] = useState<Row[]>([])
@@ -111,19 +110,19 @@ export const AdminGallery = () => {
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-line px-8 py-6">
         <div>
-          <h1 className="font-serif text-2xl text-cream">Gallery</h1>
+          <h1 className={pageTitle}>Gallery</h1>
           <p className="mt-1 text-[12px] text-muted">{rows.length} photos</p>
         </div>
         <button
           onClick={() => setDraft(blank())}
-          className="bg-brass px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2"
+          className={btnPrimary}
         >
           + New photo
         </button>
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <div className="w-[420px] shrink-0 overflow-y-auto border-r border-line">
+        <div className="w-[clamp(280px,24vw,380px)] shrink-0 overflow-y-auto border-r border-line">
           {loading ? (
             <p className="px-8 py-10 text-sm text-muted">Loading…</p>
           ) : rows.length === 0 ? (
@@ -134,22 +133,22 @@ export const AdminGallery = () => {
                 <button
                   key={row.id}
                   onClick={() => setDraft({ ...row, span: row.span ?? '' })}
-                  className={`group relative aspect-square overflow-hidden rounded-[2px] border bg-cover bg-center text-left ${
+                  className={`group relative aspect-square overflow-hidden rounded-lg border bg-cover bg-center text-left ${
                     draft?.id === row.id ? 'border-brass' : 'border-line'
                   }`}
                   style={{ backgroundImage: `url(${row.src})` }}
                 >
                   <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-[rgba(10,8,6,0.9)] to-transparent p-2">
-                    <span className="truncate text-[10px] text-cream">{row.label}</span>
+                    <span className="truncate text-[12px] text-cream">{row.label}</span>
                   </span>
                   <span className="absolute left-1.5 top-1.5 flex gap-1">
                     {row.featured && (
-                      <span className="rounded-full bg-brass px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-onbrass">
+                      <span className="rounded-full bg-brass px-1.5 py-0.5 text-[10px] font-medium text-onbrass">
                         ★
                       </span>
                     )}
                     {!row.published && (
-                      <span className="rounded-full border border-line bg-ink/80 px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-muted">
+                      <span className="rounded-full border border-line bg-ink/80 px-1.5 py-0.5 text-[10px] font-medium text-muted">
                         Draft
                       </span>
                     )}
@@ -166,19 +165,19 @@ export const AdminGallery = () => {
               Select a photo, or add a new one.
             </div>
           ) : (
-            <div className="max-w-2xl px-10 py-8">
-              <h2 className="font-serif text-xl text-cream">
+            <div className="max-w-3xl px-8 py-7 2xl:px-10">
+              <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-cream">
                 {draft.id ? 'Edit photo' : 'New photo'}
               </h2>
 
               <div className="mt-6 space-y-5">
                 <div>
-                  <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                  <label className={label}>
                     Image *
                   </label>
                   {draft.src && (
                     <div
-                      className="mb-3 aspect-[16/9] w-full rounded-[2px] border border-line bg-cover bg-center"
+                      className="mb-3 aspect-[16/9] w-full rounded-lg border border-line bg-cover bg-center"
                       style={{ backgroundImage: `url(${draft.src})` }}
                     />
                   )}
@@ -190,37 +189,37 @@ export const AdminGallery = () => {
                       const f = e.target.files?.[0]
                       if (f) void uploadFile(f)
                     }}
-                    className="block w-full text-sm text-muted file:mr-4 file:cursor-pointer file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-[11px] file:uppercase file:tracking-[0.18em] file:text-brass2"
+                    className="block w-full text-[13px] text-muted file:mr-4 file:cursor-pointer file:rounded-md file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-[13px] file:font-medium file:text-brass2 hover:file:border-brass"
                   />
                   {uploading && <p className="mt-2 text-[12px] text-brass2">Uploading…</p>}
                   <input
                     placeholder="…or paste an image URL / path"
                     value={draft.src ?? ''}
                     onChange={(e) => setDraft({ ...draft, src: e.target.value })}
-                    className={`${inputClass} mt-3`}
+                    className={`${field} mt-3`}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                  <label className={label}>
                     Caption *
                   </label>
                   <input
                     value={draft.label ?? ''}
                     onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-                    className={inputClass}
+                    className={field}
                   />
                 </div>
 
                 <div className="flex gap-5">
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                    <label className={label}>
                       Category
                     </label>
                     <select
                       value={draft.cat}
                       onChange={(e) => setDraft({ ...draft, cat: e.target.value })}
-                      className={inputClass}
+                      className={field}
                     >
                       {CATS.map((c) => (
                         <option key={c} value={c} className="bg-ink">
@@ -230,13 +229,13 @@ export const AdminGallery = () => {
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                    <label className={label}>
                       Size
                     </label>
                     <select
                       value={draft.span ?? ''}
                       onChange={(e) => setDraft({ ...draft, span: e.target.value })}
-                      className={inputClass}
+                      className={field}
                     >
                       {SPANS.map((s) => (
                         <option key={s.value} value={s.value} className="bg-ink">
@@ -249,14 +248,14 @@ export const AdminGallery = () => {
 
                 <div className="flex items-end gap-8">
                   <div>
-                    <label className="mb-1.5 block text-[10px] uppercase tracking-[0.2em] text-muted">
+                    <label className={label}>
                       Order
                     </label>
                     <input
                       type="number"
                       value={draft.sort ?? 0}
                       onChange={(e) => setDraft({ ...draft, sort: e.target.value })}
-                      className={`${inputClass} w-24`}
+                      className={`${field} w-24`}
                     />
                   </div>
                   <label className="flex items-center gap-2 pb-2.5 text-sm text-cream">
@@ -282,20 +281,20 @@ export const AdminGallery = () => {
                 <button
                   onClick={save}
                   disabled={uploading}
-                  className="bg-brass px-5 py-2.5 text-[11px] uppercase tracking-[0.18em] text-onbrass transition-colors hover:bg-brass2 disabled:opacity-50"
+                  className={btnPrimary}
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setDraft(null)}
-                  className="text-[11px] uppercase tracking-[0.18em] text-muted hover:text-cream"
+                  className={btnQuiet}
                 >
                   Cancel
                 </button>
                 {draft.id && (
                   <button
                     onClick={() => remove(draft)}
-                    className="ml-auto text-[11px] uppercase tracking-[0.18em] text-muted hover:text-[#d98a6a]"
+                    className={`ml-auto ${btnDanger}`}
                   >
                     Delete
                   </button>

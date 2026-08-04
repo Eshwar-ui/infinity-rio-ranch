@@ -48,12 +48,13 @@ Supabase backend, deployed to Vercel.
   values in the prerendered HTML *and* makes the client's first render match it,
   so hydration holds. The pull is forgiving by design — no creds, no network, or
   no tables and it keeps the committed snapshot and exits 0.
-- **Editable content lives in five tables.** `site_copy` (keyed page copy —
+- **Editable content lives in six tables.** `site_copy` (keyed page copy —
   `key`, `page`, `label`, `value`, `type`), `stats`, `amenities`, `list_items`
-  (`list` = `included` | `event_types`), plus the pre-existing `testimonials`,
-  `events`, `faqs`, `gallery`. Admin UI: `/admin/content` for copy,
+  (`list` = `included` | `event_types`), `posts` (the blog), plus the
+  pre-existing `testimonials`, `events`, `faqs`, `gallery`. Admin UI:
+  `/admin/content` for copy, `/admin/blog` for posts,
   `ContentEditor` (with its `scope` prop for `list_items`) for the rest.
-  All nine editors sit behind the single **CMS** sidebar entry as a tab bar
+  All ten editors sit behind the single **CMS** sidebar entry as a tab bar
   (`pages/admin/cms-layout.tsx`, a pathless layout route in `App.tsx` — the
   per-editor URLs are unchanged). A new website editor needs a row in
   `pages/admin/cms-tabs.ts` and a child of that layout route; nothing in
@@ -64,6 +65,34 @@ Supabase backend, deployed to Vercel.
   fails the build on a throw, so `stats[1].value` in `seo.ts` meant removing one
   statistic in the admin panel broke the deploy. Never index CMS arrays
   positionally and never interpolate a possibly-absent value into a template.
+- **The blog is prerendered per post, so `PUBLIC_ROUTES` is computed, not fixed.**
+  `posts` (0008) holds slug, markdown body, cover, per-post `seo_title` /
+  `seo_description`, an FAQ `jsonb` array and optional CTA overrides. Every
+  published post becomes a `/blog/<slug>` entry in `PUBLIC_ROUTES`, which is what
+  makes the prerenderer emit `dist/blog/<slug>/index.html`, a sitemap row and an
+  `llms.txt` line. Consequences worth knowing before touching any of it:
+  - **Never index `ROUTE_META` by an arbitrary member of `PUBLIC_ROUTES`** — post
+    routes have no entry. `llms.txt` iterates `STATIC_ROUTES` for exactly this
+    reason; post metadata comes from `postMeta(post)` instead.
+  - **`vercel.json` gets one pattern rewrite, `/blog/:slug`**, not one per post.
+    An unpublished slug matches no file and falls through to `404.html` — that's
+    the design, not a gap. `assertRewritesCoverRoutes` knows about the pattern.
+  - **Post `lastmod` comes from `updated_at`, not git.** There is no
+    `src/pages/blog/<slug>.tsx`, so `gitLastModified()` returns null for posts;
+    `sitemapEntries()` carries the DB value and the prerenderer prefers it.
+  - **`published_at` is stamped by a DB trigger on first publish**, never by the
+    admin UI — otherwise every unpublish/fix/republish cycle silently re-dates
+    the article. Same rule as invoice numbers.
+  - **The blog pages are eagerly imported in both `App.tsx` and
+    `entry-server.tsx`.** They cannot be `React.lazy`: the Suspense fallback
+    would land in the prerendered HTML and mismatch on hydration. The cost is
+    that post bodies ship in the main bundle — `pull-content.mjs` warns past
+    ~200 kB of body text, which is the point to reconsider the approach.
+  - **Dates are formatted by `src/lib/post-format.ts`, never `toLocaleDateString`** —
+    that reads the runtime's locale and timezone, so Node and the browser
+    disagree and hydration breaks.
+  - FAQ pairs render *and* emit `FAQPage` JSON-LD; Google drops the enhancement
+    if the markup and the schema disagree, so both come from `post.faqs`.
 - **Publishing is a rebuild.** Saving in the admin panel updates the DB — instant
   for JS visitors, invisible to crawlers until the next build. The "Publish to
   live site" button (`components/admin/publish-bar.tsx`) POSTs a Vercel deploy
@@ -98,6 +127,24 @@ Supabase backend, deployed to Vercel.
   Don't "fix" this by computing it from `amount`/`advance_amount`. It's separate
   from `status` (booked/completed/cancelled) and from an invoice's own
   draft/sent/paid.
+- **The admin panel does not use the site's fonts.** `.admin-ui` (index.css,
+  applied on the admin shell + login) switches to the OS UI stack via
+  `font-admin` — the panel is lazy-loaded behind auth, so a webfont would be a
+  download nobody sees, and Cormorant/Jost are branding, not tool typography.
+  Class strings live once in `src/lib/admin-ui.ts` (`field`, `label`,
+  `btnPrimary`, `pill`, …); every page used to declare its own `field`/`label`,
+  which is how they drifted. Nothing structural is set in ALL CAPS with wide
+  tracking any more — that treatment costs legibility at 12px. The
+  client-facing invoice document keeps the serif deliberately.
+- **Appending a width to a shared class string doesn't work.** `field` carries
+  `w-full`, and Tailwind emits `.w-full` *after* `.w-16`/`.w-24` in the sheet, so
+  `` `${field} w-24` `` silently renders full width — this shipped twice (the
+  CMS "Order" input, the invoice line items). Size the *wrapper* instead. Same
+  trap for any conflicting pair in one string.
+- **List views share one filter toolbar** (`components/admin/list-filters.tsx`):
+  search + per-option counts, docked above the list it filters rather than
+  floating in the page header. Counts are computed against the *other* active
+  filters, so "Paid 6" can't sit above a list of two.
 - **`/admin/clients` is a profile, not a form.** Read-only by default behind an
   Edit toggle; status writes straight through on click. Invoices are raised in
   place via `components/admin/client-invoice-panel.tsx`, which only ever
@@ -158,6 +205,10 @@ Supabase backend, deployed to Vercel.
 
 ## Layout
 - `src/pages/` public pages; `src/pages/admin/` admin panel; `src/pages/invoice-public.tsx`.
+- `src/pages/blog.tsx` + `src/pages/blog-post.tsx` public blog;
+  `src/pages/admin/blog.tsx` its editor; `src/lib/markdown.tsx` the body renderer
+  (react-markdown, elements mapped to the site's type scale — not a `prose` sheet);
+  `src/lib/post-format.ts` hydration-safe dates.
 - `src/components/admin/content-editor.tsx` — generic CRUD editor (testimonials/events/faqs).
 - `src/lib/supabase.ts` client; `src/lib/invoice.ts` totals/money helpers.
 - `src/hooks/use-admin.ts` session + is_admin; `src/hooks/use-site-content.ts` public reads.
@@ -172,7 +223,12 @@ Supabase backend, deployed to Vercel.
   recreated to carry the advance. `0006_client_payment_status.sql` =
   `clients.payment_status`, seeded once from the existing amounts.
   `0007_documents_bucket.sql` = the private `documents` bucket holding the
-  rental-agreement template.
+  rental-agreement template. `0008_posts.sql` = the `posts` table, its RLS, the
+  `stamp_published_at()` trigger and the published/published_at index. Covers
+  reuse the existing public `gallery` bucket rather than adding a new one.
+  `supabase/seeds/` is **not** migrations — one-off content inserts, run by hand
+  once. They upsert, so re-running one overwrites whatever the owner has since
+  edited in the admin panel. Never move a seed into `migrations/`.
   `RUNBOOK.md` — key rotation + new-project setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
   **Its source is not in the repo** (deployed directly) — must be rebuilt from

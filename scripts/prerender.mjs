@@ -113,10 +113,30 @@ const buildSitemap = (entries) =>
  */
 const SPA_REWRITES = ['/admin', '/admin/(.*)', '/invoice/(.*)']
 
+/**
+ * Blog posts are the one route family that can't be enumerated in vercel.json:
+ * the set changes every time the owner publishes. One pattern rewrite covers
+ * them all, and an unpublished slug simply matches no file and falls through to
+ * 404.html — which is the required behaviour, not a workaround.
+ */
+const POST_REWRITE = '/blog/:slug'
+const isPostRoute = (route) => route.startsWith('/blog/')
+
 const assertRewritesCoverRoutes = async (routes) => {
   const config = JSON.parse(await readFile(path.join(ROOT, 'vercel.json'), 'utf8'))
   const sources = new Set((config.rewrites ?? []).map((r) => r.source))
-  const missing = routes.filter((route) => route !== '/' && !sources.has(route))
+
+  if (routes.some(isPostRoute) && !sources.has(POST_REWRITE)) {
+    throw new Error(
+      `vercel.json is missing the blog post rewrite:\n` +
+        `  { "source": "${POST_REWRITE}", "destination": "${POST_REWRITE}/index.html" }\n` +
+        'Without it every published post 404s.',
+    )
+  }
+
+  const missing = routes.filter(
+    (route) => route !== '/' && !isPostRoute(route) && !sources.has(route),
+  )
 
   if (missing.length > 0) {
     throw new Error(
@@ -214,9 +234,14 @@ const main = async () => {
   await writeFile(notFoundFile, notFound, 'utf8')
   report(NOT_FOUND_ROUTE, notFoundFile, notFound)
 
+  /*
+   * An entry that already carries a lastmod knows better than git does: posts
+   * live in the database, so their real modification time is the `updated_at`
+   * the table maintains, and `git log` has no commit to point at for them.
+   */
   const dated = sitemapEntries().map((entry) => ({
     ...entry,
-    lastmod: gitLastModified(entry.route),
+    lastmod: entry.lastmod ?? gitLastModified(entry.route),
   }))
 
   const undated = dated.filter((e) => !e.lastmod)

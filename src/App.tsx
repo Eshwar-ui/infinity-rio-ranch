@@ -7,6 +7,14 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+/*
+ * The blog pages are imported eagerly, unlike admin/invoice below. They are
+ * prerendered, so a lazy chunk would render the Suspense fallback into
+ * dist/blog/<slug>/index.html and mismatch on hydration — throwing away the
+ * prerender's head start on precisely the pages that exist for search traffic.
+ */
+import { BlogPage } from '@/pages/blog'
+import { BlogPostPage } from '@/pages/blog-post'
 import { NotFoundPage } from '@/pages/not-found'
 
 // Admin + invoice code is lazy-loaded so public visitors never download it.
@@ -23,6 +31,7 @@ const AdminEvents = named(() => import('@/pages/admin/events'), 'AdminEvents')
 const AdminFaqs = named(() => import('@/pages/admin/faqs'), 'AdminFaqs')
 const AdminGallery = named(() => import('@/pages/admin/gallery'), 'AdminGallery')
 const AdminPageCopy = named(() => import('@/pages/admin/page-copy'), 'AdminPageCopy')
+const AdminBlog = named(() => import('@/pages/admin/blog'), 'AdminBlog')
 const AdminStats = named(() => import('@/pages/admin/lists'), 'AdminStats')
 const AdminAmenities = named(() => import('@/pages/admin/lists'), 'AdminAmenities')
 const AdminIncluded = named(() => import('@/pages/admin/lists'), 'AdminIncluded')
@@ -38,6 +47,8 @@ const router = createBrowserRouter([
       { path: '/', element: <HomePage /> },
       { path: '/about', element: <AboutPage /> },
       { path: '/gallery', element: <GalleryPage /> },
+      { path: '/blog', element: <BlogPage /> },
+      { path: '/blog/:slug', element: <BlogPostPage /> },
       { path: '/contact', element: <ContactPage /> },
       // Matches dist/404.html, which the server returns for unknown paths.
       // Mirror any change here in src/entry-server.tsx.
@@ -59,6 +70,7 @@ const router = createBrowserRouter([
         element: <CmsLayout />,
         children: [
           { path: 'content', element: <AdminPageCopy /> },
+          { path: 'blog', element: <AdminBlog /> },
           { path: 'stats', element: <AdminStats /> },
           { path: 'amenities', element: <AdminAmenities /> },
           { path: 'included', element: <AdminIncluded /> },
