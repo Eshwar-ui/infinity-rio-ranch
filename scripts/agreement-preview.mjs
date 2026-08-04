@@ -29,7 +29,7 @@ const OUT = path.join(root, '.agreement-preview.pdf')
 const [name = 'Priya Raghunathan & Daniel Okonkwo', date = '2027-06-12', type = 'Wedding'] =
   process.argv.slice(2)
 
-const { fields } = JSON.parse(readFileSync(FIELDS, 'utf8'))
+const { fields, intro, pageSize, pageCount } = JSON.parse(readFileSync(FIELDS, 'utf8'))
 
 const formatEventDate = (d) =>
   d
@@ -40,6 +40,11 @@ const formatEventDate = (d) =>
         timeZone: 'UTC',
       })
     : ''
+
+/** Mirrors titleCaseName() in agreement.ts — see the note there on why it only
+ *  ever adds capitals. Keep the two in step or this preview lies. */
+const titleCaseName = (name) =>
+  (name ?? '').replace(/[^\s\-'’]+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1))
 
 const pdf = await PDFDocument.load(readFileSync(TEMPLATE))
 const font = await pdf.embedFont(StandardFonts.TimesRoman)
@@ -59,11 +64,44 @@ const draw = (key, text) => {
   )
 }
 
+/** Same guard as agreement.ts: a cover rectangle on an unrecognised layout
+ *  could hide a clause, so an unfamiliar template keeps its broken line. */
+const looksLikeKnownTemplate = () => {
+  if (pages.length !== pageCount) return false
+  const page = pages[intro?.page ?? 0]
+  if (!page) return false
+  const { width, height } = page.getSize()
+  return Math.abs(width - pageSize.width) < 1 && Math.abs(height - pageSize.height) < 1
+}
+
+/** Mirrors drawIntro() in agreement.ts — the template's opening line is broken,
+ *  so it gets covered and reset. Keep the two in step or this preview lies. */
+const drawIntro = () => {
+  if (!intro) return
+  if (!looksLikeKnownTemplate()) {
+    console.log('  intro                SKIPPED — template is not the one these coordinates fit')
+    return
+  }
+  const page = pages[intro.page]
+  if (!page) return
+  const [r, g, b] = intro.coverColor
+  page.drawRectangle({ ...intro.cover, color: rgb(r, g, b) })
+  intro.lines.forEach((line, i) => {
+    const y = intro.baseline + (intro.lines.length - 1 - i) * intro.leading
+    const width = font.widthOfTextAtSize(line, intro.size)
+    page.drawText(line, { x: intro.centerX - width / 2, y, size: intro.size, font, color: rgb(0.1, 0.08, 0.07) })
+    console.log(
+      `  ${(i === 0 ? 'intro' : '').padEnd(20)} page ${intro.page + 1}  x ${(intro.centerX - width / 2).toFixed(1)}→${(intro.centerX + width / 2).toFixed(1)}  y ${y.toFixed(1)}  ${intro.size}pt  "${line}"`,
+    )
+  })
+}
+
 console.log('[agreement] stamping:')
-draw('clientName', name)
+drawIntro()
+draw('clientName', titleCaseName(name))
 draw('eventDate', formatEventDate(date))
-draw('eventType', type)
-draw('signatureClientName', name)
+draw('eventType', titleCaseName(type))
+draw('signatureClientName', titleCaseName(name))
 
 writeFileSync(OUT, await pdf.save())
 console.log(`\n[agreement] wrote ${path.relative(root, OUT)} — open it and check every value sits on its line.`)

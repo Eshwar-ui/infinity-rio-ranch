@@ -1,5 +1,10 @@
-// send-invoice — emails a client their invoice link via Resend, with the filled
-// rental agreement attached when the invoice belongs to a client.
+// send-invoice — emails a client their invoice via Resend, with Download
+// invoice and Download agreement buttons.
+//
+// Neither document is attached. The invoice button opens /invoice/<token> (which
+// has its own Print / Save PDF); the agreement button hits /agreement/<token>,
+// served by the `public-agreement` function. Both are keyed on the same
+// `public_token`, so the client holds one credential, not three.
 //
 // Invoked from the admin panel:
 //   supabase.functions.invoke('send-invoice', { body: { id } })            → sends
@@ -16,7 +21,6 @@
 // Optional: INVOICE_REPLY_TO (where client replies should land, e.g. the venue's inbox).
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
 import { agreementFileName, buildAgreement } from '../_shared/agreement.ts'
 
@@ -106,6 +110,11 @@ Deno.serve(async (req) => {
     const advance = Math.max(0, Number(inv.advance_paid) || 0)
     const balance = Math.max(0, total - advance)
     const link = `${SITE_URL}/invoice/${inv.public_token}`
+    // Served by the `public-agreement` function, proxied through the venue's own
+    // domain by a rewrite in vercel.json. A contract download pointing at a
+    // supabase.co URL reads as a phishing link in the one email where it matters
+    // most — and mail filters treat an unfamiliar host the same way.
+    const agreementLink = `${SITE_URL}/agreement/${inv.public_token}`
 
     const rowsHtml = items.map((it) => `
       <tr>
@@ -123,7 +132,7 @@ Deno.serve(async (req) => {
       <p style="font-size:14px;line-height:1.6;color:#6b6155;margin:0 0 20px">
         Hi ${escapeHtml(inv.client_name)}, thank you for choosing Infinity at Rio Ranch.
         Your invoice is ready — the full itemized copy is below and always available at your private link.
-        ${agreement ? 'Your rental agreement is attached to this email: please print it, sign and date it, and return it to us.' : ''}
+        ${agreement ? 'Your rental agreement is ready to download below: please print it, sign and date it, and return it to us.' : ''}
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
         <thead>
@@ -145,11 +154,26 @@ Deno.serve(async (req) => {
         <div style="text-align:right;font-size:16px;color:#1a1512;margin-top:6px"><strong>Balance due: ${money(balance)}</strong></div>`
         : `<div style="text-align:right;font-size:16px;color:#1a1512;margin-top:6px"><strong>Amount due: ${money(total)}</strong></div>`}
       </div>
-      <div style="margin:28px 0">
-        <a href="${link}" style="display:inline-block;background:#b08d3f;color:#fff;text-decoration:none;padding:12px 26px;font-family:Arial,sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase">View &amp; print invoice</a>
-      </div>
+      <!-- Buttons sit in a table, not a flex row: Outlook ignores display:flex
+           and would stack these full-width. Cells side by side work everywhere. -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0">
+        <tr>
+          <td style="padding-right:10px">
+            <a href="${link}" style="display:inline-block;background:#b08d3f;color:#fff;text-decoration:none;padding:12px 26px;font-family:Arial,sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase">Download invoice</a>
+          </td>
+          ${agreement ? `
+          <td>
+            <a href="${agreementLink}" style="display:inline-block;background:#ffffff;color:#2a2320;border:1px solid #b08d3f;text-decoration:none;padding:11px 26px;font-family:Arial,sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase">Download agreement</a>
+          </td>` : ''}
+        </tr>
+      </table>
       ${inv.notes ? `<p style="font-size:12px;color:#6b6155;font-family:Arial,sans-serif;line-height:1.6">${escapeHtml(inv.notes)}</p>` : ''}
-      <p style="font-size:11px;color:#a99a86;margin-top:24px;font-family:Arial,sans-serif">If the button doesn't work, copy this link: ${link}</p>
+      <!-- Both links spelled out: a client whose mail client strips the buttons
+           still has to be able to reach a contract they are being asked to sign. -->
+      <p style="font-size:11px;color:#a99a86;margin-top:24px;font-family:Arial,sans-serif;line-height:1.7">
+        If the buttons don't work, copy these links:<br>
+        Invoice: ${link}${agreement ? `<br>Agreement: ${agreementLink}` : ''}
+      </p>
     </div>`
 
     const payload: Record<string, unknown> = {
@@ -159,11 +183,12 @@ Deno.serve(async (req) => {
       html,
     }
     if (INVOICE_REPLY_TO) payload.reply_to = INVOICE_REPLY_TO
-    if (agreement && client) {
-      payload.attachments = [
-        { filename: agreementFileName(client.name), content: encodeBase64(agreement) },
-      ]
-    }
+    // The agreement is a download button now, not an attachment. It is still
+    // BUILT above rather than just linked, because `agreement` is what decides
+    // whether the button is rendered at all — a link to a document that can't
+    // be produced is worse than no link. Attaching it as well would put a
+    // multi-megabyte PDF on every invoice email for no gain: same document,
+    // twice, and attachment size is the main thing that lands mail in spam.
 
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',

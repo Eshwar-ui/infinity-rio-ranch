@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { computeTotals, money, type InvoiceItem } from '@/lib/invoice'
-import { btnPrimary, btnQuiet, field, label, pill, sectionTitle } from '@/lib/admin-ui'
+import { btnPrimary, btnQuiet, chip, field, label, pill, sectionTitle } from '@/lib/admin-ui'
 
 /** The slice of an invoice this panel lists and totals up. */
 export type ClientInvoice = {
@@ -66,6 +66,12 @@ type Draft = {
   items: InvoiceItem[]
 }
 
+/** The two documents a client receives, and the two tabs of the viewer. */
+type PreviewTab = 'invoice' | 'agreement'
+
+/** The client-facing invoice URL, absolute so it can be copied and pasted. */
+const publicInvoiceUrl = (token: string) => new URL(`/invoice/${token}`, location.origin).href
+
 /**
  * Invoices for one client, raised without leaving their profile.
  *
@@ -88,7 +94,34 @@ export const ClientInvoicePanel = ({
   const [draft, setDraft] = useState<Draft | null>(null)
   const [creating, setCreating] = useState(false)
   const [sendingId, setSendingId] = useState<string | null>(null)
-  const [previewId, setPreviewId] = useState<string | null>(null)
+  const [buildingId, setBuildingId] = useState<string | null>(null)
+
+  // Which invoice is on screen in the viewer, and which of its two documents.
+  const [viewer, setViewer] = useState<{ id: string; tab: PreviewTab } | null>(null)
+  // The built agreement, kept as an object URL so switching tabs back doesn't
+  // rebuild a PDF the function already spent a few seconds on.
+  const [agreement, setAgreement] = useState<{ id: string; url: string } | null>(null)
+  const [agreementError, setAgreementError] = useState<string | null>(null)
+  const agreementUrl = useRef<string | null>(null)
+
+  // Resolved from the list every render, so a status change or a rename shows
+  // in the viewer header without a second copy of the row to keep in sync.
+  const viewed = viewer ? (invoices.find((i) => i.id === viewer.id) ?? null) : null
+
+  /** One live blob at a time: the old one is revoked before the new one lands. */
+  const holdAgreement = (id: string, url: string | null) => {
+    if (agreementUrl.current) URL.revokeObjectURL(agreementUrl.current)
+    agreementUrl.current = url
+    setAgreement(url ? { id, url } : null)
+  }
+
+  // Leaving the page with a PDF still held would leak it for the tab's lifetime.
+  useEffect(
+    () => () => {
+      if (agreementUrl.current) URL.revokeObjectURL(agreementUrl.current)
+    },
+    [],
+  )
 
   // What the advance has already been credited against. Prefilling a second
   // invoice with the full deposit would credit the same money twice.
@@ -185,18 +218,44 @@ export const ClientInvoicePanel = ({
     })
     setOpen(false)
     setDraft(null)
+    // Land on the finished document rather than back on a list row: the first
+    // thing anyone does after raising an invoice is check it reads right.
+    setViewer({ id: data.id, tab: 'invoice' })
   }
 
-  /** Surfaces the function's own message instead of a generic failure. */
+  /**
+   * Surfaces the real reason a function call failed.
+   *
+   * Three different shapes arrive here and only the first is ours:
+   *  - `{ error }` — send-invoice's own handled failures, already a sentence
+   *    written for the owner ("No agreement template uploaded yet…").
+   *  - `{ code, message }` — the Edge Runtime itself, before our code ran:
+   *    BOOT_ERROR when a deploy missed `_shared/`, WORKER_LIMIT when the PDF
+   *    blew the memory or CPU cap.
+   *  - a bare stack trace, when the worker died before it could serialise JSON.
+   *
+   * This used to read `body.error` and return the fallback for everything else,
+   * so a boot failure, a blown memory limit and a missing template all produced
+   * the same sentence with nothing to act on. The status code is worth carrying
+   * too — it's the difference between "we rejected this" and "it never ran".
+   */
   const functionError = async (error: unknown, fallback: string) => {
     const res = (error as { context?: Response })?.context
-    try {
-      const body = await res?.clone().json()
-      if (body?.error) return String(body.error)
-    } catch {
-      /* non-JSON body — fall through */
+    // No response at all: the request never landed (offline, CORS, DNS).
+    if (!res) {
+      const msg = (error as { message?: string })?.message
+      return msg ? `${fallback} — ${msg}` : fallback
     }
-    return fallback
+    try {
+      const body = await res.clone().json()
+      if (body?.error) return String(body.error)
+      const platform = [body?.code, body?.message].filter(Boolean).join(' — ')
+      if (platform) return `${fallback} — ${platform} (HTTP ${res.status})`
+    } catch {
+      const text = (await res.clone().text().catch(() => '')).trim()
+      if (text) return `${fallback} — ${text.slice(0, 300)} (HTTP ${res.status})`
+    }
+    return `${fallback} (HTTP ${res.status})`
   }
 
   const email = async (invoice: ClientInvoice) => {
@@ -212,39 +271,88 @@ export const ClientInvoicePanel = ({
     }
     await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoice.id)
     onStatusChange(invoice.id, 'sent')
-    // Say when the agreement didn't ride along — a missing template would
-    // otherwise look exactly like a successful send.
+    // Say when the agreement button wasn't included — a missing template would
+    // otherwise look exactly like a successful send. `agreement` means the
+    // document could be built, which is what decides whether the email shows
+    // the button at all; it is no longer an attachment.
     toast.success(
       data?.agreement
-        ? 'Invoice and rental agreement emailed to the client.'
-        : 'Invoice emailed — no agreement attached (no template uploaded).',
+        ? 'Emailed — the client can download the invoice and the agreement.'
+        : 'Invoice emailed — no agreement link (no template uploaded).',
     )
   }
 
-  /** The exact PDF the email would attach, so it can be checked first. */
-  const previewAgreement = async (invoice: ClientInvoice) => {
-    setPreviewId(invoice.id)
+  /**
+   * Builds the exact PDF the email would attach and hands it to the viewer.
+   *
+   * Every failure is written into the viewer as well as toasted: a toast is
+   * gone in four seconds, and "why is this panel empty" is the question the
+   * message exists to answer.
+   */
+  const loadAgreement = async (invoice: ClientInvoice) => {
+    if (agreement?.id === invoice.id) return // already built for this invoice
+    setAgreementError(null)
+    setBuildingId(invoice.id)
     const { data, error } = await supabase.functions.invoke('send-invoice', {
       body: { id: invoice.id, preview: 1 },
     })
-    setPreviewId(null)
-    if (error || !(data instanceof Blob)) {
-      toast.error(await functionError(error, 'Could not build the agreement.'))
+    setBuildingId(null)
+    if (error) {
+      const message = await functionError(error, 'Could not build the agreement.')
+      setAgreementError(message)
+      toast.error(message)
       return
     }
-    // A download rather than window.open: this runs after an await, and popup
-    // blockers treat that as unsolicited.
-    const url = URL.createObjectURL(data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `Rental Agreement - ${booking.name}.pdf`
-    a.click()
-    URL.revokeObjectURL(url)
+    // A 200 that isn't a PDF means the function answered but the body wasn't
+    // what we asked for — functions-js decodes by Content-Type, so anything
+    // other than application/pdf arrives here as text or an object.
+    if (!(data instanceof Blob)) {
+      // `{ ok: true }` specifically means the deployed function is older than
+      // this code: it has no `preview` branch, so it ignored the flag and took
+      // the send path. Say that outright — the client was just emailed, and a
+      // vague "could not build" reads as if nothing happened.
+      if (data && typeof data === 'object' && 'ok' in data) {
+        onStatusChange(invoice.id, 'sent')
+        const message =
+          'The deployed send-invoice function is out of date — it emailed the client instead of returning a preview. Redeploy it (see RUNBOOK.md).'
+        setAgreementError(message)
+        toast.error(message, { duration: 12000 })
+        return
+      }
+      const body = typeof data === 'string' ? data : JSON.stringify(data)
+      const message = `Could not build the agreement — the function returned ${body ? body.slice(0, 200) : 'an empty response'}.`
+      setAgreementError(message)
+      toast.error(message)
+      return
+    }
+    holdAgreement(invoice.id, URL.createObjectURL(data))
+  }
+
+  const showDocument = (invoice: ClientInvoice, tab: PreviewTab) => {
+    setViewer({ id: invoice.id, tab })
+    if (tab === 'agreement') void loadAgreement(invoice)
+  }
+
+  const closeViewer = () => {
+    setViewer(null)
+    setAgreementError(null)
+    holdAgreement('', null)
+  }
+
+  const copyLink = async (invoice: ClientInvoice) => {
+    if (!invoice.public_token) return
+    try {
+      await navigator.clipboard.writeText(publicInvoiceUrl(invoice.public_token))
+      toast.success('Client link copied.')
+    } catch {
+      toast.error('Could not copy the link — open it in a new tab and copy from the address bar.')
+    }
   }
 
   return (
-    /* A card, not a section divider: this now sits in its own column beside the
-       booking, where a top rule would read as a break in the wrong place. */
+    /* A card, not a section divider: this is the primary block of the client
+       page and holds the main column, with the booking details in the rail
+       beside it. A top rule would read as a break in the wrong place. */
     <section className="rounded-lg border border-line bg-panel/20 p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -255,8 +363,8 @@ export const ClientInvoicePanel = ({
               : `${invoices.length} raised${uncredited > 0 ? ` · ${money(uncredited)} of the advance still uncredited` : ''}`}
           </p>
           <p className="mt-1 text-[12px] leading-relaxed text-muted/80">
-            Emailing an invoice attaches this client&apos;s rental agreement, filled in and
-            ready to print and sign.
+            Emailing an invoice gives the client a download button for it and one for
+            this client&apos;s rental agreement, filled in and ready to print and sign.
           </p>
         </div>
         {!open && (
@@ -276,14 +384,20 @@ export const ClientInvoicePanel = ({
             return (
               <li
                 key={inv.id}
-                className="rounded-md border border-line bg-panel/20 px-3 py-2.5"
+                className={`rounded-md border px-4 py-3 transition-colors ${
+                  viewer?.id === inv.id
+                    ? 'border-brass/40 bg-panel/50'
+                    : 'border-line bg-panel/20 hover:border-brass/30'
+                }`}
               >
-                {/* Three stacked rows, not one flex line. In a ~420px column the
-                    number, the pill, the money and four actions all competed for
-                    the same row, and `flex-1 min-w-0` resolved it by wrapping
-                    "INV-2026-0004" one character at a time. */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
+                {/* One line per invoice in the main column, wrapping into three
+                    zones when the space isn't there. It used to be three fixed
+                    rows because this panel lived in a ~420px rail, where the
+                    number, the pill, the money and four actions all competed
+                    for one row and "INV-2026-0004" wrapped a character at a
+                    time. With the column width it reads as a ledger again. */}
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5">
+                  <div className="flex min-w-0 flex-1 basis-[220px] flex-wrap items-center gap-x-2.5 gap-y-1">
                     <span className="whitespace-nowrap text-[14px] font-medium text-cream">
                       {inv.number ?? 'Draft'}
                     </span>
@@ -292,54 +406,49 @@ export const ClientInvoicePanel = ({
                     >
                       {inv.status}
                     </span>
+                    <span className="truncate text-[12px] text-muted">
+                      Issued {fmtDate(inv.issue_date)}
+                      {inv.due_date && ` · due ${fmtDate(inv.due_date)}`}
+                    </span>
                   </div>
-                  <span className="shrink-0 text-[14px] font-medium text-cream">
-                    {money(total)}
-                  </span>
-                </div>
 
-                <div className="mt-0.5 flex items-baseline justify-between gap-2 text-[12px] text-muted">
-                  <span className="truncate">
-                    Issued {fmtDate(inv.issue_date)}
-                    {inv.due_date && ` · due ${fmtDate(inv.due_date)}`}
-                  </span>
-                  {advance > 0 && (
-                    <span className="shrink-0 text-brass2">{money(balance)} due</span>
-                  )}
-                </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-[14px] font-medium text-cream">{money(total)}</div>
+                    {advance > 0 && (
+                      <div className="text-[12px] text-brass2">{money(balance)} due</div>
+                    )}
+                  </div>
 
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line/70 pt-2 text-[13px] font-medium">
-                  <Link
-                    to={`/admin/invoices/${inv.id}`}
-                    className="text-muted transition-colors hover:text-brass2"
-                  >
-                    Open
-                  </Link>
-                  {inv.public_token && (
-                    <a
-                      href={`/invoice/${inv.public_token}`}
-                      target="_blank"
-                      rel="noreferrer"
+                  {/* Preview covers what Link and Agreement used to do
+                      separately, and shows the documents instead of describing
+                      them. The link and the PDF download live inside it. */}
+                  <div className="flex shrink-0 items-center gap-4 text-[13px] font-medium">
+                    <button
+                      onClick={() =>
+                        viewer?.id === inv.id ? closeViewer() : showDocument(inv, 'invoice')
+                      }
+                      aria-expanded={viewer?.id === inv.id}
+                      title="See exactly what the client receives"
+                      className={`transition-colors hover:text-brass2 ${
+                        viewer?.id === inv.id ? 'text-brass2' : 'text-muted'
+                      }`}
+                    >
+                      Preview
+                    </button>
+                    <Link
+                      to={`/admin/invoices/${inv.id}`}
                       className="text-muted transition-colors hover:text-brass2"
                     >
-                      Link
-                    </a>
-                  )}
-                  <button
-                    onClick={() => previewAgreement(inv)}
-                    disabled={previewId === inv.id}
-                    title="Download the rental agreement exactly as this email would attach it"
-                    className="text-muted transition-colors hover:text-brass2 disabled:opacity-50"
-                  >
-                    {previewId === inv.id ? 'Building…' : 'Agreement'}
-                  </button>
-                  <button
-                    onClick={() => email(inv)}
-                    disabled={sendingId === inv.id}
-                    className="ml-auto text-brass2 transition-colors hover:text-brass disabled:opacity-50"
-                  >
-                    {sendingId === inv.id ? 'Sending…' : 'Email'}
-                  </button>
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => email(inv)}
+                      disabled={sendingId === inv.id}
+                      className="text-brass2 transition-colors hover:text-brass disabled:opacity-50"
+                    >
+                      {sendingId === inv.id ? 'Sending…' : 'Email'}
+                    </button>
+                  </div>
                 </div>
               </li>
             )
@@ -347,11 +456,130 @@ export const ClientInvoicePanel = ({
         </ul>
       )}
 
+      {/* The viewer. Inline under the list rather than a modal: the list stays
+          on screen, so moving between two invoices is one click and the page
+          behind it never disappears. Both documents are the real thing — the
+          client-facing invoice page itself, and the PDF the email would
+          attach — because a rendering of a document that only resembles what
+          gets sent is worth nothing as a check. */}
+      {viewed && (
+        <div className="mt-5 overflow-hidden rounded-lg border border-brass/30 bg-panel/40">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-3">
+            <div className="flex items-center gap-1">
+              {(['invoice', 'agreement'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => showDocument(viewed, tab)}
+                  aria-pressed={viewer?.tab === tab}
+                  className={chip(viewer?.tab === tab)}
+                >
+                  {tab === 'invoice' ? 'Invoice' : 'Agreement'}
+                </button>
+              ))}
+            </div>
+            <span className="text-[13px] text-muted">
+              {viewed.number ?? 'Draft'}
+              {viewer?.tab === 'agreement' && ' · rental agreement'}
+            </span>
+
+            <div className="ml-auto flex items-center gap-4 text-[13px] font-medium">
+              {viewer?.tab === 'invoice' ? (
+                <>
+                  <button
+                    onClick={() => copyLink(viewed)}
+                    className="text-muted transition-colors hover:text-brass2"
+                  >
+                    Copy link
+                  </button>
+                  {viewed.public_token && (
+                    <a
+                      href={`/invoice/${viewed.public_token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-muted transition-colors hover:text-brass2"
+                    >
+                      Open in new tab
+                    </a>
+                  )}
+                </>
+              ) : (
+                agreement?.id === viewed.id && (
+                  <a
+                    href={agreement.url}
+                    download={`Rental Agreement - ${booking.name}.pdf`}
+                    className="text-muted transition-colors hover:text-brass2"
+                  >
+                    Download
+                  </a>
+                )
+              )}
+              <button onClick={closeViewer} className={btnQuiet}>
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-ink/40">
+            {viewer?.tab === 'invoice' ? (
+              viewed.public_token ? (
+                <iframe
+                  key={viewed.id}
+                  title={`Invoice ${viewed.number ?? 'draft'} as the client sees it`}
+                  src={`/invoice/${viewed.public_token}`}
+                  className="block h-[70vh] min-h-[420px] w-full border-0 bg-ink"
+                />
+              ) : (
+                <p className="grid h-[420px] place-items-center px-6 text-center text-[13px] text-muted">
+                  This invoice has no client link yet.
+                </p>
+              )
+            ) : agreement?.id === viewed.id ? (
+              /* `#toolbar=0&navpanes=0` are PDF open parameters, not URL query —
+                 they strip the browser's own viewer chrome (print, download,
+                 zoom, page thumbnails) so this reads as an embedded document
+                 rather than a second application inside the panel. The panel
+                 already has its own Download, and print belongs to the invoice,
+                 not to a contract that goes out by email.
+
+                 Chromium honours these; Firefox's pdf.js ignores them and keeps
+                 its toolbar. The fragment is appended here rather than baked
+                 into `agreement.url` because that same url is the href of the
+                 Download link, which wants the bare blob. */
+              <iframe
+                key={`${viewed.id}-agreement`}
+                title="Rental agreement as it would be sent"
+                src={`${agreement.url}#toolbar=0&navpanes=0`}
+                className="block h-[70vh] min-h-[420px] w-full border-0 bg-ink"
+              />
+            ) : (
+              <div className="grid h-[420px] place-items-center px-6">
+                {buildingId === viewed.id ? (
+                  <p className="text-[13px] text-muted">Building the agreement…</p>
+                ) : (
+                  <div className="max-w-[52ch] text-center">
+                    <p className="text-[13px] leading-relaxed text-muted">
+                      {agreementError ?? 'The agreement has not been built yet.'}
+                    </p>
+                    <button
+                      onClick={() => void loadAgreement(viewed)}
+                      className={`mt-4 ${btnQuiet}`}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {open && draft && preview && (
         <div className="mt-5 rounded-lg border border-brass/30 bg-panel/40 p-5">
-          {/* Two across, not four: this panel is a ~420px column now, and a
-              date input squeezed under a third of that clips its own picker. */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Four across once there's room for it. Two below that, never one:
+              a date input squeezed into a third of a narrow column clips its
+              own picker. */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div>
               <label className={label}>Issue date</label>
               <input
@@ -412,7 +640,7 @@ export const ClientInvoicePanel = ({
               {draft.items.map((it, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-[minmax(0,1fr)_56px_84px_20px] items-center gap-2"
+                  className="grid grid-cols-[minmax(0,1fr)_64px_100px_20px] items-center gap-2"
                 >
                   <input
                     placeholder="Description"

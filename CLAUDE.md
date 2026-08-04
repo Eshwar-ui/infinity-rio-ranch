@@ -142,18 +142,59 @@ Supabase backend, deployed to Vercel.
   CMS "Order" input, the invoice line items). Size the *wrapper* instead. Same
   trap for any conflicting pair in one string.
 - **List views share one filter toolbar** (`components/admin/list-filters.tsx`):
-  search + per-option counts, docked above the list it filters rather than
-  floating in the page header. Counts are computed against the *other* active
-  filters, so "Paid 6" can't sit above a list of two.
-- **`/admin/clients` is a profile, not a form.** Read-only by default behind an
-  Edit toggle; status writes straight through on click. Invoices are raised in
+  search + one dropdown per filter, docked above the list it filters rather than
+  floating in the page header. Counts ride in the option labels ("Paid (6)") and
+  are computed against the *other* active filters, so "Paid (6)" can't sit above
+  a list of two. `FilterGroup` is a **native `<select>`** — the segmented row it
+  replaced grew with the option list and didn't read as clickable. Native buys
+  keyboard/type-ahead/mobile pickers and an OS-drawn popup that can't be trapped
+  by an `overflow` ancestor; the cost is that the popup ignores styling, so
+  `<option>` must carry an explicit `bg-panel`/`text-cream` or the light theme's
+  colours leak into the dark one.
+- **Clients are a list route and a page route, like invoices.** `/admin/clients`
+  (`pages/admin/clients.tsx`) is the table and nothing else — full width, one
+  horizontal filter bar (`<FilterBar row>`). One client opens at
+  `/admin/clients/:id`, and `/admin/clients/new` is the same component with a
+  blank draft (`pages/admin/client-detail.tsx`); the row type, status colours
+  and money helpers both views share live in `pages/admin/client-shared.ts`.
+  Converting a lead navigates to `/admin/clients/<new id>` — there is no
+  `?id=` param any more.
+- **The client page is a profile, not a form.** Read-only by default behind an
+  Edit toggle; status writes straight through on click. **Billing owns the main
+  column** — the money band and then the invoice panel — because opening a client
+  is almost always on the way to raising or sending one. The booking (event,
+  contact, booking status, notes) is the sticky rail beside it, read while
+  working rather than the reason you came. `client-invoice-panel.tsx` is laid out
+  for that main-column width now, not the ~420px rail it used to sit in.
+  **Both client-facing documents preview in place**, in a viewer under the
+  invoice list with Invoice/Agreement tabs: the invoice tab iframes the real
+  `/invoice/:token` page (same origin, so `X-Frame-Options: SAMEORIGIN` allows
+  it) and the agreement tab iframes the PDF the `send-invoice` preview branch
+  returns, held as one object URL at a time and revoked on close. Neither is a
+  mock-up of the document — a preview that only resembles what gets sent is
+  worth nothing as a check.
+  Sections keep their place when empty — a Notes block that disappears is a block
+  nobody remembers exists. Invoices are raised in
   place via `components/admin/client-invoice-panel.tsx`, which only ever
   *creates* — editing an existing invoice stays in `invoice-editor.tsx`, which
   owns the number, the public token and the send state. `/admin/invoices/new`
   also takes `?client=<uuid>` and prefills from that client.
-- **The rental agreement is stamped, not templated.** Emailing an invoice that
-  belongs to a client attaches the venue's own agreement PDF with the client
-  name, event date and event type drawn onto it
+- **The invoice email links, it never attaches.** Two buttons: **Download
+  invoice** → `/invoice/<public_token>` (the existing page, which has its own
+  Print / Save PDF) and **Download agreement** → `/agreement/<public_token>`,
+  a `vercel.json` rewrite onto the **`public-agreement`** edge function. That
+  function is deliberately unauthenticated — the invoice's `public_token` is the
+  credential, the same claim `get_invoice_by_token` already makes — and it is a
+  *separate function from `send-invoice`* because `verify_jwt` is per-function:
+  serving the public route from `send-invoice` would drop the admin check from
+  the send path. `verify_jwt` for both is pinned in `supabase/config.toml` so a
+  redeploy can't silently flip it. Deploy the two together; the email contains a
+  button only the other one can answer. Keep the agreement *built* in
+  `send-invoice` even though it's no longer attached — whether it can be built
+  is what decides if the button is rendered, and a dead link to a contract is
+  worse than no link.
+- **The rental agreement is stamped, not templated.** The agreement PDF carries
+  the client name, event date and event type drawn onto the venue's own template
   (`supabase/functions/_shared/agreement.ts`). The template has **no form
   fields**, so every value sits at a fixed coordinate in
   `agreement-fields.json`; re-exporting the PDF silently invalidates all of them
@@ -162,6 +203,21 @@ Supabase backend, deployed to Vercel.
   the private `documents` bucket (0007), not the repo, so replacing it is an
   upload. No template = invoice still sends, toast says so. Signing dates are
   deliberately left blank for hand-signing. Full procedure in `RUNBOOK.md`.
+  The template's **opening line used to be broken** ("...on this day of
+  ________, 20, by and between:" — no day blank, no year blank, sentence
+  unfinished) and was patched at run time by an `intro` block that covered and
+  redrew it. That is **done**: the corrected line is baked into the template PDF
+  and the block is deleted. Don't reintroduce it — the cover rectangle reaches
+  the second line but not the first, so a second pass double-strikes line one.
+  `pageSize`/`pageCount` stay in the JSON because `looksLikeKnownTemplate()`
+  still reads them. Nothing draws a rectangle any more; if something ever does
+  again, it must keep that guard, since a value in the wrong place is still
+  readable but a rectangle in the wrong place can hide a clause.
+  Names are title-cased **at the point of drawing** (`titleCaseName`), never in
+  the DB — the owner's record stays as they typed it and only the contract is
+  presented. It only ever *adds* capitals: lowercasing the rest would turn
+  `McDonald` into `Mcdonald` and a `III` suffix into `Iii`, and a wrong name on
+  a legal document beats an unconverted one. All-caps input therefore survives.
 - **Invoice numbers are DB-assigned.** A `BEFORE INSERT` trigger pulls from a
   sequence (`INV-YYYY-0001`) — never generate numbers in JS (races).
 - **Client-facing invoice** (`/invoice/:token`) reads via the `get_invoice_by_token`

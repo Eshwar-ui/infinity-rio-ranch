@@ -80,21 +80,44 @@ curl -s -w "\nHTTP %{http_code}\n" \
 
 ---
 
-## Invoice email (`send-invoice` edge function)
+## Invoice email (`send-invoice` + `public-agreement` edge functions)
 
-- Source lives at `supabase/functions/send-invoice/index.ts` (rebuilt in-repo
-  after the original project was deleted). Deploy with
-  `supabase functions deploy send-invoice` — it pulls in
-  `supabase/functions/_shared/agreement.ts` and `agreement-fields.json`.
-- Takes `{ id }` → emails the client a link to `/invoice/<public_token>` with the
-  filled rental agreement attached. `{ id, preview: 1 }` returns that PDF instead
-  of sending, which is what the admin panel's per-invoice **Agreement** button uses.
-- Until it's deployed, the admin "Email client" button fails gracefully
+**There are two functions and they must be deployed together** — the email
+`send-invoice` writes contains a button that only `public-agreement` can answer.
+
+```
+npx supabase functions deploy send-invoice      --project-ref xmnneacpgjwaihwcvayx
+npx supabase functions deploy public-agreement  --project-ref xmnneacpgjwaihwcvayx
+```
+
+Both pull in `supabase/functions/_shared/agreement.ts` and
+`agreement-fields.json`. Deploy from the repo root or the `_shared` import
+doesn't resolve and the function dies with `BOOT_ERROR` at first call.
+
+- **`send-invoice`** — ADMIN ONLY. `{ id }` emails the client two buttons:
+  **Download invoice** → `/invoice/<public_token>`, and **Download agreement** →
+  `/agreement/<public_token>`. Neither document is attached. `{ id, preview: 1 }`
+  returns the agreement PDF to the caller instead of sending anything, which is
+  what the admin panel's per-invoice **Agreement** button uses.
+- **`public-agreement`** — deliberately UNAUTHENTICATED. `GET ?token=<public_token>`
+  rebuilds that client's agreement and returns it as a download. The token is the
+  credential, exactly as it already is for the invoice page. It is a separate
+  function because `verify_jwt` is per-function: serving this route from
+  `send-invoice` would drop the admin check from the send path.
+- **`verify_jwt` is pinned in `supabase/config.toml`**, not passed as a CLI flag,
+  so it can't be lost on a redeploy. If you ever deploy from somewhere without
+  that file, `public-agreement` needs `--no-verify-jwt` or every button 401s.
+- **`/agreement/:token` is a rewrite in `vercel.json`** onto the function URL, so
+  the link in the email is on the venue's own domain. A contract download
+  pointing at a `supabase.co` host reads as phishing and filters treat it that
+  way. Changing the Supabase project ref means changing that rewrite.
+- Until they're deployed, the admin "Email client" button fails gracefully
   ("email service may not be configured") — everything else works.
-- Secrets it needs (Dashboard → Edge Functions → send-invoice → Secrets):
+- Secrets `send-invoice` needs (Dashboard → Edge Functions → Secrets):
   `RESEND_API_KEY`, `INVOICE_FROM` (e.g. `Infinity Rio Ranch <invoices@domain>`,
-  domain verified in Resend), `SITE_URL` (e.g. the Vercel URL).
-  Optional: `INVOICE_REPLY_TO`.
+  domain verified in Resend), `SITE_URL` (e.g. `https://www.infinityrioranch.com`
+  — the agreement button is built from it, so a wrong value breaks the link).
+  Optional: `INVOICE_REPLY_TO`. `public-agreement` needs none.
 
 ---
 
@@ -107,8 +130,10 @@ with their name, event date and event type stamped onto the venue's own PDF.
    `0007_documents_bucket.sql`, private) → upload the blank agreement as exactly
    **`rental-agreement-template.pdf`**. Without it, invoices still send; the
    toast says "no agreement attached (no template uploaded)".
-2. **Check one** — admin → Clients → pick a client → Invoices → **Agreement**.
-   That downloads the exact PDF the email would attach.
+2. **Check one** — admin → Clients → pick a client → an invoice's **Preview** →
+   the **Agreement** tab. That renders the exact PDF the email would attach,
+   with a Download beside it. Every failure is written into the panel as well as
+   toasted, so "no template uploaded" is readable after the toast has gone.
 
 **If the template is ever re-exported or re-edited, recalibrate.** The PDF has no
 form fields, so each value is drawn at a fixed coordinate in
@@ -124,10 +149,25 @@ That writes `.agreement-preview.pdf` (gitignored) using the same JSON the
 function reads. **Open it and look**, adjust the coordinates, repeat. Then
 re-upload the template and redeploy the function.
 
-Only the three page-1 blanks and the page-4 client name are filled. The
-"day of ____, 20__" line and both `Date:` lines are left blank on purpose —
-they're the date of *signing*, which isn't known when the email goes out, and
-the client fills them in by hand with the signatures.
+Only the three page-1 blanks and the page-4 client name are filled. The signing
+dates are left blank on purpose — "on this __ day of ____, 20__" and both
+`Date:` lines — they're the date of *signing*, which isn't known when the email
+goes out, and the client fills them in by hand with the signatures.
+
+**The opening line is rewritten, not filled.** The template's own wording is
+broken — it reads "This Agreement is entered into on this day of ________, 20,
+by and between:", with no day blank, no year blank and the sentence stopping
+mid-clause. The `intro` block in `agreement-fields.json` covers that line with a
+rectangle of the page's cream and sets it again in two lines:
+
+> This Agreement is entered into on this \_\_\_\_ day of \_\_\_\_\_\_\_\_\_\_, 20\_\_\_\_,
+> by and between the Venue and the Client identified below (the "Parties"):
+
+That patch is coordinate-based like everything else here, so it only draws when
+the template still has 4 pages at 595.32 × 841.92 — on anything else the opening
+line is left alone, because a misplaced cover rectangle could hide a clause. **If
+you upload a template with the wording already corrected, delete the `intro`
+block** or the fixed line gets covered by a second copy of itself.
 
 ---
 

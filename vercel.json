@@ -11,7 +11,12 @@
 
     { "source": "/admin", "destination": "/index.html" },
     { "source": "/admin/(.*)", "destination": "/index.html" },
-    { "source": "/invoice/(.*)", "destination": "/index.html" }
+    { "source": "/invoice/(.*)", "destination": "/index.html" },
+
+    {
+      "source": "/agreement/:token",
+      "destination": "https://xmnneacpgjwaihwcvayx.supabase.co/functions/v1/public-agreement?token=:token"
+    }
   ],
   "headers": [
     {
@@ -51,6 +56,10 @@
     },
     {
       "source": "/invoice/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/agreement/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
     }
   ]

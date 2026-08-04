@@ -1,0 +1,19 @@
+# Supabase CLI project config.
+#
+# This repo does not run the local Supabase stack (no Docker here) — the file
+# exists for one reason: `verify_jwt` is a per-function deploy setting, and
+# pinning it here means it cannot be lost by someone redeploying without the
+# right CLI flag.
+#
+#   send-invoice      — ADMIN ONLY. It reads any invoice with the service-role
+#                       key, so it must never be reachable without a JWT.
+#   public-agreement  — deliberately public. The invoice's `public_token` in the
+#                       query string is the credential, the same way it already
+#                       is for /invoice/<token>. See the header of that function.
+project_id = "xmnneacpgjwaihwcvayx"
+
+[functions.send-invoice]
+verify_jwt = true
+
+[functions.public-agreement]
+verify_jwt = false
