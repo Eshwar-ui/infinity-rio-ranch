@@ -1,4 +1,4 @@
-import { MagnifyingGlass, X } from '@phosphor-icons/react'
+import { CaretDown, MagnifyingGlass, X } from '@phosphor-icons/react'
 
 /**
  * Search + filter toolbar that sits directly above a list rail.
@@ -18,12 +18,27 @@ export type FilterOption<T extends string> = {
   count: number
 }
 
-const optionClass = (active: boolean) =>
-  `rounded-md border px-2 py-1 text-[12px] font-medium capitalize transition-colors ${
-    active
-      ? 'border-brass/50 bg-brass/15 text-brass2'
-      : 'border-transparent text-muted hover:bg-panel2/70 hover:text-cream'
-  }`
+/**
+ * A native `<select>`, not a custom popup.
+ *
+ * The segmented row this replaced grew with the option list — five booking
+ * statuses next to four payment ones filled the whole bar and still didn't read
+ * as controls. A dropdown states the *current* filter in one place and hides
+ * the rest until asked, which is what a filter should do.
+ *
+ * Native because it gets keyboard handling, type-ahead, mobile pickers and
+ * labelling for free, and because the option popup is drawn by the OS — no
+ * portal, no outside-click handling, nothing to escape an `overflow` ancestor.
+ * The trade is that the popup ignores most styling, so the only colours set on
+ * `<option>` are a solid background and text: left to inherit, several browsers
+ * render the list light-on-light under the dark theme.
+ */
+const selectClass =
+  'w-full appearance-none rounded-md border border-line bg-panel/30 py-1.5 pl-2.5 pr-7 text-[12px] font-medium text-cream outline-none transition-colors hover:border-brass/40 focus:border-brass focus:bg-panel/60 focus:ring-2 focus:ring-brass/25 [&>option]:bg-panel [&>option]:text-cream'
+
+/** Options come through lowercase (`'all'`, `'booked'`); `capitalize` doesn't
+ *  reach into a native option list, so do it in the string. */
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export function FilterGroup<T extends string>({
   label,
@@ -37,26 +52,33 @@ export function FilterGroup<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-1">
-      <span className="mr-0.5 w-[52px] shrink-0 text-[11px] font-medium text-muted/70">
-        {label}
-      </span>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          aria-pressed={value === o.value}
-          className={optionClass(value === o.value)}
+    <label className="flex min-w-[172px] max-w-[280px] flex-1 items-center gap-2">
+      <span className="shrink-0 text-[11px] font-medium text-muted/70">{label}</span>
+      {/* The caret is absolute inside this wrapper, so the width has to be set
+          here — `selectClass` carries `w-full` and would win over any width
+          appended to it. */}
+      <div className="relative min-w-0 flex-1">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as T)}
+          className={selectClass}
         >
-          {o.label}
-          {/* Zero counts stay visible but recede — "Cancelled 0" is information,
-              and hiding the option entirely would make the row jump around. */}
-          <span className={`ml-1 tabular-nums ${o.count === 0 ? 'opacity-40' : 'opacity-60'}`}>
-            {o.count}
-          </span>
-        </button>
-      ))}
-    </div>
+          {options.map((o) => (
+            // Zero counts stay listed — "Cancelled (0)" is information, and
+            // dropping the option would hide a status that exists.
+            <option key={o.value} value={o.value}>
+              {titleCase(o.label)} ({o.count})
+            </option>
+          ))}
+        </select>
+        <CaretDown
+          size={12}
+          weight="bold"
+          aria-hidden
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted"
+        />
+      </div>
+    </label>
   )
 }
 
@@ -95,26 +117,31 @@ export const SearchBox = ({
   </div>
 )
 
-/** Wrapper: the bar itself, plus the result line and a reset when it's narrowed. */
+/**
+ * Wrapper: the bar itself, plus the result line and a reset when it's narrowed.
+ *
+ * `row` is for a bar above a full-width list rather than a narrow rail — the
+ * groups sit on one line with the count at the far end, instead of stacking and
+ * wrapping every option onto its own row.
+ */
 export const FilterBar = ({
   children,
   showing,
   total,
   active,
   onReset,
+  row = false,
 }: {
   children: React.ReactNode
   showing: number
   total: number
   active: boolean
   onReset: () => void
-}) => (
-  <div className="space-y-2 border-b border-line px-4 py-3">
-    {children}
-    <div className="flex items-center justify-between gap-2 pt-0.5 text-[12px] text-muted">
-      <span>
-        {active ? `${showing} of ${total}` : `${total} total`}
-      </span>
+  row?: boolean
+}) => {
+  const count = (
+    <>
+      <span>{active ? `${showing} of ${total}` : `${total} total`}</span>
       {active && (
         <button
           onClick={onReset}
@@ -123,6 +150,24 @@ export const FilterBar = ({
           Reset
         </button>
       )}
+    </>
+  )
+
+  if (row) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-line px-8 py-3">
+        {children}
+        <div className="ml-auto flex items-center gap-3 text-[12px] text-muted">{count}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2 border-b border-line px-4 py-3">
+      {children}
+      <div className="flex items-center justify-between gap-2 pt-0.5 text-[12px] text-muted">
+        {count}
+      </div>
     </div>
-  </div>
-)
+  )
+}

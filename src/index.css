@@ -191,16 +191,29 @@
   font-family: inherit;
 }
 
-/* Native date/number widgets render nearly black-on-black in the dark theme. */
-.admin-ui input::-webkit-calendar-picker-indicator,
-.admin-ui input::-webkit-inner-spin-button {
+/* The native date picker renders nearly black-on-black in the dark theme. */
+.admin-ui input::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
   opacity: 0.55;
   cursor: pointer;
 }
-.admin-ui input::-webkit-calendar-picker-indicator:hover,
-.admin-ui input::-webkit-inner-spin-button:hover {
+.admin-ui input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
+}
+
+/* No spinners on number fields. Every number in this panel is a quantity, a
+   price or a guest count that gets typed, never nudged one at a time, and the
+   arrows cost a chunk of the field's width — worse, they sit exactly where the
+   value's last digit does. */
+.admin-ui input[type='number']::-webkit-outer-spin-button,
+.admin-ui input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+.admin-ui input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* Respect the OS-level motion preference across every animation/transition on the site. */

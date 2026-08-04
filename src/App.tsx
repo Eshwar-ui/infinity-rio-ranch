@@ -26,6 +26,10 @@ const RequireAdmin = named(() => import('@/pages/admin/admin-layout'), 'RequireA
 const CmsLayout = named(() => import('@/pages/admin/cms-layout'), 'CmsLayout')
 const LeadsPage = named(() => import('@/pages/admin/leads'), 'LeadsPage')
 const AdminClients = named(() => import('@/pages/admin/clients'), 'AdminClients')
+const AdminClientDetail = named(
+  () => import('@/pages/admin/client-detail'),
+  'AdminClientDetail',
+)
 const AdminTestimonials = named(() => import('@/pages/admin/testimonials'), 'AdminTestimonials')
 const AdminEvents = named(() => import('@/pages/admin/events'), 'AdminEvents')
 const AdminFaqs = named(() => import('@/pages/admin/faqs'), 'AdminFaqs')
@@ -64,6 +68,8 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/admin/leads" replace /> },
       { path: 'leads', element: <LeadsPage /> },
       { path: 'clients', element: <AdminClients /> },
+      { path: 'clients/new', element: <AdminClientDetail /> },
+      { path: 'clients/:id', element: <AdminClientDetail /> },
       // Pathless layout route: the nine website editors keep their own URLs and
       // gain the shared CMS tab bar.
       {

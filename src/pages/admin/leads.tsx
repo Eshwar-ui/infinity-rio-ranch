@@ -139,7 +139,7 @@ export const LeadsPage = () => {
       prev.map((l) => (l.id === lead.id ? { ...l, status: 'converted' } : l)),
     )
     toast.success('Lead converted to a client.')
-    navigate(`/admin/clients?id=${data}`)
+    navigate(`/admin/clients/${data}`)
   }
 
   const newCount = leads.filter((l) => l.status === 'new').length
