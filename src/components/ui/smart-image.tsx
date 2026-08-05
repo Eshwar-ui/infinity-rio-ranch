@@ -24,6 +24,8 @@ type Entry = {
   png?: number[]
   /** Intrinsic width of the original file. */
   w?: number
+  /** Intrinsic height, so the box can be reserved before the bytes arrive. */
+  h?: number
   /** True when the WebP ladder reaches full width and can fully replace the PNG. */
   full?: boolean
 }
@@ -63,6 +65,15 @@ export const SmartImage = ({
       ? [...sameWidths.map((w) => `${base}-${w}.${sameExt} ${w}w`), `${src} ${entry.w}w`].join(', ')
       : undefined
 
+  /*
+   * Intrinsic dimensions, so the browser can reserve the box from the aspect
+   * ratio before a single byte of the photo arrives. Every layout here sizes
+   * images with CSS (`h-full w-full object-cover`, `h-[62px] w-auto`), which
+   * still wins over these attributes — they exist only to stop the reflow, and
+   * a page of unsized photos is a page that jumps as it loads.
+   */
+  const intrinsic = entry?.w && entry.h ? { width: entry.w, height: entry.h } : {}
+
   const img = (
     <img
       src={src}
@@ -74,6 +85,7 @@ export const SmartImage = ({
       fetchPriority={fetchPriority}
       srcSet={sameSrcSet}
       sizes={sameSrcSet ? sizes : undefined}
+      {...intrinsic}
     />
   )
 

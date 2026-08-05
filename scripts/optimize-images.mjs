@@ -140,7 +140,7 @@ const exists = (file) =>
  * derivative from an already-compressed JPEG makes it spend bits reproducing
  * that codec's artifacts.
  */
-const writeDerivatives = async (file, buffer, sourceWidth, sourceBytes) => {
+const writeDerivatives = async (file, buffer, sourceWidth, sourceHeight, sourceBytes) => {
   const rel = keyFor(file)
   const stem = rel.replace(/\.[^.]+$/, '')
   const outDir = path.join(DERIVED_DIR, path.dirname(rel))
@@ -173,7 +173,7 @@ const writeDerivatives = async (file, buffer, sourceWidth, sourceBytes) => {
 
     // WebP only replaces the PNG if its ladder reaches full width.
     if (widths.length > 0 && widths.includes(candidates.at(-1))) {
-      return { base, webp: widths, w: sourceWidth, full: true }
+      return { base, webp: widths, w: sourceWidth, h: sourceHeight, full: true }
     }
 
     // It didn't win — the palette-quantised logos with alpha land here. They
@@ -182,7 +182,7 @@ const writeDerivatives = async (file, buffer, sourceWidth, sourceBytes) => {
     const pngWidths = (
       await Promise.all(smaller.map((w) => emit(w, 'png', (p) => p.png(PNG))))
     ).filter((w) => w !== null)
-    return pngWidths.length > 0 ? { base, png: pngWidths, w: sourceWidth } : null
+    return pngWidths.length > 0 ? { base, png: pngWidths, w: sourceWidth, h: sourceHeight } : null
   }
 
   // JPEG: only smaller widths — WebP loses to mozjpeg on this photo set, and the
@@ -190,7 +190,7 @@ const writeDerivatives = async (file, buffer, sourceWidth, sourceBytes) => {
   const widths = (
     await Promise.all(smaller.map((w) => emit(w, 'jpg', (p) => p.jpeg(JPEG))))
   ).filter((w) => w !== null)
-  return widths.length > 0 ? { base, jpg: widths, w: sourceWidth } : null
+  return widths.length > 0 ? { base, jpg: widths, w: sourceWidth, h: sourceHeight } : null
 }
 
 const optimize = async (file, manifest) => {
@@ -211,6 +211,19 @@ const optimize = async (file, manifest) => {
         : (entry?.jpg ?? []).map((w) => `${stem}-${w}.jpg`)
     const intact = await Promise.all(expected.map((f) => exists(path.join(DERIVED_DIR, f))))
     if (intact.every(Boolean)) {
+      /*
+       * Backfill the intrinsic height for entries written before it was
+       * recorded. <SmartImage> emits width/height from these two numbers so the
+       * browser can reserve the box before the bytes arrive — without them
+       * every photo on the site is a layout shift waiting to happen.
+       *
+       * Done here rather than behind a STRATEGY_VERSION bump on purpose: adding
+       * a number to the manifest must not re-encode 59 already-lossy photos a
+       * second generation just to learn something sharp can read for free.
+       */
+      if (entry && entry.w && entry.h === undefined) {
+        entry.h = (await sharp(original).metadata()).height ?? undefined
+      }
       return {
         key,
         skipped: 'already optimized',
@@ -260,8 +273,10 @@ const optimize = async (file, manifest) => {
         .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: 'inside', withoutEnlargement: true })
         .toBuffer()
     : original
-  const sourceWidth = (await sharp(capped).metadata()).width ?? 0
-  const sources = await writeDerivatives(file, capped, sourceWidth, output.length)
+  const cappedMeta = await sharp(capped).metadata()
+  const sourceWidth = cappedMeta.width ?? 0
+  const sourceHeight = cappedMeta.height ?? 0
+  const sources = await writeDerivatives(file, capped, sourceWidth, sourceHeight, output.length)
 
   return {
     key,
