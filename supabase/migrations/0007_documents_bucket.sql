@@ -5,7 +5,7 @@
 --  venue's own agreement PDF and attaches the result to the invoice email. The
 --  blank template lives here rather than in the repo or the function bundle so
 --  replacing it when the wording changes is a file upload (Storage → documents →
---  rental-agreement-template.pdf), not a redeploy. See RUNBOOK.md.
+--  rental-agreement-template.pdf), not a redeploy. See docs/RUNBOOK.md.
 --
 --  PRIVATE, unlike `gallery`: this is a contract template, not a marketing
 --  photo, and a public bucket would put it at a guessable URL. The edge

@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         'X-Robots-Tag': 'noindex, nofollow, noarchive',
       },
     })
-  } catch (_e) {
+  } catch {
     // Deliberately not echoed: this response is read by a client, and the
     // message could carry schema or storage detail.
     return fail('Something went wrong building the agreement.', 500)

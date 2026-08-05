@@ -22,7 +22,7 @@ Supabase backend, deployed to Vercel.
 - `npm run pull:content` — refreshes `src/data/content.generated.json` from the
   CMS. Runs as the first build step; run it by hand after publishing edits if you
   want the change committed. Commit the result.
-- `npm run lint` — oxlint. `design/` warnings are the design bundle, ignore them.
+- `npm run lint` — oxlint. The archived `design/` handoff is excluded.
 - `npm run optimize:images` — re-encodes `public/assets` in place (JPEG q78,
   1600px cap). Run it after adding photos; it's manifest-idempotent and
   deliberately outside `build` so nothing gets re-compressed every deploy.
@@ -250,7 +250,7 @@ Supabase backend, deployed to Vercel.
   from that same JSON — look at it after any change. The blank template lives in
   the private `documents` bucket (0007), not the repo, so replacing it is an
   upload. No template = invoice still sends, toast says so. Signing dates are
-  deliberately left blank for hand-signing. Full procedure in `RUNBOOK.md`.
+  deliberately left blank for hand-signing. Full procedure in `docs/RUNBOOK.md`.
   The template's **opening line used to be broken** ("...on this day of
   ________, 20, by and between:" — no day blank, no year blank, sentence
   unfinished) and was patched at run time by an `intro` block that covered and
@@ -285,14 +285,14 @@ Supabase backend, deployed to Vercel.
   **Never put `robots.txt` or `sitemap.xml` in `public/`** — Vite copies that
   folder into `dist/` *before* the prerender step overwrites both files, so
   hand-edits there look authoritative and ship nothing. This has already
-  happened once; see "The `public/` trap" in `SEO.md`.
+  happened once; see "The `public/` trap" in `docs/SEO.md`.
 - **No catch-all rewrite in `vercel.json`.** A `/(.*)` → `/index.html` rule makes
   every unknown URL return 200 with the homepage's HTML (soft 404s at unbounded
   URLs). Unknown paths must fall through to `dist/404.html`. `App.tsx` and
   `entry-server.tsx` both route `path="*"` to `NotFoundPage`; the prerender
   script fails the build if a catch-all reappears.
   Photos must be real `<img>` with alt text — background images are unindexable.
-  Full write-up in `SEO.md`.
+  Full write-up in `docs/SEO.md`.
 - **The client hydrates the prerendered HTML — don't break the match.** Both
   `App.tsx` and `src/entry-server.tsx` render the same `AppShell`; if their trees
   diverge, React logs error #418 and silently falls back to client rendering,
@@ -333,10 +333,10 @@ Supabase backend, deployed to Vercel.
   `supabase/seeds/` is **not** migrations — one-off content inserts, run by hand
   once. They upsert, so re-running one overwrites whatever the owner has since
   edited in the admin panel. Never move a seed into `migrations/`.
-  `RUNBOOK.md` — key rotation + new-project setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
+  `docs/RUNBOOK.md` — key rotation + new-project setup. `supabase/functions/send-invoice/` — Resend edge function (rebuilt in repo).
 - Supabase edge function `send-invoice` (Resend) sends the client an invoice link.
   **Its source is not in the repo** (deployed directly) — must be rebuilt from
-  scratch on a fresh project; see `RUNBOOK.md`.
+  scratch on a fresh project; see `docs/RUNBOOK.md`.
 
 ## Verifying in the browser (important gotchas)
 - This site's **infinite CSS animations hang the preview's screenshot and
@@ -356,17 +356,16 @@ Supabase backend, deployed to Vercel.
 
 ## Owner setup (not in code)
 - Create the admin user in the Supabase dashboard, then insert their id into
-  `admin_users` (steps in `admin-plan.md`).
+  `admin_users` (steps in `docs/admin-plan.md`).
 - Set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in Vercel **before deploying** —
   `src/lib/supabase.ts` throws on load without them, white-screening the whole site.
 - Invoice email needs `RESEND_API_KEY`, `INVOICE_FROM`, `SITE_URL` as `send-invoice`
   edge-function secrets.
 
 ## Project facts & references
-- **Origin:** converted from a Claude Design file (`Infinity Rio Ranch.dc.html`),
-  delivered as `Infinity Rio Ranch Redesign-handoff.zip` (extracted to `design/`) —
-  not via DesignSync MCP. Built to the bencium code conventions. Original public
-  site build (Home/About/Gallery/Contact SPA) predates the backend; see `progress.md`.
+- **Origin:** converted from the archived Claude Design handoff in `design/`, not
+  via DesignSync MCP. Built to the bencium code conventions. Original public
+  site build (Home/About/Gallery/Contact SPA) predates the backend; see `docs/progress.md`.
 - **Theme:** dark (default) + light + 4 accents as CSS vars in `index.css`, mapped
   into Tailwind; `[data-theme]`/`[data-accent]` set on `<html>` by the theme store.
   Fonts: Cormorant Garamond (serif) / Dancing Script (script) / Jost (body).
@@ -375,7 +374,7 @@ Supabase backend, deployed to Vercel.
   `fgzztabgzoxuwkknpdmu` (org `cscvnreghecmarqhgkrq`, region us-east-1) after it was
   **deleted** — which is why the schema is now versioned in
   `supabase/migrations/0001_init.sql`. Confirm the new project's region/org in the
-  dashboard; recovery steps in `RUNBOOK.md`.
+  dashboard; recovery steps in `docs/RUNBOOK.md`.
 - **Hosting:** Vercel project `eshwar-uis-projects/infinity-rio-ranch`
   live at **https://www.infinityrioranch.com** (canonical host; the apex
   redirects to www, `infinity-rio-ranch.vercel.app` is the platform URL).
@@ -386,8 +385,9 @@ Supabase backend, deployed to Vercel.
 - **Venue (real data):** Infinity at Rio Ranch, 326 Rio Pk Dr, Liberty Hill, TX 78642
   (Greater Austin). Contact details live in `src/data/site.ts`.
 
-See `admin-plan.md` for full backend/feature status, `progress.md` for the
-original site build, `RUNBOOK.md` for backend ops (key rotation, standing up a
-new Supabase project, rebuilding the edge function), `DEPLOY.md` for shipping
-to Vercel (env vars, pre-flight, verification, rollback), and `SEO.md` for
-search/answer-engine architecture and the open owner-side tasks.
+See `docs/admin-plan.md` for full backend/feature status, `docs/progress.md` for
+the original site build, `docs/RUNBOOK.md` for backend ops (key rotation,
+standing up a new Supabase project, rebuilding the edge function),
+`docs/DEPLOY.md` for shipping to Vercel (env vars, pre-flight, verification,
+rollback), and `docs/SEO.md` for search/answer-engine architecture and the open
+owner-side tasks.

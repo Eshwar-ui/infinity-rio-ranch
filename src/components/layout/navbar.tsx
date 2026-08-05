@@ -73,7 +73,7 @@ export const Navbar = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-2.5 md:gap-3.5">
           <button
             type="button"
             onClick={toggleTheme}
@@ -88,15 +88,17 @@ export const Navbar = () => {
             {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
           </button>
 
+          {/* Always in the bar, never inside the mobile menu — the enquiry CTA
+              is the one action worth a tap without opening anything first. */}
           <Button
             asChild
             variant="brass"
             size="sm"
-            className={cn(
-              'hidden md:inline-flex',
-            )}
+            className="px-4 py-2.5 text-[10px] tracking-[0.14em] md:px-6 md:py-3 md:text-[11px] md:tracking-[0.2em]"
           >
-            <Link to="/contact">Enquire Now</Link>
+            <Link to="/contact">
+              Enquire<span className="hidden sm:inline">&nbsp;Now</span>
+            </Link>
           </Button>
 
           <button
@@ -138,9 +140,6 @@ export const Navbar = () => {
               {link.label}
             </NavLink>
           ))}
-          <Button asChild variant="brass" size="sm" onClick={() => setMenuOpen(false)}>
-            <Link to="/contact">Enquire Now</Link>
-          </Button>
         </div>
       )}
     </>
