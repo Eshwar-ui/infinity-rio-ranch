@@ -38,20 +38,13 @@
       ]
     },
     {
-      "//": "Photos, not fonts — the negative lookahead keeps these two rules from overlapping at all. Ordering one after the other did not reliably decide the winner (checked against the deployed response), and two rules that both match one URL is a coin toss nobody should have to re-run.",
-      "source": "/assets/((?!fonts/).*)",
+      "//": "One rule for everything under /assets, fonts included. 30 days rather than a year immutable because `npm run optimize:images` re-encodes photos *in place* under the same filename — a year would freeze a replaced photo in returning browsers. Fonts could safely take the year (a webfont is replaced by renaming it), but they cannot have a rule of their own: a second entry matching /assets/fonts/* is ignored whether it is ordered before or after this one, and a negative lookahead in the source (`/assets/((?!fonts/).*)`) still matches font paths. Both were tried and checked against a cache-MISS response from the deployment, not against the docs. Moving the fonts to a top-level /fonts/ would work, and is not worth the churn for 63 kB.",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=2592000, stale-while-revalidate=31536000"
         }
-      ]
-    },
-    {
-      "//": "A webfont is replaced by renaming it, never by editing it, so a year immutable is safe here in a way it is not for a photo the optimiser rewrites in place.",
-      "source": "/assets/fonts/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
