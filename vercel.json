@@ -38,7 +38,8 @@
       ]
     },
     {
-      "source": "/assets/(.*)",
+      "//": "Photos, not fonts — the negative lookahead keeps these two rules from overlapping at all. Ordering one after the other did not reliably decide the winner (checked against the deployed response), and two rules that both match one URL is a coin toss nobody should have to re-run.",
+      "source": "/assets/((?!fonts/).*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -47,7 +48,7 @@
       ]
     },
     {
-      "//": "After the rule above, never before it: Vercel applies every matching entry and the last one wins, so a fonts rule placed first is silently overwritten by the broader /assets one. Verified against the deployed response.",
+      "//": "A webfont is replaced by renaming it, never by editing it, so a year immutable is safe here in a way it is not for a photo the optimiser rewrites in place.",
       "source": "/assets/fonts/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
