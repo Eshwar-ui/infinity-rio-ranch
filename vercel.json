@@ -38,7 +38,6 @@
       ]
     },
     {
-      "//": "One rule for everything under /assets, fonts included. 30 days rather than a year immutable because `npm run optimize:images` re-encodes photos *in place* under the same filename — a year would freeze a replaced photo in returning browsers. Fonts could safely take the year (a webfont is replaced by renaming it), but they cannot have a rule of their own: a second entry matching /assets/fonts/* is ignored whether it is ordered before or after this one, and a negative lookahead in the source (`/assets/((?!fonts/).*)`) still matches font paths. Both were tried and checked against a cache-MISS response from the deployment, not against the docs. Moving the fonts to a top-level /fonts/ would work, and is not worth the churn for 63 kB.",
       "source": "/assets/(.*)",
       "headers": [
         {

@@ -293,6 +293,21 @@ Supabase backend, deployed to Vercel.
   script fails the build if a catch-all reappears.
   Photos must be real `<img>` with alt text — background images are unindexable.
   Full write-up in `docs/SEO.md`.
+- **`vercel.json` takes no comments, and a stray key fails the deploy silently.**
+  Vercel validates the file against a strict schema, so a `"//": "…"` note inside
+  a `headers` or `rewrites` entry doesn't deploy with a warning — the build is
+  *rejected*, the last good deployment keeps serving, and the site simply never
+  changes. Three commits shipped into that hole before anyone noticed. Notes
+  about the config belong here, not in it.
+  Two of those notes worth keeping: `/assets` is cached 30 days rather than a
+  year immutable because `optimize:images` re-encodes photos **in place** under
+  the same filename, so a year would freeze a replaced photo in returning
+  browsers. And fonts can't have a longer rule of their own — a second entry
+  matching `/assets/fonts/*` is ignored whether ordered before or after the
+  broad one, and a negative lookahead in `source` (`/assets/((?!fonts/).*)`)
+  still matches font paths. Both were tried and checked against a cache-MISS
+  response from the deployment. Moving the fonts to a top-level `/fonts/` would
+  work and isn't worth the churn for 63 kB.
 - **The client hydrates the prerendered HTML — don't break the match.** Both
   `App.tsx` and `src/entry-server.tsx` render the same `AppShell`; if their trees
   diverge, React logs error #418 and silently falls back to client rendering,
