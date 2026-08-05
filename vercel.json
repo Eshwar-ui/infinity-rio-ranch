@@ -38,18 +38,19 @@
       ]
     },
     {
-      "source": "/assets/fonts/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
       "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=2592000, stale-while-revalidate=31536000"
         }
+      ]
+    },
+    {
+      "//": "After the rule above, never before it: Vercel applies every matching entry and the last one wins, so a fonts rule placed first is silently overwritten by the broader /assets one. Verified against the deployed response.",
+      "source": "/assets/fonts/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
