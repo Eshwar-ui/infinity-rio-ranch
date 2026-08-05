@@ -38,3 +38,50 @@ export const formatPostDate = (iso: string | null): string => {
   if (!name) return ''
   return `${Number(day)} ${name} ${year}`
 }
+
+export type ArticleHeading = {
+  id: string
+  level: number
+  text: string
+  line: number
+}
+
+/** Turns a markdown heading into a stable, readable fragment identifier. */
+const headingSlug = (value: string) =>
+  value
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`~]/g, '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'section'
+
+/**
+ * The article's navigable headings. `line` also lets the markdown renderer use
+ * exactly the same IDs, including when two headings have identical wording.
+ */
+export const articleHeadings = (body: string): ArticleHeading[] => {
+  const used = new Map<string, number>()
+  let inCodeFence = false
+
+  return body.split(/\r?\n/).flatMap((line, index) => {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence
+      return []
+    }
+    if (inCodeFence) return []
+
+    const match = /^(#{1,4})\s+(.+?)(?:\s+#+)?\s*$/.exec(line)
+    if (!match) return []
+
+    const [, marks, rawText] = match
+    const text = rawText.trim()
+    const base = headingSlug(text)
+    const count = used.get(base) ?? 0
+    used.set(base, count + 1)
+
+    return [{ id: count === 0 ? base : `${base}-${count + 1}`, level: marks.length, text, line: index + 1 }]
+  })
+}

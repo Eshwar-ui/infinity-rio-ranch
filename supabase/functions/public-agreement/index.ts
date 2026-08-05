@@ -79,8 +79,8 @@ Deno.serve(async (req) => {
       headers: {
         ...cors,
         'Content-Type': 'application/pdf',
-        // `attachment`, not `inline`: the email button says Download.
-        'Content-Disposition': `attachment; filename="${agreementFileName(client.name)}"`,
+        // Open in the browser's PDF viewer when the client chooses View agreement.
+        'Content-Disposition': `inline; filename="${agreementFileName(client.name)}"`,
         'Cache-Control': 'private, no-store',
         'X-Robots-Tag': 'noindex, nofollow, noarchive',
       },

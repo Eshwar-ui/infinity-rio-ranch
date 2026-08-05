@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
-import { btnPrimary, pageTitle } from '@/lib/admin-ui'
+import { btnPrimary, btnSmall, pageTitle } from '@/lib/admin-ui'
 import { COPY_DEFAULTS, type CopyEntry } from '@/data/copy'
 
 const PAGES: { key: string; label: string; hint: string }[] = [
@@ -187,7 +187,7 @@ export const AdminPageCopy = () => {
                         <button
                           type="button"
                           onClick={() => revert(entry)}
-                          className="text-[12px] font-medium text-muted transition-colors hover:text-brass2"
+                          className={btnSmall}
                         >
                           Reset
                         </button>

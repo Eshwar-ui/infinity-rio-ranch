@@ -10,6 +10,7 @@ import {
   btnGhost,
   btnPrimary,
   btnQuiet,
+  btnSmall,
   field,
   iconBtn,
   iconBtnDanger,
@@ -103,8 +104,8 @@ function StatusPicker<T extends string>({
             key={o}
             onClick={() => onPick(o)}
             aria-pressed={value === o}
-            className={`${pill} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 ${
-              value === o ? tone[o] : 'border-line text-muted hover:border-line hover:text-cream'
+            className={`inline-flex min-h-8 items-center justify-center bg-panel2/80 shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 ${pill} ${
+              value === o ? tone[o] : 'border-line text-muted hover:border-brass/50 hover:bg-panel hover:text-cream'
             }`}
           >
             {o}
@@ -205,7 +206,7 @@ export const AdminClientDetail = () => {
     supabase
       .from('invoices')
       .select(
-        'id, number, status, issue_date, due_date, tax_rate, advance_paid, public_token, invoice_items(qty, unit_price)',
+        'id, number, issue_date, due_date, tax_rate, advance_paid, public_token, invoice_items(qty, unit_price)',
       )
       .eq('client_id', id)
       .order('created_at', { ascending: false })
@@ -483,10 +484,10 @@ export const AdminClientDetail = () => {
                       <button
                         key={s}
                         onClick={() => set({ status: s })}
-                        className={`${pill} transition-colors ${
+                        className={`inline-flex min-h-8 items-center justify-center bg-panel2/80 shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px active:translate-y-0 active:shadow-none ${pill} ${
                           draft.status === s
                             ? statusClass[s]
-                            : 'border-line text-muted hover:text-cream'
+                            : 'border-line text-muted hover:border-brass/50 hover:bg-panel hover:text-cream'
                         }`}
                       >
                         {s}
@@ -499,10 +500,10 @@ export const AdminClientDetail = () => {
                       <button
                         key={s}
                         onClick={() => set({ payment_status: s })}
-                        className={`${pill} transition-colors ${
+                        className={`inline-flex min-h-8 items-center justify-center bg-panel2/80 shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px active:translate-y-0 active:shadow-none ${pill} ${
                           draft.payment_status === s
                             ? paymentClass[s]
-                            : 'border-line text-muted hover:text-cream'
+                            : 'border-line text-muted hover:border-brass/50 hover:bg-panel hover:text-cream'
                         }`}
                       >
                         {s}
@@ -660,7 +661,7 @@ export const AdminClientDetail = () => {
                     No amounts recorded.{' '}
                     <button
                       onClick={edit}
-                      className="font-medium text-brass2 transition-colors hover:text-brass"
+                      className={`ml-2 ${btnSmall}`}
                     >
                       Set the agreed amount
                     </button>{' '}
@@ -681,9 +682,6 @@ export const AdminClientDetail = () => {
               booking={client}
               invoices={invoices}
               onCreated={(inv) => setInvoices((prev) => [inv, ...prev])}
-              onStatusChange={(invId, status) =>
-                setInvoices((prev) => prev.map((i) => (i.id === invId ? { ...i, status } : i)))
-              }
             />
           </div>
 
@@ -780,7 +778,7 @@ export const AdminClientDetail = () => {
                     Nothing noted yet.{' '}
                     <button
                       onClick={edit}
-                      className="font-medium text-brass2 transition-colors hover:text-brass"
+                      className={`mt-2 ${btnSmall}`}
                     >
                       Add a note
                     </button>

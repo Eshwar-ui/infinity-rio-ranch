@@ -30,6 +30,41 @@ type StatusFilter = 'all' | 'live' | 'draft'
 /** Recommended maxima. Over these, search engines truncate — they don't reject. */
 const TITLE_LIMIT = 60
 const DESC_LIMIT = 155
+const MIN_BODY_WORDS = 500
+const MIN_INTERNAL_LINKS = 2
+
+const wordCount = (value: string) => value.trim().split(/\s+/).filter(Boolean).length
+
+/** Requirements that keep a published guide useful to readers, not just indexable. */
+const publishIssues = (post: Row): string[] => {
+  const body = String(post.body ?? '')
+  const excerpt = String(post.excerpt ?? '').trim()
+  const coverAlt = String(post.cover_alt ?? '').trim()
+  const bodyImageAlts = [...body.matchAll(/!\[([^\]]*)\]\([^)]+\)/g)].map((match) => match[1].trim())
+  const internalLinks = [...body.matchAll(/\]\(\/(?!\/)[^)]+\)/g)].length
+  const headings = [...body.matchAll(/^#{1,4}\s+\S+/gm)].length
+  const issues: string[] = []
+
+  if (wordCount(body) < MIN_BODY_WORDS) issues.push(`at least ${MIN_BODY_WORDS} words`)
+  if (headings < 2) issues.push('at least two descriptive section headings')
+  if (excerpt.length < 80) issues.push('an excerpt of at least 80 characters')
+  if (!String(post.seo_title ?? '').trim()) issues.push('an SEO title')
+  if (!String(post.seo_description ?? '').trim()) issues.push('an SEO description')
+  if (!String(post.cover_image ?? '').trim()) issues.push('a cover image')
+  if (coverAlt.length < 12) issues.push('descriptive cover alt text')
+  if (bodyImageAlts.some((alt) => alt.length < 8)) issues.push('descriptive alt text for every body image')
+  if (internalLinks < MIN_INTERNAL_LINKS) issues.push(`at least ${MIN_INTERNAL_LINKS} internal links`)
+  if (!String(post.category ?? '').trim()) issues.push('a category')
+  if (!String(post.primary_query ?? '').trim()) issues.push('a primary search query')
+  if (!String(post.target_location ?? '').trim()) issues.push('a target location')
+  if (!String(post.search_intent ?? '').trim()) issues.push('a search intent')
+  if (!String(post.reader_goal ?? '').trim()) issues.push('a reader goal')
+
+  return issues
+}
+
+const tagsFromField = (value: string) =>
+  [...new Set(value.split(',').map((tag) => tag.trim()).filter(Boolean))]
 
 /**
  * Title → slug. Deliberately matches the CHECK constraint in 0008: lowercase,
@@ -54,6 +89,12 @@ const blankPost = (): Row => ({
   cover_alt: '',
   seo_title: '',
   seo_description: '',
+  category: '',
+  tags: [] as string[],
+  primary_query: '',
+  target_location: '',
+  search_intent: '',
+  reader_goal: '',
   author: '',
   faqs: [] as QandA[],
   cta_heading: '',
@@ -294,6 +335,7 @@ export const AdminBlog = () => {
   // ---- FAQ repeater --------------------------------------------------------
   const faqs = (draft?.faqs ?? []) as QandA[]
   const setFaqs = (next: QandA[]) => patch({ faqs: next })
+  const readinessIssues = draft ? publishIssues(draft) : []
   const updateFaq = (i: number, changes: Partial<QandA>) =>
     setFaqs(faqs.map((f, n) => (n === i ? { ...f, ...changes } : f)))
   const moveFaq = (i: number, by: number) => {
@@ -314,6 +356,12 @@ export const AdminBlog = () => {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
       return toast.error('The slug can only use lowercase letters, numbers and hyphens.')
     }
+    if (draft.published) {
+      const issues = publishIssues(draft)
+      if (issues.length > 0) {
+        return toast.error(`Complete ${issues[0]} before publishing.`)
+      }
+    }
 
     setSaving(true)
     const payload = {
@@ -325,6 +373,12 @@ export const AdminBlog = () => {
       cover_alt: String(draft.cover_alt ?? '').trim(),
       seo_title: String(draft.seo_title ?? '').trim(),
       seo_description: String(draft.seo_description ?? '').trim(),
+      category: String(draft.category ?? '').trim(),
+      tags: Array.isArray(draft.tags) ? draft.tags.map(String).filter(Boolean) : [],
+      primary_query: String(draft.primary_query ?? '').trim(),
+      target_location: String(draft.target_location ?? '').trim(),
+      search_intent: String(draft.search_intent ?? '').trim(),
+      reader_goal: String(draft.reader_goal ?? '').trim(),
       author: String(draft.author ?? '').trim(),
       // Blank pairs would become empty <Question> nodes in the FAQ schema.
       faqs: faqs.filter((f) => f.q.trim() && f.a.trim()),
@@ -392,6 +446,13 @@ export const AdminBlog = () => {
 
   const togglePublished = async (row: Row) => {
     const next = !row.published
+    if (next) {
+      const issues = publishIssues(row)
+      if (issues.length > 0) {
+        toast.error(`Complete ${issues[0]} before publishing.`)
+        return
+      }
+    }
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, published: next } : r)))
     const { error } = await supabase.from('posts').update({ published: next }).eq('id', row.id)
     if (error) {
@@ -538,6 +599,29 @@ export const AdminBlog = () => {
                   </p>
                 </div>
 
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={label}>Category</label>
+                    <input
+                      value={draft.category ?? ''}
+                      onChange={(e) => patch({ category: e.target.value })}
+                      className={field}
+                      placeholder="Venue planning"
+                    />
+                    <p className={hint}>Groups related guides for visitors.</p>
+                  </div>
+                  <div>
+                    <label className={label}>Tags</label>
+                    <input
+                      value={Array.isArray(draft.tags) ? draft.tags.join(', ') : ''}
+                      onChange={(e) => patch({ tags: tagsFromField(e.target.value) })}
+                      className={field}
+                      placeholder="Austin weddings, Liberty Hill"
+                    />
+                    <p className={hint}>Separate topics with commas.</p>
+                  </div>
+                </div>
+
                 <div>
                   <label className={label}>Author</label>
                   {/* Width on the wrapper: `field` carries w-full, which Tailwind
@@ -600,6 +684,56 @@ export const AdminBlog = () => {
                       onChange={(e) => patch({ cover_alt: e.target.value })}
                       className={field}
                       placeholder="Describe the photo for screen readers and search"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ---- Content brief ---- */}
+              <div className={`mt-8 p-5 ${card}`}>
+                <h3 className={sectionTitle}>Content brief</h3>
+                <p className={hint}>
+                  Planning notes for a focused, useful guide. These are not shown to visitors.
+                </p>
+                <div className="mt-4 grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className={label}>Primary search query</label>
+                    <input
+                      value={draft.primary_query ?? ''}
+                      onChange={(e) => patch({ primary_query: e.target.value })}
+                      className={field}
+                      placeholder="How to choose a wedding venue near Austin"
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>Target location</label>
+                    <input
+                      value={draft.target_location ?? ''}
+                      onChange={(e) => patch({ target_location: e.target.value })}
+                      className={field}
+                      placeholder="Liberty Hill and Greater Austin, Texas"
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>Search intent</label>
+                    <select
+                      value={draft.search_intent ?? ''}
+                      onChange={(e) => patch({ search_intent: e.target.value })}
+                      className={field}
+                    >
+                      <option value="">Choose intent</option>
+                      <option value="Informational">Informational</option>
+                      <option value="Local planning">Local planning</option>
+                      <option value="Commercial research">Commercial research</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={label}>Reader goal</label>
+                    <input
+                      value={draft.reader_goal ?? ''}
+                      onChange={(e) => patch({ reader_goal: e.target.value })}
+                      className={field}
+                      placeholder="Compare venues and decide what to ask on a tour"
                     />
                   </div>
                 </div>
@@ -697,8 +831,8 @@ export const AdminBlog = () => {
                   <div>
                     <h3 className={sectionTitle}>Frequently asked questions</h3>
                     <p className={hint}>
-                      Shown at the end of the post and submitted to Google as FAQ
-                      structured data, which can win extra space in the results.
+                      Shown at the end of the post and included as matching FAQ
+                      structured data for search engines and answer tools.
                     </p>
                   </div>
                   <button
@@ -797,6 +931,29 @@ export const AdminBlog = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* ---- Publish readiness ---- */}
+              <div className={`mt-8 p-5 ${card}`}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className={sectionTitle}>Publish readiness</h3>
+                  <span className={`text-[12px] font-medium ${
+                    readinessIssues.length === 0 ? 'text-brass2' : 'text-[#e0b46f]'
+                  }`}>
+                    {readinessIssues.length === 0
+                      ? 'Ready to publish'
+                      : `${readinessIssues.length} item${readinessIssues.length === 1 ? '' : 's'} left`}
+                  </span>
+                </div>
+                {readinessIssues.length === 0 ? (
+                  <p className={hint}>This guide has the required reader and search basics.</p>
+                ) : (
+                  <ul className="mt-3 space-y-1.5 text-[13px] leading-relaxed text-muted">
+                    {readinessIssues.map((issue) => (
+                      <li key={issue}>• Add {issue}.</li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               {/* ---- Actions ---- */}

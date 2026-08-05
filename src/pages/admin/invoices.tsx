@@ -3,16 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
-import { btnPrimary, pageTitle, pill, th } from '@/lib/admin-ui'
+import { btnPrimary, pageTitle, th } from '@/lib/admin-ui'
 import { money } from '@/lib/invoice'
 
 type Row = Record<string, any>
-
-const statusClass: Record<string, string> = {
-  draft: 'border-line text-muted',
-  sent: 'border-brass/40 text-brass2',
-  paid: 'border-[#6a9a7a]/40 text-[#8fc0a0]',
-}
 
 const fmt = (d?: string | null) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
@@ -71,7 +65,6 @@ export const AdminInvoices = () => {
                 <th className={th}>Number</th>
                 <th className={th}>Client</th>
                 <th className={th}>Issued</th>
-                <th className={th}>Status</th>
                 <th className={`${th} text-right`}>Total</th>
               </tr>
             </thead>
@@ -85,13 +78,6 @@ export const AdminInvoices = () => {
                   <td className="py-3.5 font-medium text-cream">{r.number}</td>
                   <td className="py-3.5 text-cream/90">{r.client_name}</td>
                   <td className="py-3.5 text-muted">{fmt(r.issue_date)}</td>
-                  <td className="py-3.5">
-                    <span
-                      className={`${pill} ${statusClass[r.status] ?? statusClass.draft}`}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
                   <td className="py-3.5 text-right font-medium text-cream">
                     {money(rowTotal(r))}
                     {rowAdvance(r) > 0 && (

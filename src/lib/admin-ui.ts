@@ -26,19 +26,23 @@ export const hint = 'mt-1.5 text-[12px] leading-relaxed text-muted/80'
 
 /** Primary action — one per view. */
 export const btnPrimary =
-  'rounded-md bg-brass px-4 py-2 text-[13px] font-semibold text-onbrass transition-colors hover:bg-brass2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:opacity-50'
+  'inline-flex min-h-10 items-center justify-center rounded-md border border-brass bg-brass px-4 py-2 text-[13px] font-semibold text-onbrass shadow-[0_2px_0_rgba(0,0,0,0.3),0_5px_12px_rgba(0,0,0,0.16)] transition-all hover:-translate-y-px hover:bg-brass2 hover:shadow-[0_3px_0_rgba(0,0,0,0.3),0_8px_16px_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:opacity-50'
 
 /** Secondary action. */
 export const btnGhost =
-  'rounded-md border border-line px-4 py-2 text-[13px] font-medium text-cream transition-colors hover:border-brass hover:text-brass2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 disabled:opacity-50'
+  'inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-panel2/80 px-4 py-2 text-[13px] font-semibold text-cream shadow-[0_2px_0_rgba(0,0,0,0.25),0_4px_10px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-px hover:border-brass hover:bg-panel hover:text-brass2 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 disabled:opacity-50'
 
 /** Tertiary / inline action — no chrome until hovered. */
 export const btnQuiet =
-  'rounded text-[13px] font-medium text-muted transition-colors hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 disabled:opacity-50'
+  'inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-panel/70 px-4 py-2 text-[13px] font-semibold text-cream shadow-[0_2px_0_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-brass/60 hover:bg-panel2 hover:text-brass2 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 disabled:opacity-50'
 
 /** Destructive inline action. */
 export const btnDanger =
-  'rounded text-[13px] font-medium text-muted transition-colors hover:text-[#e0916f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40'
+  'inline-flex min-h-10 items-center justify-center rounded-md border border-[#e0916f]/45 bg-[#e0916f]/10 px-4 py-2 text-[13px] font-semibold text-[#eeb099] shadow-[0_2px_0_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-[#e0916f] hover:bg-[#e0916f]/20 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40'
+
+/** Compact raised control for action rows and inline toolbars. */
+export const btnSmall =
+  'inline-flex min-h-8 items-center justify-center rounded-md border border-line bg-panel2/80 px-2.5 py-1 text-[12px] font-semibold text-cream shadow-[0_1px_0_rgba(0,0,0,0.25),0_2px_6px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-px hover:border-brass hover:bg-panel hover:text-brass2 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40 disabled:opacity-50'
 
 /**
  * Icon-only action. ALWAYS pass an `aria-label` and a `title` — the icon is the
@@ -46,11 +50,11 @@ export const btnDanger =
  * to everyone else. Sized to a 30px hit area, the floor for a comfortable click.
  */
 export const iconBtn =
-  'grid h-[30px] w-[30px] place-items-center rounded-md border border-transparent text-muted transition-colors hover:border-line hover:bg-panel2/70 hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40'
+  'grid h-10 w-10 place-items-center rounded-md border border-line bg-panel2/80 text-muted shadow-[0_2px_0_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-brass hover:bg-panel hover:text-cream active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40'
 
 /** Icon-only destructive action. Same rules. */
 export const iconBtnDanger =
-  'grid h-[30px] w-[30px] place-items-center rounded-md border border-transparent text-muted transition-colors hover:border-[#e0916f]/40 hover:bg-[#e0916f]/10 hover:text-[#e0916f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40'
+  'grid h-10 w-10 place-items-center rounded-md border border-[#e0916f]/35 bg-[#e0916f]/10 text-[#eeb099] shadow-[0_2px_0_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-[#e0916f] hover:bg-[#e0916f]/20 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40'
 
 /** Page heading in a view's top bar. */
 export const pageTitle = 'text-[22px] font-semibold tracking-[-0.01em] text-cream'
@@ -62,12 +66,15 @@ export const sectionTitle = 'text-[15px] font-semibold tracking-[-0.005em] text-
 export const eyebrow = 'text-[11px] font-semibold uppercase tracking-[0.12em] text-muted/70'
 
 /** Status tag. Combine with a colour class per status. */
-export const pill = 'rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize'
+export const pill =
+  'inline-flex rounded-full border bg-panel/70 px-2.5 py-0.5 text-[11px] font-medium capitalize shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_5px_rgba(0,0,0,0.1)]'
 
 /** Segmented filter button; pass `true` for the selected one. */
 export const chip = (active: boolean) =>
-  `rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors ${
-    active ? 'bg-brass/15 text-brass2' : 'text-muted hover:bg-panel hover:text-cream'
+  `inline-flex min-h-8 items-center justify-center rounded-md border px-2.5 py-1 text-[12px] font-semibold shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all active:translate-y-px active:shadow-none ${
+    active
+      ? 'border-brass/60 bg-brass/20 text-brass2'
+      : 'border-line bg-panel2/70 text-muted hover:-translate-y-px hover:border-brass/50 hover:bg-panel hover:text-cream'
   }`
 
 /** Bordered container for a group of related facts. */

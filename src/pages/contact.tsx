@@ -11,6 +11,7 @@ import { FAQ_JSONLD_ID, faqPageNode } from '@/lib/seo'
 import { inquirySchema, type InquiryValues } from '@/lib/inquiry-schema'
 import { Reveal } from '@/components/effects/reveal'
 import { PageHero } from '@/components/layout/page-hero'
+import { Polaroid } from '@/components/ui/polaroid'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { Select } from '@/components/ui/select'
 import {
@@ -181,9 +182,13 @@ export const ContactPage = () => {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div
-              className="mb-[34px] aspect-[5/4] overflow-hidden rounded-[2px] bg-cover bg-center shadow-[0_30px_70px_rgba(0,0,0,0.5)]"
-              style={{ backgroundImage: `url(${CONTACT_IMG})` }}
+            <Polaroid
+              src={CONTACT_IMG}
+              alt="The entrance and grounds at Infinity at Rio Ranch in Liberty Hill, Texas"
+              aspect="aspect-[5/4]"
+              rotate={1}
+              sizes="(max-width: 767px) 100vw, 480px"
+              className="mb-[34px] w-full"
             />
             <div className="flex flex-col gap-[26px]">
               <div>

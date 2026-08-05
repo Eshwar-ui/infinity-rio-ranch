@@ -123,10 +123,7 @@ const AdminShell = () => {
           )}
         </nav>
 
-        <button
-          onClick={signOut}
-          className="border-t border-line px-5 py-3.5 text-left text-[13px] font-medium text-muted transition-colors hover:text-cream"
-        >
+        <button onClick={signOut} className={`m-3 mt-auto ${btnGhost}`}>
           Sign out
         </button>
       </aside>

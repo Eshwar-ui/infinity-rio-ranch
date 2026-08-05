@@ -7,11 +7,12 @@ export type InvoiceData = {
   client_address?: string | null
   issue_date: string
   due_date?: string | null
-  status: string
   tax_rate: number
   /** Deposit already taken, credited against the total. */
   advance_paid?: number | null
   notes?: string | null
+  /** True when this invoice belongs to a booking with a rental agreement. */
+  has_agreement?: boolean
   items: InvoiceItem[]
 }
 

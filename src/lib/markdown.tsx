@@ -23,7 +23,14 @@ import { SmartImage } from '@/components/ui/smart-image'
 /** Internal links use the router; external ones open safely in a new tab. */
 const isInternal = (href: string) => href.startsWith('/') && !href.startsWith('//')
 
-export const PostBody = ({ children }: { children: string }) => (
+export const PostBody = ({
+  children,
+  headingIds = {},
+}: {
+  children: string
+  /** Heading IDs derived from the source body, for table-of-contents links. */
+  headingIds?: Record<number, string>
+}) => (
   <Markdown
     remarkPlugins={[remarkGfm]}
     components={{
@@ -32,23 +39,35 @@ export const PostBody = ({ children }: { children: string }) => (
        * to h2. Two h1s on a page is a real (if minor) structural SEO fault, and
        * the owner writing `#` out of habit shouldn't be able to cause it.
        */
-      h1: ({ children }) => (
-        <h2 className="mb-4 mt-12 font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.2] text-cream">
+      h1: ({ children, node }) => (
+        <h2
+          id={headingIds[node?.position?.start.line ?? 0]}
+          className="mb-4 mt-12 scroll-mt-28 font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.2] text-cream"
+        >
           {children}
         </h2>
       ),
-      h2: ({ children }) => (
-        <h2 className="mb-4 mt-12 font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.2] text-cream">
+      h2: ({ children, node }) => (
+        <h2
+          id={headingIds[node?.position?.start.line ?? 0]}
+          className="mb-4 mt-12 scroll-mt-28 font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.2] text-cream"
+        >
           {children}
         </h2>
       ),
-      h3: ({ children }) => (
-        <h3 className="mb-3 mt-9 font-serif text-[clamp(1.3rem,2.4vw,1.7rem)] font-normal leading-[1.25] text-cream">
+      h3: ({ children, node }) => (
+        <h3
+          id={headingIds[node?.position?.start.line ?? 0]}
+          className="mb-3 mt-9 scroll-mt-28 font-serif text-[clamp(1.3rem,2.4vw,1.7rem)] font-normal leading-[1.25] text-cream"
+        >
           {children}
         </h3>
       ),
-      h4: ({ children }) => (
-        <h4 className="mb-2.5 mt-7 text-[15px] font-medium uppercase tracking-[0.14em] text-brass2">
+      h4: ({ children, node }) => (
+        <h4
+          id={headingIds[node?.position?.start.line ?? 0]}
+          className="mb-2.5 mt-7 scroll-mt-28 text-[15px] font-medium uppercase tracking-[0.14em] text-brass2"
+        >
           {children}
         </h4>
       ),

@@ -1,6 +1,7 @@
 import { MagnifyingGlass, X } from '@phosphor-icons/react'
 
 import { Select } from '@/components/ui/select'
+import { btnSmall } from '@/lib/admin-ui'
 
 /**
  * Search + filter toolbar that sits directly above a list rail.
@@ -99,7 +100,7 @@ export const SearchBox = ({
       <button
         onClick={() => onChange('')}
         aria-label="Clear search"
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-cream"
+        className="absolute right-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded border border-line bg-panel2/80 text-muted shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_5px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-[calc(50%+1px)] hover:border-brass hover:text-cream active:translate-y-[-50%] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/40"
       >
         <X size={13} />
       </button>
@@ -135,7 +136,7 @@ export const FilterBar = ({
       {active && (
         <button
           onClick={onReset}
-          className="font-medium text-brass2 transition-colors hover:text-brass"
+          className={btnSmall}
         >
           Reset
         </button>

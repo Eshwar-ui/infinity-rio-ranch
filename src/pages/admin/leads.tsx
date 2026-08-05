@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
-import { btnDanger, btnGhost, btnPrimary, pageTitle, pill } from '@/lib/admin-ui'
+import { btnDanger, btnPrimary, pageTitle, pill } from '@/lib/admin-ui'
 import { FilterBar, FilterGroup, SearchBox } from '@/components/admin/list-filters'
 
 type LeadStatus = 'new' | 'read' | 'replied' | 'converted' | 'archived'
@@ -26,7 +26,18 @@ type Lead = {
  * client record that doesn't exist.
  */
 const STATUSES: LeadStatus[] = ['new', 'read', 'replied', 'archived']
-const FILTERS: LeadStatus[] = ['new', 'read', 'replied', 'converted', 'archived']
+
+/**
+ * A converted lead is a client, and it is only ever in one place.
+ *
+ * The row stays in `leads` — `clients.lead_id` points at it, and the enquiry
+ * itself is the record of how the booking arrived — but this inbox stops
+ * listing it the moment it becomes a booking. Leaving it here gave the same
+ * couple two entries in two views, each with its own status, and no way to tell
+ * which one you were meant to act on. The filter is applied in the query so the
+ * "N total" line and every option count describe the same set.
+ */
+const FILTERS: LeadStatus[] = ['new', 'read', 'replied', 'archived']
 
 const statusClass: Record<LeadStatus, string> = {
   new: 'bg-brass/15 text-brass2 border-brass/40',
@@ -56,6 +67,7 @@ export const LeadsPage = () => {
     supabase
       .from('leads')
       .select('*')
+      .neq('status', 'converted')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (error) toast.error('Could not load leads.')
@@ -135,10 +147,11 @@ export const LeadsPage = () => {
       toast.error('Could not convert this lead.')
       return
     }
-    setLeads((prev) =>
-      prev.map((l) => (l.id === lead.id ? { ...l, status: 'converted' } : l)),
-    )
-    toast.success('Lead converted to a client.')
+    // Out of the inbox, not restyled in it: it is a client now, and the next
+    // screen is that client's page.
+    setLeads((prev) => prev.filter((l) => l.id !== lead.id))
+    setSelectedId(null)
+    toast.success(`${lead.name} is now a client.`)
     navigate(`/admin/clients/${data}`)
   }
 
@@ -227,22 +240,15 @@ export const LeadsPage = () => {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
-                  {selected.status === 'converted' ? (
-                    <button
-                      onClick={() => navigate('/admin/clients')}
-                      className={btnGhost}
-                    >
-                      View in Clients
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => convert(selected)}
-                      disabled={converting}
-                      className={btnPrimary}
-                    >
-                      {converting ? 'Converting…' : 'Convert to client'}
-                    </button>
-                  )}
+                  {/* No "converted" branch here any more: converting removes the
+                      lead from this list, so a selected lead is never one. */}
+                  <button
+                    onClick={() => convert(selected)}
+                    disabled={converting}
+                    className={btnPrimary}
+                  >
+                    {converting ? 'Converting…' : 'Convert to client'}
+                  </button>
                   <button
                     onClick={() => remove(selected.id)}
                     className={btnDanger}

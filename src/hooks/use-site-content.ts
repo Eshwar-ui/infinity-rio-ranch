@@ -174,6 +174,8 @@ export const mapPostRow = (r: Record<string, any>): Post => ({
   coverAlt: r.cover_alt ?? '',
   seoTitle: r.seo_title ?? '',
   seoDescription: r.seo_description ?? '',
+  category: r.category ?? '',
+  tags: Array.isArray(r.tags) ? r.tags.map((tag: unknown) => String(tag)).filter(Boolean) : [],
   author: r.author ?? '',
   faqs: Array.isArray(r.faqs)
     ? r.faqs.filter((f: any) => f?.q && f?.a).map((f: any) => ({ q: String(f.q), a: String(f.a) }))
@@ -185,7 +187,28 @@ export const mapPostRow = (r: Record<string, any>): Post => ({
 })
 
 const POST_COLUMNS =
+  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,category,tags,author,faqs,cta_heading,cta_body,published_at,updated_at'
+
+/**
+ * What 0008 shipped, without the `category`/`tags` 0010 added.
+ *
+ * PostgREST rejects the *whole* select with a 400 (42703) when one column is
+ * absent, so on a project that hasn't had 0010 applied every post query failed
+ * and the blog stayed on the build-time snapshot — which is how a published
+ * cover image stopped appearing while the row in the DB had one all along.
+ * A missing optional field should cost that field, not the article.
+ */
+const CORE_POST_COLUMNS =
   'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,author,faqs,cta_heading,cta_body,published_at,updated_at'
+
+type PostQuery<T> = PromiseLike<{ data: T | null; error: { code?: string } | null }>
+
+/** Runs a post query, retrying once without the 0010 columns if they're absent. */
+const withPostColumns = async <T>(run: (columns: string) => PostQuery<T>) => {
+  const first = await run(POST_COLUMNS)
+  // 42703 = undefined_column. Anything else is a real failure and stays one.
+  return first.error?.code === '42703' ? run(CORE_POST_COLUMNS) : first
+}
 
 /** Published posts, newest first — seeded from the snapshot, then refreshed. */
 export const usePosts = (): Post[] => {
@@ -195,11 +218,13 @@ export const usePosts = (): Post[] => {
     let active = true
     void import('@/lib/supabase')
       .then(({ supabase }) =>
-        supabase
-          .from('posts')
-          .select(POST_COLUMNS)
-          .eq('published', true)
-          .order('published_at', { ascending: false }),
+        withPostColumns((columns) =>
+          supabase
+            .from('posts')
+            .select(columns)
+            .eq('published', true)
+            .order('published_at', { ascending: false }),
+        ),
       )
       .then(({ data, error }) => {
         // Unlike the other lists, an empty result is meaningful here: the owner
@@ -235,12 +260,14 @@ export const usePost = (slug: string | undefined): { post?: Post; loading: boole
 
     void import('@/lib/supabase')
       .then(({ supabase }) =>
-        supabase
-          .from('posts')
-          .select(POST_COLUMNS)
-          .eq('slug', slug)
-          .eq('published', true)
-          .maybeSingle(),
+        withPostColumns((columns) =>
+          supabase
+            .from('posts')
+            .select(columns)
+            .eq('slug', slug)
+            .eq('published', true)
+            .maybeSingle(),
+        ),
       )
       .then(({ data, error }) => {
         if (!active) return

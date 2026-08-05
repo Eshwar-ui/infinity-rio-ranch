@@ -18,7 +18,7 @@
 insert into public.posts (
   slug, title, excerpt, body,
   cover_image, cover_alt,
-  seo_title, seo_description,
+  seo_title, seo_description, category, tags,
   faqs, cta_heading, cta_body, published
 ) values (
   'best-wedding-event-center-in-texas',
@@ -96,6 +96,8 @@ If you're comparing wedding and event centers across Texas, it's worth [seeing I
 
   'Best Wedding & Event Center in Texas | How to Choose',
   'How to compare Texas wedding and event centers: indoor and outdoor flexibility, capacity, location, and the exact questions to ask before you book near Austin.',
+  'Venue planning',
+  '["Texas wedding venues", "Liberty Hill", "Austin weddings"]'::jsonb,
 
 $json$[
   {
@@ -136,6 +138,8 @@ on conflict (slug) do update set
   cover_alt       = excluded.cover_alt,
   seo_title       = excluded.seo_title,
   seo_description = excluded.seo_description,
+  category        = excluded.category,
+  tags            = excluded.tags,
   faqs            = excluded.faqs,
   cta_heading     = excluded.cta_heading,
   cta_body        = excluded.cta_body,

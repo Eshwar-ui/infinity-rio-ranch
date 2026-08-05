@@ -4,13 +4,12 @@ import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
 import { computeTotals, money, sentMessage, type InvoiceItem, type SendResult } from '@/lib/invoice'
-import { btnPrimary, btnQuiet, chip, field, label, pill, sectionTitle } from '@/lib/admin-ui'
+import { btnPrimary, btnQuiet, btnSmall, chip, field, label, sectionTitle } from '@/lib/admin-ui'
 
 /** The slice of an invoice this panel lists and totals up. */
 export type ClientInvoice = {
   id: string
   number: string | null
-  status: string
   issue_date: string | null
   due_date: string | null
   tax_rate: number | null
@@ -31,12 +30,6 @@ export type InvoiceBooking = {
   advance_amount: number | null
 }
 
-
-const statusClass: Record<string, string> = {
-  draft: 'border-line text-muted',
-  sent: 'border-brass/40 text-brass2',
-  paid: 'border-[#6a9a7a]/40 text-[#8fc0a0]',
-}
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -100,12 +93,10 @@ export const ClientInvoicePanel = ({
   booking,
   invoices,
   onCreated,
-  onStatusChange,
 }: {
   booking: InvoiceBooking
   invoices: ClientInvoice[]
   onCreated: (invoice: ClientInvoice) => void
-  onStatusChange: (id: string, status: string) => void
 }) => {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -121,8 +112,8 @@ export const ClientInvoicePanel = ({
   const [agreementError, setAgreementError] = useState<string | null>(null)
   const agreementUrl = useRef<string | null>(null)
 
-  // Resolved from the list every render, so a status change or a rename shows
-  // in the viewer header without a second copy of the row to keep in sync.
+  // Resolved from the list every render, so a rename shows in the viewer header
+  // without a second copy of the row to keep in sync.
   const viewed = viewer ? (invoices.find((i) => i.id === viewer.id) ?? null) : null
 
   /** One live blob at a time: the old one is revoked before the new one lands. */
@@ -149,6 +140,9 @@ export const ClientInvoicePanel = ({
   const credited = invoices.reduce((s, i) => s + (Number(i.advance_paid) || 0), 0)
   const uncredited = Math.max(0, deposit - credited)
   const isFollowUp = invoices.length > 0
+  // The list is newest-first, so the original booking invoice is at the end.
+  // Its agreement is the one contract the client receives for this booking.
+  const bookingInvoice = invoices.at(-1)
   const base = [booking.package, booking.event_type].find((v) => (v ?? '').trim()) ?? ''
 
   /**
@@ -242,12 +236,11 @@ export const ClientInvoicePanel = ({
         client_email: booking.email,
         issue_date: draft.issue_date || today(),
         due_date: draft.due_date || null,
-        status: 'draft',
         tax_rate: Number(draft.tax_rate) || 0,
         advance_paid: Math.max(0, Number(draft.advance_paid) || 0),
         notes: draft.notes || null,
       })
-      .select('id, number, status, issue_date, due_date, tax_rate, advance_paid, public_token')
+      .select('id, number, issue_date, due_date, tax_rate, advance_paid, public_token')
       .single()
 
     if (error || !data) {
@@ -331,8 +324,6 @@ export const ClientInvoicePanel = ({
       toast.error(await functionError(error, 'Email not sent — the email service may not be configured yet.'))
       return
     }
-    await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoice.id)
-    onStatusChange(invoice.id, 'sent')
     // Say when the agreement button wasn't included, and why. Left as one
     // message, "no agreement" reads as a fault every time — including on a
     // follow-up, where leaving it out is the whole point.
@@ -369,7 +360,6 @@ export const ClientInvoicePanel = ({
       // the send path. Say that outright — the client was just emailed, and a
       // vague "could not build" reads as if nothing happened.
       if (data && typeof data === 'object' && 'ok' in data) {
-        onStatusChange(invoice.id, 'sent')
         const message =
           'The deployed send-invoice function is out of date — it emailed the client instead of returning a preview. Redeploy it (see RUNBOOK.md).'
         setAgreementError(message)
@@ -435,6 +425,29 @@ export const ClientInvoicePanel = ({
         )}
       </div>
 
+      {bookingInvoice && (
+        <section className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-md border border-brass/35 bg-brass/10 p-4">
+          <div className="max-w-[58ch]">
+            <h4 className="text-[14px] font-semibold text-cream">Client documents</h4>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted">
+              The rental agreement is created from this booking and is kept separate from each
+              invoice, so the client always knows which document they are opening.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => showDocument(bookingInvoice, 'agreement')}
+              className={btnSmall}
+            >
+              View agreement
+            </button>
+            <button onClick={() => showDocument(invoices[0], 'invoice')} className={btnSmall}>
+              View latest invoice
+            </button>
+          </div>
+        </section>
+      )}
+
       {invoices.length > 0 && (
         <ul className="mt-5 space-y-2">
           {invoices.map((inv) => {
@@ -451,18 +464,13 @@ export const ClientInvoicePanel = ({
                 {/* One line per invoice in the main column, wrapping into three
                     zones when the space isn't there. It used to be three fixed
                     rows because this panel lived in a ~420px rail, where the
-                    number, the pill, the money and four actions all competed
+                    number, the money and four actions all competed
                     for one row and "INV-2026-0004" wrapped a character at a
                     time. With the column width it reads as a ledger again. */}
                 <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5">
                   <div className="flex min-w-0 flex-1 basis-[220px] flex-wrap items-center gap-x-2.5 gap-y-1">
                     <span className="whitespace-nowrap text-[14px] font-medium text-cream">
                       {inv.number ?? 'Draft'}
-                    </span>
-                    <span
-                      className={`shrink-0 ${pill} ${statusClass[inv.status] ?? statusClass.draft}`}
-                    >
-                      {inv.status}
                     </span>
                     <span className="truncate text-[12px] text-muted">
                       Issued {fmtDate(inv.issue_date)}
@@ -480,29 +488,27 @@ export const ClientInvoicePanel = ({
                   {/* Preview covers what Link and Agreement used to do
                       separately, and shows the documents instead of describing
                       them. The link and the PDF download live inside it. */}
-                  <div className="flex shrink-0 items-center gap-4 text-[13px] font-medium">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <button
                       onClick={() =>
                         viewer?.id === inv.id ? closeViewer() : showDocument(inv, 'invoice')
                       }
                       aria-expanded={viewer?.id === inv.id}
                       title="See exactly what the client receives"
-                      className={`transition-colors hover:text-brass2 ${
-                        viewer?.id === inv.id ? 'text-brass2' : 'text-muted'
-                      }`}
+                      className={btnSmall}
                     >
-                      Preview
+                      View invoice
                     </button>
                     <Link
                       to={`/admin/invoices/${inv.id}`}
-                      className="text-muted transition-colors hover:text-brass2"
+                      className={btnSmall}
                     >
-                      Edit
+                      Edit invoice
                     </Link>
                     <button
                       onClick={() => email(inv)}
                       disabled={sendingId === inv.id}
-                      className="text-brass2 transition-colors hover:text-brass disabled:opacity-50"
+                      className={btnSmall}
                     >
                       {sendingId === inv.id ? 'Sending…' : 'Email'}
                     </button>
@@ -540,12 +546,12 @@ export const ClientInvoicePanel = ({
               {viewer?.tab === 'agreement' && ' · rental agreement'}
             </span>
 
-            <div className="ml-auto flex items-center gap-4 text-[13px] font-medium">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
               {viewer?.tab === 'invoice' ? (
                 <>
                   <button
                     onClick={() => copyLink(viewed)}
-                    className="text-muted transition-colors hover:text-brass2"
+                    className={btnSmall}
                   >
                     Copy link
                   </button>
@@ -554,7 +560,7 @@ export const ClientInvoicePanel = ({
                       href={`/invoice/${viewed.public_token}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-muted transition-colors hover:text-brass2"
+                      className={btnSmall}
                     >
                       Open in new tab
                     </a>
@@ -565,7 +571,7 @@ export const ClientInvoicePanel = ({
                   <a
                     href={agreement.url}
                     download={`Rental Agreement - ${booking.name}.pdf`}
-                    className="text-muted transition-colors hover:text-brass2"
+                    className={btnSmall}
                   >
                     Download
                   </a>
@@ -738,7 +744,7 @@ export const ClientInvoicePanel = ({
               <span className={label}>Line items</span>
               <button
                 onClick={addItem}
-                className="text-[13px] font-semibold text-brass2 transition-colors hover:text-brass"
+                className={btnSmall}
               >
                 + Add row
               </button>
@@ -751,7 +757,7 @@ export const ClientInvoicePanel = ({
               {draft.items.map((it, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-[minmax(0,1fr)_64px_100px_20px] items-center gap-2"
+                  className="grid grid-cols-[minmax(0,1fr)_64px_100px_36px] items-center gap-2"
                 >
                   <input
                     placeholder="Description"
@@ -777,7 +783,7 @@ export const ClientInvoicePanel = ({
                   <button
                     onClick={() => removeItem(i)}
                     aria-label="Remove row"
-                    className="text-[18px] leading-none text-muted transition-colors hover:text-[#e0916f]"
+                    className="grid h-8 w-8 place-items-center rounded-md border border-[#e0916f]/45 bg-[#e0916f]/10 text-[18px] leading-none text-[#eeb099] shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-[#e0916f] hover:bg-[#e0916f]/20 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40"
                   >
                     ×
                   </button>

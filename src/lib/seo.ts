@@ -35,6 +35,7 @@ import {
   seededStats as stats,
   type Post,
 } from '@/lib/content-snapshot'
+import { articleHeadings } from '@/lib/post-format'
 
 const included = seededList('included')
 
@@ -426,25 +427,61 @@ export const faqPageNode = (
  * fixing a typo doesn't re-date the article. Both are omitted rather than
  * guessed when absent: a fabricated publication date is worse than none.
  */
-const blogPostingNode = (post: Post, url: string) => ({
-  '@type': 'BlogPosting',
-  '@id': `${url}#article`,
-  headline: post.seoTitle || post.title,
-  name: post.title,
-  description: post.seoDescription || post.excerpt || VENUE_DESCRIPTION,
-  url,
-  mainEntityOfPage: { '@id': `${url}#webpage` },
-  inLanguage: 'en-US',
-  isPartOf: { '@id': `${abs(BLOG_ROUTE)}#blog` },
-  ...(post.coverImage ? { image: abs(post.coverImage) } : {}),
-  ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
-  ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
-  author: post.author
-    ? { '@type': 'Person', name: post.author }
-    : { '@id': VENUE_ID },
-  publisher: { '@id': VENUE_ID },
-  about: { '@id': VENUE_ID },
-})
+const articleSections = (post: Post, url: string) =>
+  articleHeadings(post.body).map((heading) => ({
+    '@type': 'WebPageElement',
+    '@id': `${url}#${heading.id}`,
+    name: heading.text,
+    url: `${url}#${heading.id}`,
+  }))
+
+/** Semantic table of contents for crawlers; it mirrors the visible in-page navigation. */
+const articleTocNode = (post: Post, url: string) => {
+  const headings = articleHeadings(post.body)
+  return headings.length > 0
+    ? {
+        '@type': 'ItemList',
+        '@id': `${url}#table-of-contents`,
+        name: `Table of contents: ${post.title}`,
+        numberOfItems: headings.length,
+        itemListElement: headings.map((heading, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: heading.text,
+          url: `${url}#${heading.id}`,
+        })),
+      }
+    : null
+}
+
+const blogPostingNode = (post: Post, url: string) => {
+  const sections = articleSections(post, url)
+  const words = post.body.trim().split(/\s+/).filter(Boolean).length
+
+  return {
+    '@type': 'BlogPosting',
+    '@id': `${url}#article`,
+    headline: post.seoTitle || post.title,
+    name: post.title,
+    description: post.seoDescription || post.excerpt || VENUE_DESCRIPTION,
+    url,
+    mainEntityOfPage: { '@id': `${url}#webpage` },
+    inLanguage: 'en-US',
+    isPartOf: { '@id': `${abs(BLOG_ROUTE)}#blog` },
+    ...(post.coverImage ? { image: abs(post.coverImage) } : {}),
+    ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
+    ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
+    ...(post.category ? { articleSection: post.category } : {}),
+    ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
+    ...(words > 0 ? { wordCount: words } : {}),
+    ...(sections.length > 0 ? { hasPart: sections.map((section) => ({ '@id': section['@id'] })) } : {}),
+    author: post.author
+      ? { '@type': 'Person', name: post.author }
+      : { '@id': VENUE_ID },
+    publisher: { '@id': VENUE_ID },
+    about: { '@id': VENUE_ID },
+  }
+}
 
 const blogNode = () => ({
   '@type': 'Blog',
@@ -528,7 +565,11 @@ const jsonLdFor = (pathname: string, meta: RouteMeta) => {
   if (pathname === BLOG_ROUTE) graph.push(blogNode())
 
   const post = isPostRoute(pathname) ? postBySlug(postSlug(pathname)) : undefined
-  if (post) graph.push(blogPostingNode(post, url))
+  if (post) {
+    graph.push(blogPostingNode(post, url), ...articleSections(post, url))
+    const toc = articleTocNode(post, url)
+    if (toc) graph.push(toc)
+  }
 
   const docs: JsonLdDoc[] = [
     { doc: { '@context': 'https://schema.org', '@graph': graph } },

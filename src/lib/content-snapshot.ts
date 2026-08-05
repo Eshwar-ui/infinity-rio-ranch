@@ -49,6 +49,8 @@ export type Post = {
   coverAlt: string
   seoTitle: string
   seoDescription: string
+  category: string
+  tags: string[]
   author: string
   faqs: QandA[]
   ctaHeading: string

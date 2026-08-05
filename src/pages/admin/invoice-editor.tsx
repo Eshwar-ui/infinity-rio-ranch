@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { supabase } from '@/lib/supabase'
-import { btnGhost, btnPrimary, btnQuiet, field, hint, label } from '@/lib/admin-ui'
+import { btnGhost, btnPrimary, btnQuiet, btnSmall, field, hint, label } from '@/lib/admin-ui'
 import {
   computeTotals,
   money,
@@ -13,7 +13,6 @@ import {
   type SendResult,
 } from '@/lib/invoice'
 import { InvoiceDocument } from '@/components/invoice/invoice-document'
-import { Select } from '@/components/ui/select'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const emptyItem = (): InvoiceItem => ({ description: '', qty: 1, unit_price: 0 })
@@ -25,7 +24,6 @@ type Form = {
   client_address: string
   issue_date: string
   due_date: string
-  status: string
   tax_rate: string
   advance_paid: string
   notes: string
@@ -52,7 +50,6 @@ export const InvoiceEditor = () => {
     client_address: '',
     issue_date: today(),
     due_date: '',
-    status: 'draft',
     tax_rate: '0',
     advance_paid: '0',
     notes: '',
@@ -111,7 +108,6 @@ export const InvoiceEditor = () => {
         client_address: inv.client_address ?? '',
         issue_date: inv.issue_date ?? today(),
         due_date: inv.due_date ?? '',
-        status: inv.status ?? 'draft',
         tax_rate: String(inv.tax_rate ?? 0),
         advance_paid: String(inv.advance_paid ?? 0),
         notes: inv.notes ?? '',
@@ -156,7 +152,6 @@ export const InvoiceEditor = () => {
       client_address: form.client_address || null,
       issue_date: form.issue_date,
       due_date: form.due_date || null,
-      status: form.status,
       tax_rate: Number(form.tax_rate) || 0,
       advance_paid: Math.max(0, Number(form.advance_paid) || 0),
       client_id: clientId,
@@ -164,6 +159,20 @@ export const InvoiceEditor = () => {
     }
 
     let invoiceId = id ?? null
+    /*
+     * The rows that are on file right now, captured before anything is written.
+     *
+     * Line items are replaced wholesale, and the order that happens in decides
+     * what a failure costs. This used to delete first and insert after without
+     * checking either call, so a failed insert left the invoice with no line
+     * items at all, a total of $0 and a toast saying it had saved — on a
+     * document that may already have been emailed to a client.
+     *
+     * Insert first, then delete these by id: a failed insert changes nothing,
+     * and a failed delete leaves the old lines *beside* the new ones. Duplicated
+     * lines are visible and fixable; deleted ones are neither.
+     */
+    let replacing: string[] = []
     if (id) {
       const { error } = await supabase.from('invoices').update(payload).eq('id', id)
       if (error) {
@@ -171,7 +180,16 @@ export const InvoiceEditor = () => {
         setSaving(false)
         return null
       }
-      await supabase.from('invoice_items').delete().eq('invoice_id', id)
+      const { data: existing, error: readError } = await supabase
+        .from('invoice_items')
+        .select('id')
+        .eq('invoice_id', id)
+      if (readError) {
+        toast.error('Saved the invoice details, but its line items could not be read — nothing was changed. Try again.')
+        setSaving(false)
+        return null
+      }
+      replacing = (existing ?? []).map((row) => row.id as string)
     } else {
       const { data: inv, error } = await supabase.from('invoices').insert(payload).select().single()
       if (error) {
@@ -193,7 +211,28 @@ export const InvoiceEditor = () => {
         unit_price: Number(it.unit_price) || 0,
         sort: i,
       }))
-    if (rows.length) await supabase.from('invoice_items').insert(rows)
+
+    if (rows.length) {
+      const { error } = await supabase.from('invoice_items').insert(rows)
+      if (error) {
+        toast.error('The invoice details saved, but the line items did not — the previous lines are untouched. Try saving again.')
+        setSaving(false)
+        return null
+      }
+    }
+
+    if (replacing.length) {
+      const { error } = await supabase.from('invoice_items').delete().in('id', replacing)
+      if (error) {
+        // Both sets are on the invoice now. Say exactly that, because the
+        // document is readable and wrong rather than unreadable.
+        toast.error('Saved, but the previous line items could not be removed — this invoice now shows them twice. Reload and delete the duplicates.')
+        setSaving(false)
+        // Null, not the id: `sendToClient` saves before it emails, and a
+        // document showing every line twice must not be what reaches a client.
+        return null
+      }
+    }
 
     setSaving(false)
     toast.success('Invoice saved.')
@@ -214,8 +253,6 @@ export const InvoiceEditor = () => {
       toast.error('Email not sent — the email service may not be configured yet.')
       return
     }
-    await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoiceId)
-    set({ status: 'sent' })
     // Which of the two happened, in the same words the client panel uses: the
     // agreement goes with a booking's first invoice, and its absence is either
     // the design or a template nobody has uploaded yet.
@@ -303,25 +340,9 @@ export const InvoiceEditor = () => {
               <input type="date" value={form.due_date} onChange={(e) => set({ due_date: e.target.value })} className={field} />
             </div>
           </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className={label}>Status</label>
-              <Select
-                value={form.status}
-                onChange={(status) => set({ status })}
-                ariaLabel="Status"
-                className={field}
-                options={[
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'sent', label: 'Sent' },
-                  { value: 'paid', label: 'Paid' },
-                ]}
-              />
-            </div>
-            <div className="w-28">
-              <label className={label}>Tax %</label>
-              <input type="number" value={form.tax_rate} onChange={(e) => set({ tax_rate: e.target.value })} className={field} />
-            </div>
+          <div className="w-28">
+            <label className={label}>Tax %</label>
+            <input type="number" value={form.tax_rate} onChange={(e) => set({ tax_rate: e.target.value })} className={field} />
           </div>
 
           <div>
@@ -343,7 +364,7 @@ export const InvoiceEditor = () => {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <label className={label}>Line items</label>
-              <button onClick={addItem} className="text-[13px] font-semibold text-brass2 transition-colors hover:text-brass">
+              <button onClick={addItem} className={btnSmall}>
                 + Add row
               </button>
             </div>
@@ -381,7 +402,7 @@ export const InvoiceEditor = () => {
                   <button
                     onClick={() => removeItem(i)}
                     aria-label="Remove row"
-                    className="shrink-0 px-2 text-muted hover:text-[#d98a6a]"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[#e0916f]/45 bg-[#e0916f]/10 text-[#eeb099] shadow-[0_1px_0_rgba(0,0,0,0.2),0_2px_6px_rgba(0,0,0,0.1)] transition-all hover:-translate-y-px hover:border-[#e0916f] hover:bg-[#e0916f]/20 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0916f]/40"
                   >
                     ×
                   </button>

@@ -79,7 +79,11 @@
     --menu-bg: rgba(12, 10, 8, 0.97);
 
     --hero-bg: radial-gradient(120% 78% at 50% 118%, #e0a24e 0%, #a9662f 20%, #5c3a20 40%, #2a1c12 64%, #140f0a 82%, #0f0b07 100%);
-    --band-overlay: linear-gradient(90deg, rgba(12, 10, 8, 0.92) 0%, rgba(12, 10, 8, 0.6) 46%, rgba(12, 10, 8, 0.25) 100%);
+    /* The CTA band carries light text over a venue photo in either theme. A
+       theme-coloured wash flattened the image in light mode, so this is a
+       cinematic fixed scrim: solid enough for the copy at left, transparent
+       enough to reveal the reception scene on the right. */
+    --band-overlay: linear-gradient(90deg, rgba(19, 12, 6, 0.92) 0%, rgba(19, 12, 6, 0.82) 34%, rgba(19, 12, 6, 0.52) 58%, rgba(19, 12, 6, 0.16) 100%), radial-gradient(68% 105% at 18% 50%, rgba(119, 75, 27, 0.3), transparent 72%);
     --contact-glow: radial-gradient(120% 90% at 50% 0%, rgba(90, 58, 32, 0.5), transparent 55%);
   }
 
@@ -98,7 +102,7 @@
     --nav-scrolled: rgba(246, 240, 231, 0.85);
     --menu-bg: rgba(246, 240, 231, 0.98);
 
-    --band-overlay: linear-gradient(90deg, rgba(246, 240, 231, 0.86) 0%, rgba(246, 240, 231, 0.42) 46%, rgba(246, 240, 231, 0.08) 100%);
+    --band-overlay: linear-gradient(90deg, rgba(19, 12, 6, 0.92) 0%, rgba(19, 12, 6, 0.82) 34%, rgba(19, 12, 6, 0.52) 58%, rgba(19, 12, 6, 0.16) 100%), radial-gradient(68% 105% at 18% 50%, rgba(119, 75, 27, 0.3), transparent 72%);
     --contact-glow: radial-gradient(120% 90% at 50% 0%, rgba(205, 160, 88, 0.32), transparent 55%);
   }
 

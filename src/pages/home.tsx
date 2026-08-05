@@ -37,7 +37,7 @@ const CtaBand = () => {
     >
       <div
         ref={parallaxRef}
-        className="absolute inset-x-0 -inset-y-[14%] z-0 bg-cover bg-center"
+        className="absolute inset-x-0 -inset-y-[14%] z-0 bg-cover bg-[position:60%_center] md:bg-[position:72%_center]"
         style={showBackdrop ? { backgroundImage: 'url(/assets/site/ss.jpg)' } : undefined}
       />
       <div className="absolute inset-0 z-[1]" style={{ background: 'var(--band-overlay)' }} />
@@ -46,9 +46,10 @@ const CtaBand = () => {
           <SectionHeading
             eyebrow={t('home.band.eyebrow')}
             title={t('home.band.title')}
-            titleClassName="text-[clamp(2.3rem,5vw,4rem)] leading-[1.04] mb-6"
+            className="[&>span]:text-[#e6cfa0]"
+            titleClassName="mb-6 text-[clamp(2.3rem,5vw,4rem)] leading-[1.04] text-[#f5efe6]"
           />
-          <p className="mb-9 text-[15.5px] font-light leading-[1.85] text-muted">
+          <p className="mb-9 text-[15.5px] font-light leading-[1.85] text-[rgba(245,239,230,0.78)]">
             {t('home.band.body')}
           </p>
           <Button asChild variant="brass">
@@ -129,13 +130,22 @@ export const HomePage = () => {
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="absolute inset-0 z-0 h-full w-full object-cover"
                 />
-                <div className="absolute inset-0 z-[1] shadow-[inset_0_-120px_120px_rgba(10,8,6,0.85)]" />
+                {/* A real gradient, not an inset shadow — the shadow's falloff
+                    left the caption band sitting on whatever the photo was, and
+                    these covers run bright. Same scrim the gallery tiles use. */}
+                <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,transparent_30%,rgba(10,8,6,0.5)_58%,rgba(8,6,4,0.93)_100%)]" />
+                {/*
+                 * Fixed light-on-dark colors, never the theme tokens: this text
+                 * sits on a photo behind a dark scrim in *both* themes, so
+                 * `text-cream` flipped to near-black in light mode and the
+                 * captions vanished. Same reasoning as the navbar over the hero.
+                 */}
                 <div className="relative z-[2] flex min-h-[190px] flex-col justify-end gap-2.5 px-6 pb-7 pt-[26px]">
-                  <span className="font-serif text-[15px] text-brass2">{evt.n}</span>
-                  <h3 className="m-0 font-serif text-[23px] font-medium leading-[1.12] text-cream">
+                  <span className="font-serif text-[15px] text-[#e2c690]">{evt.n}</span>
+                  <h3 className="m-0 font-serif text-[23px] font-medium leading-[1.12] text-[#f3ede2]">
                     {evt.title}
                   </h3>
-                  <p className="m-0 text-[13px] font-light leading-[1.6] text-cream/70">
+                  <p className="m-0 text-[13px] font-light leading-[1.6] text-[rgba(243,237,226,0.75)]">
                     {evt.blurb}
                   </p>
                 </div>

@@ -7,6 +7,7 @@ import { useAdmin } from '@/hooks/use-admin'
 import { SmartImage } from '@/components/ui/smart-image'
 import { ThemeProvider } from '@/components/layout/theme-provider'
 import { logoFor, useThemeStore } from '@/store/theme'
+import { btnPrimary, iconBtn } from '@/lib/admin-ui'
 
 /**
  * Roomier than the panel's `field` — this form is the whole screen. Written out
@@ -129,7 +130,7 @@ export const AdminLogin = () => {
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               aria-pressed={showPassword}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition-colors hover:text-brass2"
+              className={`absolute right-1 top-1/2 -translate-y-1/2 ${iconBtn}`}
             >
               {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
             </button>
@@ -140,7 +141,7 @@ export const AdminLogin = () => {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-md bg-brass px-6 py-2.5 text-[14px] font-semibold text-onbrass transition-colors hover:bg-brass2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:opacity-50"
+            className={`w-full ${btnPrimary}`}
           >
             {busy ? 'Signing in…' : 'Sign in'}
           </button>

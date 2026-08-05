@@ -2,12 +2,6 @@ import { useContact } from '@/hooks/use-site-content'
 import { computeTotals, money, type InvoiceData } from '@/lib/invoice'
 import { SmartImage } from '@/components/ui/smart-image'
 
-const statusStyle: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  sent: 'bg-amber-100 text-amber-700',
-  paid: 'bg-green-100 text-green-700',
-}
-
 const fmt = (d?: string | null) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
@@ -50,13 +44,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
         <div className="text-right">
           <div className="font-serif text-3xl tracking-wide text-[#b08d3f]">INVOICE</div>
           <div className="mt-1 text-[13px] font-medium text-[#2a2320]">{data.number ?? 'Draft'}</div>
-          <span
-            className={`mt-2 inline-block rounded-full px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-              statusStyle[data.status] ?? statusStyle.draft
-            }`}
-          >
-            {data.status}
-          </span>
         </div>
       </div>
 
