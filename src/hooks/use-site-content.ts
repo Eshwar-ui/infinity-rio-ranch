@@ -21,6 +21,34 @@ import type { Amenity, EventItem, Faq, Testimonial } from '@/data/site'
 export type { GalleryTileData, Post, Stat } from '@/lib/content-snapshot'
 
 /**
+ * The Supabase client, loaded once the browser has nothing better to do.
+ *
+ * Every public page already renders from the build-time snapshot, so this
+ * refetch exists only to pick up CMS edits published since the last deploy —
+ * worth doing, worth doing *last*. Fetching it on mount put 199 kB of parse and
+ * a network round trip inside the window Lighthouse measures, on a phone that
+ * is still laying out the page.
+ *
+ * One promise for the whole page: a dozen hooks calling this share a single
+ * import and a single idle callback. The 2.5 s timeout is the ceiling, not the
+ * expectation — `requestIdleCallback` normally fires within a few hundred ms of
+ * load — and it guarantees the refresh still happens on browsers that never go
+ * idle. Falls straight through on the server, where there is no window and the
+ * effects never run anyway.
+ */
+let supabaseModule: Promise<typeof import('@/lib/supabase')> | null = null
+const supabaseWhenIdle = () =>
+  (supabaseModule ??= new Promise((resolve) => {
+    const load = () => resolve(import('@/lib/supabase'))
+    if (typeof window === 'undefined') return load()
+    // Safari has no requestIdleCallback; a timeout is the honest substitute.
+    const idle = (window as { requestIdleCallback?: (cb: () => void, o?: object) => void })
+      .requestIdleCallback
+    if (idle) idle(load, { timeout: 2500 })
+    else setTimeout(load, 1200)
+  }))
+
+/**
  * Reads a published, ordered content list from Supabase, starting from the
  * build-time snapshot so the first paint is never empty and never disagrees
  * with the prerendered HTML.
@@ -39,7 +67,7 @@ function useContent<T>(
 
   useEffect(() => {
     let active = true
-    import('@/lib/supabase')
+    supabaseWhenIdle()
       .then(({ supabase }) =>
         supabase
           .from(table)
@@ -71,7 +99,7 @@ function useContent<T>(
 let copyRequest: Promise<Record<string, string> | null> | null = null
 
 const fetchCopy = () => {
-  copyRequest ??= import('@/lib/supabase')
+  copyRequest ??= supabaseWhenIdle()
     .then(({ supabase }) => supabase.from('site_copy').select('key,value'))
     .then(({ data, error }) => {
       if (error || !data || data.length === 0) return null
@@ -216,7 +244,7 @@ export const usePosts = (): Post[] => {
 
   useEffect(() => {
     let active = true
-    void import('@/lib/supabase')
+    void supabaseWhenIdle()
       .then(({ supabase }) =>
         withPostColumns((columns) =>
           supabase
@@ -258,7 +286,7 @@ export const usePost = (slug: string | undefined): { post?: Post; loading: boole
     setPost(postBySlug(slug))
     setLoading(!postBySlug(slug))
 
-    void import('@/lib/supabase')
+    void supabaseWhenIdle()
       .then(({ supabase }) =>
         withPostColumns((columns) =>
           supabase
@@ -292,7 +320,7 @@ export const useList = (list: string): string[] => {
 
   useEffect(() => {
     let active = true
-    import('@/lib/supabase')
+    supabaseWhenIdle()
       .then(({ supabase }) =>
         supabase
           .from('list_items')

@@ -58,6 +58,11 @@ export const HeroSlideshow = ({ active }: { active: number }) => {
                 alt=""
                 sizes="100vw"
                 priority={i === 0}
+                /* Capped: this photo sits under a 0.62→0.92 gradient and an
+                   inset shadow, and it is the LCP element on every phone. A
+                   1600w original is 442 kB of a picture nobody can quite see;
+                   the 960w step is 161 kB of the same picture. */
+                maxWidth={960}
                 className="h-full w-full object-cover"
               />
             </div>

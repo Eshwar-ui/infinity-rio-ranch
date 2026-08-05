@@ -41,6 +41,20 @@ type SmartImageProps = {
   style?: CSSProperties
   /** Above the fold: load eagerly at high priority instead of lazily. */
   priority?: boolean
+  /**
+   * Largest candidate to offer, for full-bleed art where an upscale is invisible.
+   *
+   * `sizes` describes the slot and must stay truthful, so the only honest way to
+   * stop a phone pulling a 1600px file for a photo it will show under a
+   * near-opaque gradient is to not offer one. The hero is the whole argument:
+   * at 412 CSS px and DPR 2.6 the browser asked for the 1600w original — 442 kB
+   * on the LCP element over a throttled connection — where the 960w step is
+   * 161 kB and, behind a 0.62→0.92 wash, indistinguishable.
+   *
+   * Only for art direction of that kind. A photo the visitor is meant to *look*
+   * at keeps its full ladder.
+   */
+  maxWidth?: number
 }
 
 export const SmartImage = ({
@@ -50,6 +64,7 @@ export const SmartImage = ({
   className,
   style,
   priority = false,
+  maxWidth,
 }: SmartImageProps) => {
   const entry = SOURCES[src]
   const base = entry?.base
@@ -57,13 +72,22 @@ export const SmartImage = ({
   const loading = priority ? 'eager' : 'lazy'
   const fetchPriority = priority ? 'high' : undefined
 
-  // Same-format ladder: the original file is always the full-width candidate.
+  const cap = maxWidth ?? Number.POSITIVE_INFINITY
+  const within = (widths?: number[]) => widths?.filter((w) => w <= cap)
+
+  // Same-format ladder: the original file is the full-width candidate, unless a
+  // cap says it is more bytes than the slot is worth.
   const sameExt = entry?.jpg ? 'jpg' : entry?.png ? 'png' : null
-  const sameWidths = entry?.jpg ?? entry?.png
-  const sameSrcSet =
-    sameExt && sameWidths && entry?.w
-      ? [...sameWidths.map((w) => `${base}-${w}.${sameExt} ${w}w`), `${src} ${entry.w}w`].join(', ')
-      : undefined
+  const sameWidths = within(entry?.jpg ?? entry?.png)
+  const offerOriginal = entry?.w !== undefined && entry.w <= cap
+  const sameCandidates =
+    sameExt && sameWidths
+      ? [
+          ...sameWidths.map((w) => `${base}-${w}.${sameExt} ${w}w`),
+          ...(offerOriginal ? [`${src} ${entry.w}w`] : []),
+        ]
+      : []
+  const sameSrcSet = sameCandidates.length > 0 ? sameCandidates.join(', ') : undefined
 
   /*
    * Intrinsic dimensions, so the browser can reserve the box from the aspect
@@ -89,15 +113,19 @@ export const SmartImage = ({
     />
   )
 
-  // Only offer WebP when the ladder covers full width — otherwise a large slot
-  // would pick the biggest WebP available and upscale it.
-  if (!entry?.webp?.length || !entry.full) return img
+  // Only offer WebP when the ladder covers everything we are willing to serve —
+  // otherwise a large slot picks the biggest WebP available and upscales it.
+  // With a cap, "everything" is the cap rather than the source's own width.
+  const webpWidths = within(entry?.webp)
+  const webpCovers =
+    entry?.full && webpWidths?.length ? webpWidths.at(-1)! >= Math.min(cap, entry.w ?? cap) : false
+  if (!webpCovers) return img
 
   return (
     <picture>
       <source
         type="image/webp"
-        srcSet={entry.webp.map((w) => `${base}-${w}.webp ${w}w`).join(', ')}
+        srcSet={webpWidths!.map((w) => `${base}-${w}.webp ${w}w`).join(', ')}
         sizes={sizes}
       />
       {img}
