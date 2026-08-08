@@ -108,15 +108,31 @@ export const BlogPostPage = () => {
     () => Object.fromEntries(headings.map((heading) => [heading.line, heading.id])),
     [headings],
   )
+  /*
+   * "Keep reading" — every other post, best match first, never fewer than what
+   * exists. Category and tags *rank* the list; they no longer decide whether
+   * the reader is offered anything at all.
+   *
+   * They used to. A post with no tags returned nothing, and so did a post whose
+   * tags happened to match nobody — so on a young blog the block was invisible
+   * on exactly the articles a first-time reader lands on, which is the moment
+   * it earns its keep. A section that only sometimes appears is one nobody
+   * learns to look for; the sort is what makes it useful, not the filter.
+   *
+   * `sort` is stable, so posts on equal footing keep the order `usePosts` gives
+   * them — newest first.
+   */
   const relatedPosts = useMemo(() => {
-    if (!post || !post.category && post.tags.length === 0) return []
+    if (!post) return []
     const tags = new Set(post.tags.map((tag) => tag.toLowerCase()))
+    // The category test is guarded: without it two *uncategorised* posts both
+    // hold '' and score as a match, which ranks by an absence of information.
     const score = (candidate: (typeof posts)[number]) =>
-      (candidate.category === post.category ? 2 : 0) +
+      (post.category && candidate.category === post.category ? 2 : 0) +
       candidate.tags.reduce((total, tag) => total + Number(tags.has(tag.toLowerCase())), 0)
 
     return posts
-      .filter((candidate) => candidate.slug !== post.slug && score(candidate) > 0)
+      .filter((candidate) => candidate.slug !== post.slug)
       .sort((a, b) => score(b) - score(a))
       .slice(0, 3)
   }, [post, posts])
