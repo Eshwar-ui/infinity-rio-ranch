@@ -247,10 +247,22 @@ Supabase backend, deployed to Vercel.
   fields**, so every value sits at a fixed coordinate in
   `agreement-fields.json`; re-exporting the PDF silently invalidates all of them
   and nothing errors. `node scripts/agreement-preview.mjs` renders a local copy
-  from that same JSON — look at it after any change. The blank template lives in
-  the private `documents` bucket (0007), not the repo, so replacing it is an
-  upload. No template = invoice still sends, toast says so. Signing dates are
+  from that same JSON — look at it after any change. What the function reads is
+  the copy in the private `documents` bucket (0007), so replacing it is an
+  upload; `INFINITY RIO RANCH - Rental Agreement.pdf` at the repo root is the
+  same file, is what the preview script reads, and the two must be kept in step.
+  No template = invoice still sends, toast says so. Signing dates are
   deliberately left blank for hand-signing. Full procedure in `docs/RUNBOOK.md`.
+  **New wording goes into the PDF, never into the code** — the code fills blanks,
+  it doesn't author clauses, and a clause drawn at send time is one the owner
+  can't read in their own copy of the contract. Both edits made so far (the
+  opening line below, and section 1E "Event Center Cancellation" in page 2's
+  empty lower half) were drawn into the document with pdf-lib and saved, which
+  reflows nothing and so leaves every coordinate above valid. Set new text in an
+  embedded subset of the real Times New Roman rather than
+  `StandardFonts.TimesRoman`, and match the page's own measure, leading and
+  justification — a clause that renders as substituted Times, ragged against
+  justified neighbours, reads as bolted on.
   The template's **opening line used to be broken** ("...on this day of
   ________, 20, by and between:" — no day blank, no year blank, sentence
   unfinished) and was patched at run time by an `intro` block that covered and

@@ -145,6 +145,12 @@ with their name, event date and event type stamped onto the venue's own PDF.
    `0007_documents_bucket.sql`, private) → upload the blank agreement as exactly
    **`rental-agreement-template.pdf`**. Without it, invoices still send; the
    toast says "no agreement attached (no template uploaded)".
+   The repo's own copy, `INFINITY RIO RANCH - Rental Agreement.pdf`, is the one
+   to upload — it is what `scripts/agreement-preview.mjs` reads, so a bucket that
+   has drifted from it means the preview no longer shows what clients receive.
+   **Editing the document is an upload, not a deploy**: the function downloads
+   the template on every send, so a re-upload takes effect on the next email with
+   nothing to redeploy.
 2. **Check one** — admin → Clients → pick a client → an invoice's **Preview** →
    the **Agreement** tab. That renders the exact PDF the email would attach,
    with a Download beside it. Every failure is written into the panel as well as
@@ -169,20 +175,35 @@ dates are left blank on purpose — "on this __ day of ____, 20__" and both
 `Date:` lines — they're the date of *signing*, which isn't known when the email
 goes out, and the client fills them in by hand with the signatures.
 
-**The opening line is rewritten, not filled.** The template's own wording is
-broken — it reads "This Agreement is entered into on this day of ________, 20,
-by and between:", with no day blank, no year blank and the sentence stopping
-mid-clause. The `intro` block in `agreement-fields.json` covers that line with a
-rectangle of the page's cream and sets it again in two lines:
+**Wording changes go into the template PDF, not into the code.** The stamping
+code fills blanks; it does not author clauses. Two edits have been made to the
+document this way — both drawn into the PDF with pdf-lib and saved, so nothing
+existing reflowed and every coordinate above stayed valid:
 
-> This Agreement is entered into on this \_\_\_\_ day of \_\_\_\_\_\_\_\_\_\_, 20\_\_\_\_,
-> by and between the Venue and the Client identified below (the "Parties"):
+- **The opening line** on page 1. The original read "This Agreement is entered
+  into on this day of ________, 20, by and between:" — no day blank, no year
+  blank, sentence stopping mid-clause. It is covered with a rectangle of the
+  page's cream and set again in two lines: "…on this \_\_\_\_ day of
+  \_\_\_\_\_\_\_\_\_\_, 20\_\_\_\_, by and between the Venue and the Client
+  identified below (the "Parties"):". This used to be redone on every send by an
+  `intro` block in `agreement-fields.json`; that block is **gone** and must not
+  come back — against this template its cover rectangle would strike the first
+  line twice. See the `_readme` in that file.
+- **Section 1E, "Event Center Cancellation"**, in the empty lower half of page 2:
 
-That patch is coordinate-based like everything else here, so it only draws when
-the template still has 4 pages at 595.32 × 841.92 — on anything else the opening
-line is left alone, because a misplaced cover rectangle could hide a clause. **If
-you upload a template with the wording already corrected, delete the `intro`
-block** or the fixed line gets covered by a second copy of itself.
+  > If the Event Center is unable to host the scheduled event due to any issue,
+  > problem, or unforeseen circumstance on the Event Center's side, the Event
+  > Center will promptly inform the Client of the cancellation. In such a case,
+  > all amounts paid by the Client toward the event booking will be fully
+  > refunded.
+
+  It sits under D. Credit Expiry at the same measure, leading and justification
+  as the sections above it, in an embedded subset of Times New Roman — the face
+  Word embedded for the body text, so it renders identically everywhere rather
+  than relying on the reader substituting a standard font.
+
+Both live only in the PDF. **If the document is ever re-exported from Word, they
+are gone** along with every coordinate above — the Word source has neither.
 
 ---
 
