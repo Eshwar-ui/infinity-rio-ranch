@@ -20,6 +20,14 @@ import { NotFoundPage } from '@/pages/not-found'
 
 type Heading = ReturnType<typeof articleHeadings>[number]
 
+/*
+ * CTA fallbacks, at module scope because the contents rail needs the heading
+ * before the component's early returns — a hook can't run after them.
+ */
+const DEFAULT_CTA_HEADING = 'Ready to see it in person?'
+const DEFAULT_CTA_BODY =
+  'The fastest way to know if a venue is right for your day is to walk it yourself. Book a tour, or call to check date availability.'
+
 /**
  * Contents rail, with the section you're reading marked.
  *
@@ -108,6 +116,57 @@ export const BlogPostPage = () => {
     () => Object.fromEntries(headings.map((heading) => [heading.line, heading.id])),
     [headings],
   )
+
+  /*
+   * Anchors for the two sections the markdown can't declare.
+   *
+   * `faq` is not an arbitrary choice: `faqPageNode` gives the FAQPage an `@id`
+   * of `<url>#faq`, so this is what makes that fragment resolve to a real
+   * element instead of nothing. (It doesn't clash with `FAQ_JSONLD_ID` — that
+   * keys a `data-seo-id` attribute, not a DOM id.)
+   *
+   * Both are checked against the body's own heading ids: a post with an `##
+   * FAQ` section would otherwise put the same id on two elements, and
+   * `getElementById` would return whichever came first.
+   */
+  const sectionIds = useMemo(() => {
+    const taken = new Set(headings.map((heading) => heading.id))
+    const free = (id: string) => (taken.has(id) ? `${id}-section` : id)
+    return { faq: free('faq'), cta: free('tour') }
+  }, [headings])
+
+  /*
+   * The rail lists top-level sections only, plus the two below the article.
+   *
+   * `###` subheadings are deliberately left out. They keep their ids, stay
+   * linkable, and still appear in the article's JSON-LD `hasPart` — but a rail
+   * that lists every sub-point stops being a map of the article and becomes the
+   * article again. On a post with four seasons and three ceremony criteria it
+   * ran to 15 entries and pushed the real sections off a laptop screen.
+   *
+   * The FAQ block and the closing CTA are real sections that no `##` in the
+   * body produces, so they're appended by hand. Their labels are the headings
+   * actually rendered further down, not fixed strings: a rail entry that
+   * disagrees with the heading it scrolls to is worse than a missing one.
+   * `line` is negative because nothing indexes these into the body.
+   */
+  const tocHeadings = useMemo(() => {
+    if (!post) return []
+    const top = headings.filter((heading) => heading.level === 2)
+    if (top.length === 0) return []
+
+    const extra: Heading[] = []
+    if (post.faqs.length > 0) {
+      extra.push({ id: sectionIds.faq, level: 2, text: 'Frequently asked questions', line: -1 })
+    }
+    extra.push({
+      id: sectionIds.cta,
+      level: 2,
+      text: post.ctaHeading || DEFAULT_CTA_HEADING,
+      line: -2,
+    })
+    return [...top, ...extra]
+  }, [headings, post, sectionIds])
   /*
    * "Keep reading" — every other post, best match first, never fewer than what
    * exists. Category and tags *rank* the list; they no longer decide whether
@@ -171,10 +230,8 @@ export const BlogPostPage = () => {
   if (!post) return <NotFoundPage />
 
   const date = formatPostDate(post.publishedAt)
-  const ctaHeading = post.ctaHeading || 'Ready to see it in person?'
-  const ctaBody =
-    post.ctaBody ||
-    'The fastest way to know if a venue is right for your day is to walk it yourself. Book a tour, or call to check date availability.'
+  const ctaHeading = post.ctaHeading || DEFAULT_CTA_HEADING
+  const ctaBody = post.ctaBody || DEFAULT_CTA_BODY
 
   return (
     <div style={{ animation: 'riseIn .6s ease forwards' }}>
@@ -308,12 +365,12 @@ export const BlogPostPage = () => {
           <div
             className={cn(
               'mx-auto grid gap-x-[clamp(28px,4vw,60px)] gap-y-10',
-              headings.length > 1
+              tocHeadings.length > 1
                 ? 'max-w-[1180px] lg:grid-cols-[240px_minmax(0,820px)]'
                 : 'max-w-[820px]',
             )}
           >
-            {headings.length > 1 && <TableOfContents headings={headings} />}
+            {tocHeadings.length > 1 && <TableOfContents headings={tocHeadings} />}
             <div className="min-w-0 [&>*:first-child]:mt-0">
               <PostBody headingIds={headingIds}>{post.body}</PostBody>
             </div>
@@ -325,7 +382,12 @@ export const BlogPostPage = () => {
           <section className="relative bg-[linear-gradient(180deg,var(--ink),var(--panel)_50%,var(--ink))] px-[clamp(20px,6vw,80px)] py-[clamp(60px,9vw,110px)]">
             <div className="mx-auto max-w-[820px]">
               <Reveal className="mb-10">
-                <h2 className="font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.15] text-cream">
+                {/* `scroll-mt-28` matches the body headings in markdown.tsx —
+                    without it the fixed navbar covers the target on a jump. */}
+                <h2
+                  id={sectionIds.faq}
+                  className="scroll-mt-28 font-serif text-[clamp(1.6rem,3.2vw,2.3rem)] font-normal leading-[1.15] text-cream"
+                >
                   Frequently asked questions
                 </h2>
               </Reveal>
@@ -379,7 +441,10 @@ export const BlogPostPage = () => {
         <section className="relative bg-ink px-[clamp(20px,6vw,80px)] pb-[clamp(70px,10vw,120px)] pt-[clamp(40px,6vw,70px)]">
           <div className="mx-auto max-w-[820px] border-t border-line pt-[clamp(40px,6vw,64px)] text-center">
             <Reveal>
-              <h2 className="font-serif text-[clamp(1.7rem,3.4vw,2.5rem)] font-normal leading-[1.15] text-cream">
+              <h2
+                id={sectionIds.cta}
+                className="scroll-mt-28 font-serif text-[clamp(1.7rem,3.4vw,2.5rem)] font-normal leading-[1.15] text-cream"
+              >
                 {ctaHeading}
               </h2>
               <p className="mx-auto mt-4 max-w-[560px] text-[15.5px] font-light leading-[1.85] text-muted">
