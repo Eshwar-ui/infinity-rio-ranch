@@ -101,10 +101,10 @@ const published = (table, columns) =>
 
 /** Posts are ordered by publication date, not by a `sort` column. */
 const POST_COLUMNS =
-  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,category,tags,author,faqs,cta_heading,cta_body,published_at,updated_at'
+  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,category,tags,primary_query,author,faqs,cta_heading,cta_body,published_at,updated_at'
 
 /**
- * What 0008 shipped. 0010 added `category`/`tags`, and PostgREST answers a
+ * What 0008 shipped. 0010 added `category`/`tags`/`primary_query`, and PostgREST answers a
  * *whole-request* 400 (42703) when one selected column is missing — so on a
  * project that never had 0010 applied the entire blog silently fell back to the
  * committed snapshot, cover images and all. One absent field must cost that
@@ -122,7 +122,7 @@ const pullPosts = async () => {
   } catch (err) {
     if (err.status !== 400 || !/42703|does not exist/.test(err.message)) throw err
     console.warn(
-      '[pull-content] ⚠ posts is missing the 0010 columns (category/tags) — ' +
+      '[pull-content] ⚠ posts is missing the 0010 columns (category/tags/primary_query) — ' +
         'pulling without them. Apply supabase/migrations/0010_post_content_seo.sql.',
     )
     return optional('posts', postsPath(CORE_POST_COLUMNS))
@@ -191,6 +191,7 @@ try {
       seoDescription: r.seo_description ?? '',
       category: r.category ?? '',
       tags: Array.isArray(r.tags) ? r.tags.map(String).filter(Boolean) : [],
+      primaryQuery: r.primary_query ?? '',
       author: r.author ?? '',
       // Defensive: jsonb comes back parsed, but a hand-edited row could hold
       // anything, and a malformed entry here would throw inside the prerender.

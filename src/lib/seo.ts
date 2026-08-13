@@ -458,6 +458,28 @@ const blogPostingNode = (post: Post, url: string) => {
   const sections = articleSections(post, url)
   const words = post.body.trim().split(/\s+/).filter(Boolean).length
 
+  /*
+   * `keywords` is the post's tags plus its primary query.
+   *
+   * Tags alone under-describe the article: they are chosen to be *reader-facing*
+   * (they render as pills under the title), so they are short labels like
+   * "Outdoor weddings" rather than the phrase the piece was actually written to
+   * answer. The brief for every post already records that phrase in
+   * `primary_query`, which nothing rendered until now — so this costs no new
+   * column and no new editorial step.
+   *
+   * The primary query leads: it is the more specific of the two. Deduped
+   * case-insensitively, because a tag that repeats the query is the likely case,
+   * not the odd one.
+   */
+  const keywords = [post.primaryQuery, ...post.tags]
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+    .filter(
+      (keyword, i, all) =>
+        all.findIndex((other) => other.toLowerCase() === keyword.toLowerCase()) === i,
+    )
+
   return {
     '@type': 'BlogPosting',
     '@id': `${url}#article`,
@@ -472,7 +494,7 @@ const blogPostingNode = (post: Post, url: string) => {
     ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
     ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
     ...(post.category ? { articleSection: post.category } : {}),
-    ...(post.tags.length > 0 ? { keywords: post.tags.join(', ') } : {}),
+    ...(keywords.length > 0 ? { keywords: keywords.join(', ') } : {}),
     ...(words > 0 ? { wordCount: words } : {}),
     ...(sections.length > 0 ? { hasPart: sections.map((section) => ({ '@id': section['@id'] })) } : {}),
     author: post.author

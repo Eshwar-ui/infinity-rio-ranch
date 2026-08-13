@@ -204,6 +204,7 @@ export const mapPostRow = (r: Record<string, any>): Post => ({
   seoDescription: r.seo_description ?? '',
   category: r.category ?? '',
   tags: Array.isArray(r.tags) ? r.tags.map((tag: unknown) => String(tag)).filter(Boolean) : [],
+  primaryQuery: r.primary_query ?? '',
   author: r.author ?? '',
   faqs: Array.isArray(r.faqs)
     ? r.faqs.filter((f: any) => f?.q && f?.a).map((f: any) => ({ q: String(f.q), a: String(f.a) }))
@@ -215,10 +216,10 @@ export const mapPostRow = (r: Record<string, any>): Post => ({
 })
 
 const POST_COLUMNS =
-  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,category,tags,author,faqs,cta_heading,cta_body,published_at,updated_at'
+  'slug,title,excerpt,body,cover_image,cover_alt,seo_title,seo_description,category,tags,primary_query,author,faqs,cta_heading,cta_body,published_at,updated_at'
 
 /**
- * What 0008 shipped, without the `category`/`tags` 0010 added.
+ * What 0008 shipped, without the `category`/`tags`/`primary_query` 0010 added.
  *
  * PostgREST rejects the *whole* select with a 400 (42703) when one column is
  * absent, so on a project that hasn't had 0010 applied every post query failed

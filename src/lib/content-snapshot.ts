@@ -51,6 +51,14 @@ export type Post = {
   seoDescription: string
   category: string
   tags: string[]
+  /*
+   * The editorial brief's search phrase (0010). Only `primary_query` of that
+   * group is carried: it is the one the rendered page uses — it joins `tags` in
+   * the BlogPosting's `keywords`. `target_location` / `search_intent` /
+   * `reader_goal` stay admin-only, so shipping them would put three unused
+   * strings per post into every visitor's bundle.
+   */
+  primaryQuery: string
   author: string
   faqs: QandA[]
   ctaHeading: string
