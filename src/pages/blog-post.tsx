@@ -274,12 +274,24 @@ export const BlogPostPage = () => {
                 className="absolute inset-0 z-0 h-full w-full object-cover"
               />
               {/*
-                Bottom stop is `--ink`, so the photo resolves into the page's own
-                background instead of ending on a seam. Everything above it is
-                fixed dark: the title, the breadcrumb and the navbar all sit on
-                this, in both themes.
+                Every stop is a fixed near-black, deliberately — this scrim does
+                not follow the theme.
+
+                The bottom stop used to be `--ink`, to resolve the photo into the
+                page's own background instead of ending on a seam. That works in
+                dark mode and fails in light, where `--ink` *is* the cream page
+                background: the header washed out to near-white under text that
+                is fixed light-on-dark (#f5efe6 title, 0.85-alpha excerpt), so
+                the bottom third of the hero lost its contrast entirely.
+
+                Everything drawn on this band — title, breadcrumb, tags, excerpt,
+                and the unscrolled navbar floating above it — is styled for dark,
+                so the band has to be dark in both themes. Ending on a fixed
+                near-black is also what `PageHero` does (rgba(10,8,6,0.97)), so
+                /blog/<slug> now meets the section below it exactly the way
+                /about and /gallery already do.
               */}
-              <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(12,9,6,0.74)_0%,rgba(12,9,6,0.52)_34%,rgba(11,8,5,0.88)_76%,var(--ink)_100%)]" />
+              <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(12,9,6,0.78)_0%,rgba(12,9,6,0.58)_34%,rgba(11,8,5,0.9)_76%,rgba(10,8,6,0.97)_100%)]" />
             </>
           )}
 
