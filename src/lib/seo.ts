@@ -36,8 +36,37 @@ import {
   type Post,
 } from '@/lib/content-snapshot'
 import { articleHeadings } from '@/lib/post-format'
+import imageSources from '@/lib/image-sources.json'
 
 const included = seededList('included')
+
+/**
+ * The real pixel size of an image this repo ships, or null for anything else.
+ *
+ * `image-sources.json` is generated from the files themselves, so it is the only
+ * honest source for these numbers. It matters twice over:
+ *
+ *  - **Post covers** carried no dimensions at all. `postMeta` sets width/height
+ *    to 0 because a cover *can* be a CMS upload of unknown size, and `buildHead`
+ *    drops the OG tags when they are 0. But every cover so far is a repo asset
+ *    the manifest already measured, so the tags were being dropped for images
+ *    whose size was sitting in a file two imports away. Scrapers that lay out a
+ *    card before fetching the bytes (Facebook, LinkedIn, Slack) show no image on
+ *    a first share without them.
+ *  - **Static routes** declare their own width/height by hand in `ROUTE_META`,
+ *    and those had gone stale: the homepage advertised 1752×1168 for a file that
+ *    `optimize:images` re-encoded in place to 1600×1067. Measured beats declared
+ *    for exactly that reason — the photo can be replaced under the same
+ *    filename, and nothing prompts anyone to update a number in a TS file.
+ *
+ * A genuine CMS upload is absent from the manifest, so it still falls through to
+ * the declared 0 and the tags are still omitted. An absent dimension makes a
+ * scraper measure the file; a wrong one makes it mis-crop.
+ */
+const measuredImageSize = (url: string) => {
+  const entry = (imageSources as Record<string, { w?: number; h?: number }>)[url]
+  return entry?.w && entry?.h ? { width: entry.w, height: entry.h } : null
+}
 
 /**
  * Phone numbers are editable too, so never interpolate `contact.phones[0]`
@@ -675,12 +704,19 @@ export const buildHead = (pathnameRaw: string): HeadModel => {
   const robots =
     'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
 
-  // CMS uploads have no known intrinsic size — see postMeta.
+  /*
+   * Measured beats declared — see `measuredImageSize`. What's left after it is
+   * a genuine CMS upload, which has no known intrinsic size (see postMeta), so
+   * the tags are omitted rather than guessed.
+   */
+  const measured = measuredImageSize(image.url)
+  const imageWidth = measured?.width ?? image.width
+  const imageHeight = measured?.height ?? image.height
   const imageDimensions: Record<string, string> =
-    image.width > 0 && image.height > 0
+    imageWidth > 0 && imageHeight > 0
       ? {
-          'og:image:width': String(image.width),
-          'og:image:height': String(image.height),
+          'og:image:width': String(imageWidth),
+          'og:image:height': String(imageHeight),
         }
       : {}
 
