@@ -255,14 +255,21 @@ Supabase backend, deployed to Vercel.
   deliberately left blank for hand-signing. Full procedure in `docs/RUNBOOK.md`.
   **New wording goes into the PDF, never into the code** — the code fills blanks,
   it doesn't author clauses, and a clause drawn at send time is one the owner
-  can't read in their own copy of the contract. Both edits made so far (the
-  opening line below, and section 1E "Event Center Cancellation" in page 2's
-  empty lower half) were drawn into the document with pdf-lib and saved, which
-  reflows nothing and so leaves every coordinate above valid. Set new text in an
-  embedded subset of the real Times New Roman rather than
-  `StandardFonts.TimesRoman`, and match the page's own measure, leading and
-  justification — a clause that renders as substituted Times, ragged against
-  justified neighbours, reads as bolted on.
+  can't read in their own copy of the contract. The three edits made so far (the
+  opening line below; section 1E "Event Center Cancellation" in page 2's empty
+  lower half; and section 3 "Photos, Video & Social Media", drawn as a whole new
+  page between the Property Damage Waiver page and the AGREEMENT/signature page)
+  were drawn into the document with pdf-lib and saved, which reflows nothing and
+  so leaves every coordinate valid. **Inserting a page still moves every page
+  after it**, though: adding section 3 took `pageCount` to 5 and
+  `signatureClientName.page` from 3 to 4, and nothing would have complained if
+  they hadn't moved — the name would just have been stamped onto the new page.
+  Set new text in an embedded subset of the real Times New Roman rather than
+  `StandardFonts.TimesRoman`, and match the page's own measure and leading: body
+  text is 14pt on 18.5pt leading, paragraphs at x=94.5 and bullets at x=130.3,
+  **left-aligned, ragged right** (the widest line in the document ends at x≈537,
+  well short of the others) — a clause that renders as substituted Times, or
+  justified against ragged neighbours, reads as bolted on.
   The template's **opening line used to be broken** ("...on this day of
   ________, 20, by and between:" — no day blank, no year blank, sentence
   unfinished) and was patched at run time by an `intro` block that covered and
