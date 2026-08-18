@@ -176,8 +176,8 @@ dates are left blank on purpose — "on this __ day of ____, 20__" and both
 goes out, and the client fills them in by hand with the signatures.
 
 **Wording changes go into the template PDF, not into the code.** The stamping
-code fills blanks; it does not author clauses. Two edits have been made to the
-document this way — both drawn into the PDF with pdf-lib and saved, so nothing
+code fills blanks; it does not author clauses. Three edits have been made to the
+document this way — all drawn into the PDF with pdf-lib and saved, so nothing
 existing reflowed and every coordinate above stayed valid:
 
 - **The opening line** on page 1. The original read "This Agreement is entered
@@ -201,9 +201,77 @@ existing reflowed and every coordinate above stayed valid:
   as the sections above it, in an embedded subset of Times New Roman — the face
   Word embedded for the body text, so it renders identically everywhere rather
   than relying on the reader substituting a standard font.
+- **Section 3, "Photos, Video & Social Media"**, added as a whole new page 4,
+  between the Property Damage Waiver page and the AGREEMENT/signature page:
+
+  > • The Venue may take photos and video at the event, and the Client and their
+  >   guests may appear in them.
+  > • The Venue may use them on its website (www.infinityrioranch.com), its
+  >   Instagram page (@infinity_rio_ranch) and other social media, advertising
+  >   and printed material.
+  > • No payment is due either way for this use, and the Venue will not sell the
+  >   photos or video to anyone else.
+  > • If the Client does not want their event used, they must tell the Venue in
+  >   writing at least 7 days before the event.
+
+  There was no room for it on any existing page, so it is an inserted page
+  carrying the same cream ground, watermark and hairline frame as its
+  neighbours — that frame is drawn per page as eight thin filled rects, and an
+  added page without it reads instantly as bolted on. **Inserting a page moves
+  every page after it**: `pageCount` went to 5 and `signatureClientName.page`
+  from 3 to 4 in `agreement-fields.json`. Nothing would have complained if they
+  hadn't — the client's name would simply have stopped appearing.
 
 Both live only in the PDF. **If the document is ever re-exported from Word, they
 are gone** along with every coordinate above — the Word source has neither.
+
+---
+
+## Vendor agreement PDF
+
+The venue's *Vendor Services Agreement*, filled in at **admin → Vendors**. A
+caterer, decorator, DJ or event manager gets one per event; the panel keeps the
+record and prints the document. Nothing emails it — the owner downloads the PDF
+and sends it themselves.
+
+1. **Upload the template** — Dashboard → Storage → `documents` → upload the repo
+   copy `INFINITY RIO RANCH - Vendor Agreement.pdf` as exactly
+   **`vendor-agreement-template.pdf`**. Without it the page still opens and
+   still saves; the preview pane says "No template uploaded" instead of showing
+   a document.
+2. **Run the migration** — `supabase/migrations/0011_vendor_agreements.sql` in
+   the SQL editor. Admin-only RLS; nothing public can read or write it.
+3. **Check one** — admin → Vendors → **+ New agreement** → type a business name
+   and watch the document build beside the form.
+
+**Unlike the rental agreement, this one is built in the browser** by
+`src/lib/vendor-agreement.ts`, not by an edge function — there is no email to
+attach it to, and building locally is what makes the preview live. There is no
+function to redeploy when the template changes: a re-upload takes effect on the
+next page load.
+
+**If the template is ever re-exported, recalibrate.** No form fields here either
+— every value is drawn at a coordinate in `src/lib/vendor-agreement-fields.json`:
+
+```bash
+node scripts/vendor-agreement-preview.mjs "Hill Country Catering" 2027-06-12 catering,dj
+```
+
+That writes `.vendor-agreement-preview.pdf` (gitignored) from the repo copy of
+the template and the same JSON the panel reads. **Open it and look.**
+
+Two things about this document worth knowing before editing it:
+
+- **The panel's service names are not the form's.** The printed boxes say Food,
+  Decoration, DJ and Other; the panel offers Catering, Decor, DJ and Event
+  Manager, and `BOX` in `vendor-agreement.ts` maps between them — Event Manager
+  ticks Other and writes its name on the line beside it. Re-label the boxes in
+  the PDF one day and that map is the single place to update.
+- **Every glyph in it is a Type3 procedure**, so unlike the rental agreement
+  there is no embedded font to reuse for new text. Stamped values are Helvetica.
+
+Signature and date lines are left blank on purpose, the same as the rental
+agreement: both parties sign by hand.
 
 ---
 

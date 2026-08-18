@@ -1,0 +1,194 @@
+{
+  "_readme": [
+    "Where each value is stamped onto INFINITY RIO RANCH - Vendor Agreement.pdf.",
+    "",
+    "Same deal as the rental agreement's agreement-fields.json, and the same",
+    "warning: the template has NO form fields, so every value sits at a fixed",
+    "coordinate measured from the document's own text and rules. RE-EXPORT THE",
+    "TEMPLATE AND ALL OF THESE ARE SILENTLY WRONG — a vendor receives a contract",
+    "with their phone number across a table rule and nothing errors. Run",
+    "`node scripts/vendor-agreement-preview.mjs` and LOOK at the output after any",
+    "change to either file.",
+    "",
+    "Origin is bottom-left, PDF points, page is 594.96 x 841.92 (three pages).",
+    "",
+    "This document is drawn, not typeset: every glyph in it is a Type3 procedure,",
+    "so there is no embedded font to reuse and no ToUnicode-free way to match it.",
+    "Values are set in Helvetica — a neutral sans that sits closest to the",
+    "document's own geometric face without shipping a font file into the admin",
+    "bundle. Do not switch to Times: it would read as a different document.",
+    "",
+    "Two shapes of field, because the template has two shapes of blank:",
+    "  `underline` — the value sits ON a printed rule or underscore run, so `y`",
+    "     is that rule's y plus a couple of points and the text is drawn from x.",
+    "  `cell` — a boxed table cell whose tiny caps label is its own line; the",
+    "     value goes on a second baseline under it, `labelY` minus 9.5. The cells",
+    "     are only 28.5pt tall, so 9.5pt is the largest value that clears both",
+    "     the label above and the rule below. Don't raise it.",
+    "",
+    "`maxWidth` is how much room the value actually has before it hits the next",
+    "rule or column; longer values are shrunk to fit rather than running over.",
+    "",
+    "Checkboxes are the four 8.2pt squares in SERVICE TYPE. They are drawn empty",
+    "by the template, so a chosen one gets an X centred in it — the box outline",
+    "belongs to the template and is never redrawn.",
+    "",
+    "The keys here are the words the TEMPLATE prints — food, decoration, dj,",
+    "other — not the service names the panel offers. The panel works in the",
+    "venue's own vocabulary (Catering, Decor, DJ, Event Manager) and",
+    "vendor-agreement.ts maps each onto the box the document actually has:",
+    "catering ticks Food, decor ticks Decoration, and Event Manager ticks Other",
+    "and writes its name on the line beside it. Keep these keys matching the",
+    "printed labels — the day the template is redrawn with new words, this file",
+    "is where you look to see what it used to say.",
+    "",
+    "Signature and date lines are deliberately left blank, exactly as the rental",
+    "agreement leaves them: nobody knows the signing date when the PDF is made,",
+    "and both parties sign by hand."
+  ],
+
+  "pageSize": { "width": 594.96, "height": 841.92 },
+  "pageCount": 3,
+
+  "constants": {
+    "venue": "Infinity Rio Ranch"
+  },
+
+  "fields": {
+    "venue": {
+      "page": 0,
+      "x": 70.3,
+      "y": 640.7,
+      "size": 10,
+      "maxWidth": 130,
+      "_from": "VENUE label at x=70.3 y=654.4; value baseline shares the date values' line"
+    },
+    "agreementDay": {
+      "page": 0,
+      "x": 226,
+      "y": 640.7,
+      "size": 10,
+      "maxWidth": 29,
+      "_from": "underscore run at x=224.3 y=638.7, ends before the '/' at x=257.8"
+    },
+    "agreementMonth": {
+      "page": 0,
+      "x": 268,
+      "y": 640.7,
+      "size": 10,
+      "maxWidth": 70,
+      "_from": "underscore run at x=266.0 y=638.7, ends before the '/' at x=339.9"
+    },
+    "agreementYear": {
+      "page": 0,
+      "x": 238.5,
+      "y": 626.4,
+      "size": 10,
+      "maxWidth": 22,
+      "_from": "'20' printed at x=224.3-236.2 y=624.4; the blank follows it"
+    },
+    "eventDate": {
+      "page": 0,
+      "x": 380,
+      "y": 640.7,
+      "size": 10,
+      "maxWidth": 150,
+      "_from": "underscore run at x=378.3 y=638.7 in the third column (x 365.2-537.0)"
+    },
+    "businessName": {
+      "page": 0,
+      "x": 68.8,
+      "y": 479.2,
+      "size": 9.5,
+      "maxWidth": 220,
+      "_from": "BUSINESS NAME label at x=68.8 y=488.7; cell rules y 505.2/476.7, x 57.7-297.7"
+    },
+    "contactPerson": {
+      "page": 0,
+      "x": 308.6,
+      "y": 479.2,
+      "size": 9.5,
+      "maxWidth": 218,
+      "_from": "CONTACT PERSON label at x=308.6 y=488.7; cell x 298.5-537.0"
+    },
+    "phone": {
+      "page": 0,
+      "x": 68.8,
+      "y": 450.7,
+      "size": 9.5,
+      "maxWidth": 220,
+      "_from": "PHONE label at x=68.8 y=460.2; cell rules y 476.7/448.2"
+    },
+    "email": {
+      "page": 0,
+      "x": 308.6,
+      "y": 450.7,
+      "size": 9.5,
+      "maxWidth": 218,
+      "_from": "EMAIL label at x=308.6 y=460.2"
+    },
+    "clientEventName": {
+      "page": 0,
+      "x": 68.8,
+      "y": 414.7,
+      "size": 9.5,
+      "maxWidth": 220,
+      "_from": "CLIENT / EVENT NAME label at x=68.8 y=424.2; cell rules y 448.2/404.7"
+    },
+    "otherLine": {
+      "page": 0,
+      "x": 490,
+      "y": 416.4,
+      "size": 8.5,
+      "maxWidth": 46,
+      "_from": "the 'Other ______' underscore run at x=485.6 y=415.9, cell ends x=537.0. Short on purpose: 'Event Manager' shrinks to about 7pt to fit it, which is the template's constraint, not a choice"
+    },
+    "vendorRepName": {
+      "page": 2,
+      "x": 76,
+      "y": 662.7,
+      "size": 10,
+      "maxWidth": 202,
+      "_from": "signature rule at x=73.5 y=659.7 w=207.7, label below at y=646.2"
+    },
+    "venueRepName": {
+      "page": 2,
+      "x": 316.7,
+      "y": 662.7,
+      "size": 10,
+      "maxWidth": 202,
+      "_from": "signature rule at x=314.2 y=659.7 w=207.7, label below at y=646.2"
+    }
+  },
+
+  "checkboxes": {
+    "food": {
+      "page": 0,
+      "x": 309.4,
+      "y": 414.8,
+      "size": 8.2,
+      "_from": "8.2pt square drawn at x=309.4, top y=423.0; 'Food' label at x=321.4"
+    },
+    "decoration": {
+      "page": 0,
+      "x": 352.1,
+      "y": 414.8,
+      "size": 8.2,
+      "_from": "8.2pt square at x=352.1; 'Decoration' label at x=364.6"
+    },
+    "dj": {
+      "page": 0,
+      "x": 418.9,
+      "y": 414.8,
+      "size": 8.2,
+      "_from": "8.2pt square at x=418.9; 'DJ' label at x=431.1"
+    },
+    "other": {
+      "page": 0,
+      "x": 450.4,
+      "y": 414.8,
+      "size": 8.2,
+      "_from": "8.2pt square at x=450.4; 'Other' label at x=463.0, its blank at x=485.6"
+    }
+  }
+}

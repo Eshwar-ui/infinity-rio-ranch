@@ -40,6 +40,11 @@ const AdminStats = named(() => import('@/pages/admin/lists'), 'AdminStats')
 const AdminAmenities = named(() => import('@/pages/admin/lists'), 'AdminAmenities')
 const AdminIncluded = named(() => import('@/pages/admin/lists'), 'AdminIncluded')
 const AdminEventTypes = named(() => import('@/pages/admin/lists'), 'AdminEventTypes')
+const AdminVendors = named(() => import('@/pages/admin/vendors'), 'AdminVendors')
+const AdminVendorDetail = named(
+  () => import('@/pages/admin/vendor-detail'),
+  'AdminVendorDetail',
+)
 const AdminInvoices = named(() => import('@/pages/admin/invoices'), 'AdminInvoices')
 const InvoiceEditor = named(() => import('@/pages/admin/invoice-editor'), 'InvoiceEditor')
 const InvoicePublicPage = named(() => import('@/pages/invoice-public'), 'InvoicePublicPage')
@@ -87,6 +92,9 @@ const router = createBrowserRouter([
           { path: 'gallery', element: <AdminGallery /> },
         ],
       },
+      { path: 'vendors', element: <AdminVendors /> },
+      { path: 'vendors/new', element: <AdminVendorDetail /> },
+      { path: 'vendors/:id', element: <AdminVendorDetail /> },
       { path: 'invoices', element: <AdminInvoices /> },
       { path: 'invoices/new', element: <InvoiceEditor /> },
       { path: 'invoices/:id', element: <InvoiceEditor /> },

@@ -32,3 +32,6 @@ supabase/.temp/
 
 # Local calibration output from scripts/agreement-preview.mjs
 .agreement-preview.pdf
+
+# Local calibration output from scripts/vendor-agreement-preview.mjs
+.vendor-agreement-preview.pdf

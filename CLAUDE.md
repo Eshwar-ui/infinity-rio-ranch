@@ -23,6 +23,9 @@ Supabase backend, deployed to Vercel.
   CMS. Runs as the first build step; run it by hand after publishing edits if you
   want the change committed. Commit the result.
 - `npm run lint` — oxlint. The archived `design/` handoff is excluded.
+- `node scripts/agreement-preview.mjs` / `node scripts/vendor-agreement-preview.mjs`
+  — stamp sample values onto the two contract templates and write a local PDF.
+  Run and *look at* the output after touching a template or its field map.
 - `npm run optimize:images` — re-encodes `public/assets` in place (JPEG q78,
   1600px cap). Run it after adding photos; it's manifest-idempotent and
   deliberately outside `build` so nothing gets re-compressed every deploy.
@@ -285,6 +288,38 @@ Supabase backend, deployed to Vercel.
   presented. It only ever *adds* capitals: lowercasing the rest would turn
   `McDonald` into `Mcdonald` and a `III` suffix into `Iii`, and a wrong name on
   a legal document beats an unconverted one. All-caps input therefore survives.
+- **The vendor agreement is the same idea, built in the browser.** A caterer,
+  decorator, DJ or event manager working an event signs the venue's *Vendor
+  Services Agreement*; `/admin/vendors` lists those agreements and
+  `/admin/vendors/:id` is one of them — the details as a form on the left, the
+  real PDF rebuilt beside it as you type. Differences from the rental one, all
+  deliberate:
+  - **It is generated client-side** (`src/lib/vendor-agreement.ts`, plain
+    `pdf-lib`), not in an edge function. Nothing emails a vendor agreement, so
+    there is no server to need it, and building locally is what makes the
+    preview live instead of a round trip per keystroke. The template still lives
+    in the private `documents` bucket as **`vendor-agreement-template.pdf`**,
+    which an admin can read under 0007's RLS.
+  - **`vendor-services.ts` exists only to keep `pdf-lib` out of the list.** The
+    four service names were imported from `vendor-agreement.ts`, which put 400 kB
+    of PDF library into the chunk anyone opening the table downloads. Names live
+    in the light module; the builder re-exports them.
+  - **The panel's words and the paper's words are different, and the map is in
+    code.** The form prints Food / Decoration / DJ / Other; the venue books
+    Catering / Decor / DJ / Event Manager. `BOX` in `vendor-agreement.ts` ticks
+    the right square, and an Event Manager ticks Other and gets its name written
+    on the line beside it. The DB stores the venue's vocabulary, so re-labelling
+    the PDF one day doesn't mean rewriting rows.
+  - **This template is drawn, not typeset** — every glyph is a Type3 procedure,
+    so there is no font in it to reuse. Values are set in Helvetica; don't
+    "match" it with Times.
+  - Coordinates in `src/lib/vendor-agreement-fields.json`, checked with
+    `node scripts/vendor-agreement-preview.mjs`, which reads the repo copy
+    `INFINITY RIO RANCH - Vendor Agreement.pdf`. Same rule as the rental one: the
+    repo copy and the bucket copy must be kept in step, and a re-export
+    invalidates every coordinate silently.
+  - Nothing public ever writes `vendor_agreements` (0011) — admin-only RLS, no
+    anon INSERT policy, unlike `leads`.
 - **Invoice numbers are DB-assigned.** A `BEFORE INSERT` trigger pulls from a
   sequence (`INV-YYYY-0001`) — never generate numbers in JS (races).
 - **Client-facing invoice** (`/invoice/:token`) reads via the `get_invoice_by_token`
@@ -347,6 +382,10 @@ Supabase backend, deployed to Vercel.
   `src/pages/admin/blog.tsx` its editor; `src/lib/markdown.tsx` the body renderer
   (react-markdown, elements mapped to the site's type scale — not a `prose` sheet);
   `src/lib/post-format.ts` hydration-safe dates.
+- `src/pages/admin/vendors.tsx` the vendor agreements list, `vendor-detail.tsx` one
+  agreement (form + live PDF), `vendor-shared.ts` what both read;
+  `src/lib/vendor-agreement.ts` builds the document, `vendor-services.ts` the four
+  service names, `vendor-agreement-fields.json` where each value lands.
 - `src/components/admin/content-editor.tsx` — generic CRUD editor (testimonials/events/faqs).
 - `src/lib/supabase.ts` client; `src/lib/invoice.ts` totals/money helpers.
 - `src/hooks/use-admin.ts` session + is_admin; `src/hooks/use-site-content.ts` public reads.

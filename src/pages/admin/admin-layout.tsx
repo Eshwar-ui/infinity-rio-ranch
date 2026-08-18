@@ -16,6 +16,7 @@ const NAV = [
   { group: 'Pipeline' },
   { to: '/admin/leads', label: 'Leads', ready: true },
   { to: '/admin/clients', label: 'Clients', ready: true },
+  { to: '/admin/vendors', label: 'Vendors', ready: true },
   { group: 'Website' },
   {
     to: '/admin/content',
