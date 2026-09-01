@@ -258,17 +258,31 @@ Supabase backend, deployed to Vercel.
   deliberately left blank for hand-signing. Full procedure in `docs/RUNBOOK.md`.
   **New wording goes into the PDF, never into the code** — the code fills blanks,
   it doesn't author clauses, and a clause drawn at send time is one the owner
-  can't read in their own copy of the contract. The three edits made so far (the
+  can't read in their own copy of the contract. The edits made so far (the
   opening line below; section 1E "Event Center Cancellation" in page 2's empty
-  lower half; and section 3 "Photos, Video & Social Media", drawn as a whole new
-  page between the Property Damage Waiver page and the AGREEMENT/signature page)
-  were drawn into the document with pdf-lib and saved, which reflows nothing and
-  so leaves every coordinate valid. **Inserting a page still moves every page
-  after it**, though: adding section 3 took `pageCount` to 5 and
-  `signatureClientName.page` from 3 to 4, and nothing would have complained if
-  they hadn't moved — the name would just have been stamped onto the new page.
+  lower half; section 3 "Photos, Video & Social Media", drawn as a whole new
+  page between the Property Damage Waiver page and the AGREEMENT/signature page;
+  and section 4 "Rental Period, Package Hours & Grace Period", drawn into the
+  blank lower half of the section-3 page itself) were drawn into the document
+  with pdf-lib and saved, which reflows nothing and so leaves every coordinate
+  valid. **Inserting a page still moves every page after it**, though: adding
+  section 3 took `pageCount` to 5 and `signatureClientName.page` from 3 to 4,
+  and nothing would have complained if they hadn't moved — the name would just
+  have been stamped onto the new page. Section 4 avoided that risk entirely by
+  reusing section 3's own already-blank space instead of inserting another
+  page — no `pageCount` bump, no field-page shift. It states the half-day
+  (8h) / full-day (12h) package hours (setup + event + teardown all inside
+  that window), the 45-minute grace period, and the $100 flat decor-teardown
+  charge / $300-per-hour event-continuation charge, and says it governs "in
+  place of" the AGREEMENT page's older "past 12:00 AM" Extended Hours Policy —
+  deliberately worded as a supersession rather than an edit, since covering and
+  redrawing text on that page would mean fighting its watermark and cream fill
+  to match the background exactly.
   Set new text in an embedded subset of the real Times New Roman rather than
-  `StandardFonts.TimesRoman`, and match the page's own measure and leading: body
+  `StandardFonts.TimesRoman` — via `@pdf-lib/fontkit` (a devDependency) and a
+  system copy of `times.ttf`/`timesbd.ttf` (e.g. `C:\Windows\Fonts` on Windows);
+  the font file itself is never committed, only the subset pdf-lib bakes into
+  the saved template — and match the page's own measure and leading: body
   text is 14pt on 18.5pt leading, paragraphs at x=94.5 and bullets at x=130.3,
   **left-aligned, ragged right** (the widest line in the document ends at x≈537,
   well short of the others) — a clause that renders as substituted Times, or
@@ -313,6 +327,17 @@ Supabase backend, deployed to Vercel.
   - **This template is drawn, not typeset** — every glyph is a Type3 procedure,
     so there is no font in it to reuse. Values are set in Helvetica; don't
     "match" it with Times.
+  - One clause has been drawn into it since: an unnumbered "Rental Period,
+    Package Hours & Grace Period" section in the blank space below "06
+    Indemnification" on page 2, mirroring the rental agreement's section 4 —
+    same half-day (8h) / full-day (12h) package hours, 45-minute grace period,
+    $100 flat decor-teardown charge and $300/hour event-continuation charge.
+    Unlike the rental agreement there was no older extended-hours dollar figure
+    to conflict with — "04 Venue Rules" only ever said "subject to availability
+    and prior approval" — so this one was a pure addition, no supersession
+    wording needed. Drawn in plain Helvetica per the rule above, not baked-in
+    Type3, so it reads slightly different from the template's own headings;
+    that mismatch is accepted, not fixed.
   - Coordinates in `src/lib/vendor-agreement-fields.json`, checked with
     `node scripts/vendor-agreement-preview.mjs`, which reads the repo copy
     `INFINITY RIO RANCH - Vendor Agreement.pdf`. Same rule as the rental one: the
