@@ -17,6 +17,8 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+import { PrivacyPolicyPage } from '@/pages/privacy-policy'
+import { TermsConditionsPage } from '@/pages/terms-conditions'
 import { BlogPage } from '@/pages/blog'
 import { BlogPostPage } from '@/pages/blog-post'
 import { NotFoundPage } from '@/pages/not-found'
@@ -54,6 +56,8 @@ const PublicRoutes = () => (
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/contact" element={<ContactPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms-conditions" element={<TermsConditionsPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>
   </Routes>

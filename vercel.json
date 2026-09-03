@@ -5,6 +5,8 @@
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/gallery", "destination": "/gallery/index.html" },
     { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/privacy-policy", "destination": "/privacy-policy/index.html" },
+    { "source": "/terms-conditions", "destination": "/terms-conditions/index.html" },
     { "source": "/blog", "destination": "/blog/index.html" },
 
     { "source": "/blog/:slug", "destination": "/blog/:slug/index.html" },

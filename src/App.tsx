@@ -7,6 +7,8 @@ import { HomePage } from '@/pages/home'
 import { AboutPage } from '@/pages/about'
 import { GalleryPage } from '@/pages/gallery'
 import { ContactPage } from '@/pages/contact'
+import { PrivacyPolicyPage } from '@/pages/privacy-policy'
+import { TermsConditionsPage } from '@/pages/terms-conditions'
 /*
  * The blog pages are imported eagerly, unlike admin/invoice below. They are
  * prerendered, so a lazy chunk would render the Suspense fallback into
@@ -59,6 +61,8 @@ const router = createBrowserRouter([
       { path: '/blog', element: <BlogPage /> },
       { path: '/blog/:slug', element: <BlogPostPage /> },
       { path: '/contact', element: <ContactPage /> },
+      { path: '/privacy-policy', element: <PrivacyPolicyPage /> },
+      { path: '/terms-conditions', element: <TermsConditionsPage /> },
       // Matches dist/404.html, which the server returns for unknown paths.
       // Mirror any change here in src/entry-server.tsx.
       { path: '*', element: <NotFoundPage /> },

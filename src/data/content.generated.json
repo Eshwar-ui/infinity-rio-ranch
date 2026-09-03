@@ -1,5 +1,5 @@
 {
-  "pulledAt": "2026-08-13T13:23:25.959Z",
+  "pulledAt": "2026-09-03T11:24:26.937Z",
   "copy": {
     "global.contact.email": "infinityrioranch6@gmail.com",
     "global.contact.phone_primary": "+1 (512) 630-2236",
@@ -278,9 +278,23 @@
       "featured": false
     },
     {
+      "label": "Ceremony Altar",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/74fdef9e-c76e-4f76-9a28-80621c332aec-DSC08436.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
       "label": "Garden Ceremony",
       "cat": "ceremony",
       "src": "/assets/site/DSC3678.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Grand Entrance",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/6a54e088-0f29-482f-9fed-2d789049374c-DSC08485.jpg",
       "span": null,
       "featured": false
     },
@@ -289,6 +303,20 @@
       "cat": "reception",
       "src": "/assets/site/DSC3699.jpg",
       "span": "wide",
+      "featured": false
+    },
+    {
+      "label": "Grand Entryway",
+      "cat": "outdoor",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/70213010-6c93-4aca-bfb4-a2236fa584b6-DSC08886.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Ceremony Pavilion",
+      "cat": "outdoor",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/87917e9f-e59e-4e56-bcff-20764cf09b11-DSC08653.jpg",
+      "span": "tall",
       "featured": false
     }
   ],

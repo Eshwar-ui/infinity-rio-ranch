@@ -100,9 +100,17 @@ export const Footer = () => {
 
       {/* Bottom bar */}
       <div className="mx-auto mt-12 flex max-w-content flex-col-reverse items-center gap-4 border-t border-line pt-6 sm:flex-row sm:justify-between">
-        <span className="text-xs text-muted">
-          &copy; 2025 Infinity Rio Ranch. All Rights Reserved.
-        </span>
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted">
+          <span>&copy; 2025 Infinity Rio Ranch. All Rights Reserved.</span>
+          <Dot />
+          <Link to="/privacy-policy" className="transition-colors duration-300 hover:text-brass2">
+            Privacy Policy
+          </Link>
+          <Dot />
+          <Link to="/terms-conditions" className="transition-colors duration-300 hover:text-brass2">
+            Terms &amp; Conditions
+          </Link>
+        </div>
         <div className="flex items-center gap-4">
           <span className="hidden text-[11px] uppercase tracking-[0.24em] text-muted sm:inline">
             Follow along

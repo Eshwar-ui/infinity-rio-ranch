@@ -111,7 +111,15 @@ const isPostRoute = (pathname: string) =>
 const postSlug = (pathname: string) => pathname.slice(BLOG_ROUTE.length + 1)
 
 /** The routes that exist regardless of what the CMS holds. */
-const STATIC_ROUTES = ['/', '/about', '/gallery', '/contact', BLOG_ROUTE] as const
+const STATIC_ROUTES = [
+  '/',
+  '/about',
+  '/gallery',
+  '/contact',
+  BLOG_ROUTE,
+  '/privacy-policy',
+  '/terms-conditions',
+] as const
 
 /**
  * Every indexable public route. Drives prerendering and the sitemap.
@@ -253,6 +261,18 @@ const ROUTE_META: Record<string, RouteMeta> = {
     crumb: 'Blog',
     description:
       'Planning guides for weddings and events in the Texas Hill Country — choosing a venue, indoor and outdoor options, capacity, budgets and what to ask before you book.',
+  },
+  '/privacy-policy': {
+    title: 'Privacy Policy | Infinity at Rio Ranch',
+    crumb: 'Privacy Policy',
+    description:
+      'How Infinity at Rio Ranch collects, uses and protects the information you share through our website, inquiries and bookings.',
+  },
+  '/terms-conditions': {
+    title: 'Terms & Conditions | Infinity at Rio Ranch',
+    crumb: 'Terms & Conditions',
+    description:
+      'The terms that govern use of the Infinity at Rio Ranch website and inquiries. Venue rental terms are set separately in the signed rental agreement.',
   },
 }
 
