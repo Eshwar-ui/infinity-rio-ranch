@@ -110,6 +110,21 @@ export const Footer = () => {
           <Link to="/terms-conditions" className="transition-colors duration-300 hover:text-brass2">
             Terms &amp; Conditions
           </Link>
+          <Dot />
+          {/* Build credit. Only the brand name is the anchor — "Website by" stays
+              plain text so the link reads as an editorial credit rather than a
+              keyword-stuffed site-wide footer link. */}
+          <span>
+            Website by{' '}
+            <a
+              href="https://velvomedia.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors duration-300 hover:text-brass2"
+            >
+              Velvo Media
+            </a>
+          </span>
         </div>
         <div className="flex items-center gap-4">
           <span className="hidden text-[11px] uppercase tracking-[0.24em] text-muted sm:inline">
