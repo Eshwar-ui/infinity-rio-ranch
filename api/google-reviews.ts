@@ -2,9 +2,18 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 const EXPECTED_PLACE_ID = 'ChIJpyGeLm3VWoYRSg2J_y46wmk'
 const EXPECTED_BUSINESS_NAME = 'Infinity Rio Ranch Wedding & Event Center'
-const REVIEW_LIMIT = 12
+const REVIEW_LIMIT = 50
 const CACHE_TTL_MS = 6 * 60 * 60 * 1_000
 const STALE_TTL_MS = 24 * 60 * 60 * 1_000
+
+// `pageSize=50` is the v4 maximum, and a page counts star-only ratings that get
+// dropped here for having no comment — so one page can yield well under
+// REVIEW_LIMIT text reviews. These bound the catch-up paging: never more than
+// MAX_REVIEW_PAGES requests, and stop starting new ones once the budget is
+// spent, so a slow Google can't push the function past its execution limit.
+// Only one request every CACHE_TTL_MS pays this cost.
+const MAX_REVIEW_PAGES = 3
+const PAGINATION_BUDGET_MS = 3_500
 
 type StarRating =
   | 'STAR_RATING_UNSPECIFIED'
@@ -227,24 +236,50 @@ const fetchJson = async <T>(url: URL, accessToken: string): Promise<T> => {
   return response.json() as Promise<T>
 }
 
-const fetchProfileReviews = async (config: BusinessProfileConfig): Promise<ReviewResponse> => {
-  const accessToken = await getAccessToken(config)
-  const reviewsUrl = new URL(
+const reviewsPageUrl = (config: BusinessProfileConfig, pageToken?: string) => {
+  const url = new URL(
     `https://mybusiness.googleapis.com/v4/accounts/${encodeURIComponent(config.accountId)}` +
       `/locations/${encodeURIComponent(config.locationId)}/reviews`,
   )
-  reviewsUrl.searchParams.set('pageSize', '50')
-  reviewsUrl.searchParams.set('orderBy', 'updateTime desc')
+  url.searchParams.set('pageSize', '50')
+  url.searchParams.set('orderBy', 'updateTime desc')
+  if (pageToken) url.searchParams.set('pageToken', pageToken)
+  return url
+}
+
+const fetchProfileReviews = async (config: BusinessProfileConfig): Promise<ReviewResponse> => {
+  const accessToken = await getAccessToken(config)
 
   const locationUrl = new URL(
     `https://mybusinessbusinessinformation.googleapis.com/v1/locations/${encodeURIComponent(config.locationId)}`,
   )
   locationUrl.searchParams.set('readMask', 'title,metadata')
 
-  const [reviewData, location] = await Promise.all([
-    fetchJson<ReviewsListResponse>(reviewsUrl, accessToken),
+  const [firstPage, location] = await Promise.all([
+    fetchJson<ReviewsListResponse>(reviewsPageUrl(config), accessToken),
     fetchJson<BusinessProfileLocation>(locationUrl, accessToken),
   ])
+
+  // averageRating and totalReviewCount describe the whole listing, so they are
+  // only read from the first page; later pages just add reviews.
+  const rawReviews = [...(firstPage.reviews ?? [])]
+  const withComment = () => rawReviews.filter((review) => review.comment?.trim()).length
+
+  const startedAt = Date.now()
+  let pageToken = firstPage.nextPageToken
+  for (let page = 1; page < MAX_REVIEW_PAGES; page += 1) {
+    if (!pageToken) break
+    if (withComment() >= REVIEW_LIMIT) break
+    if (Date.now() - startedAt > PAGINATION_BUDGET_MS) break
+
+    const next = await fetchJson<ReviewsListResponse>(
+      reviewsPageUrl(config, pageToken),
+      accessToken,
+    )
+    if (!next.reviews?.length) break
+    rawReviews.push(...next.reviews)
+    pageToken = next.nextPageToken
+  }
 
   const businessName = location.title?.trim() || EXPECTED_BUSINESS_NAME
   const placeId = location.metadata?.placeId ?? EXPECTED_PLACE_ID
@@ -262,7 +297,7 @@ const fetchProfileReviews = async (config: BusinessProfileConfig): Promise<Revie
     )
   }
 
-  const reviews = (reviewData.reviews ?? []).flatMap((review) => {
+  const reviews = rawReviews.flatMap((review) => {
     const text = review.comment?.trim()
     if (!text) return []
     const anonymous = review.reviewer?.isAnonymous
@@ -285,8 +320,8 @@ const fetchProfileReviews = async (config: BusinessProfileConfig): Promise<Revie
   return {
     placeId,
     businessName,
-    rating: Math.max(0, Math.min(5, reviewData.averageRating ?? 0)),
-    reviewCount: Math.max(0, reviewData.totalReviewCount ?? 0),
+    rating: Math.max(0, Math.min(5, firstPage.averageRating ?? 0)),
+    reviewCount: Math.max(0, firstPage.totalReviewCount ?? 0),
     googleMapsUrl: mapsUrl,
     reviews,
   }

@@ -49,35 +49,76 @@ rotating them.
 ### Google reviews
 
 The Home page loads reviews through the server-only `/api/google-reviews`
-Vercel Function using the Google Business Profile APIs:
+Vercel Function using the Google Business Profile APIs. Reviews are exposed
+**only** by the legacy `mybusiness.googleapis.com` v4 endpoint — the My Business
+*Business Information* and *Account Management* APIs have no reviews method at
+all — so v4 is the whole feature, and it is gated behind an approval.
+
+#### The quota-0 wall (read this before debugging anything else)
+
+Until Google grants the Cloud project Business Profile API access, the project
+quota for every `mybusiness*` API is **zero**:
+
+```
+429 RESOURCE_EXHAUSTED  reason: RATE_LIMIT_EXCEEDED
+quota_limit: "DefaultRequestsPerMinutePerProject"
+quota_limit_value: "0"
+```
+
+The ceiling itself is 0, so the **first** call of every minute fails. This is not
+a rate limit you triggered by calling too often, and enabling more APIs does not
+lift it. In the Cloud dashboard it shows up as a flat 100% error rate, which
+reads like a credentials bug and is not one — a token exchange that succeeds and
+returns scope `https://www.googleapis.com/auth/business.manage` proves the OAuth
+half is fine while every data call still 429s.
+
+#### Setup
 
 1. The Google account used for OAuth must own or manage the verified Infinity
-   Rio Ranch profile. Request Business Profile API access for the Google Cloud
-   project; Google currently requires an active verified profile and a valid
-   business website.
-2. After approval, enable **Google My Business API**, **My Business Account
-   Management API**, and **My Business Business Information API**.
-3. Configure an OAuth consent screen and create an OAuth 2.0 client. Authorize
+   Rio Ranch profile.
+2. **Request Business Profile API access** for the Cloud project, via the
+   Business Profile APIs access request form. It asks for the GCP **project
+   number** (currently `463345373161`) and the Google account that manages the
+   profile. Google requires an active verified profile and a valid business
+   website. Approval is not instant — plan for days, sometimes weeks — and the
+   quota stays 0 until it lands.
+3. After approval, enable **Google My Business API** (`mybusiness.googleapis.com`
+   — this is the v4 one that carries reviews, and it only becomes enableable
+   once approved), **My Business Account Management API**, and **My Business
+   Business Information API**.
+4. Configure an OAuth consent screen and create an OAuth 2.0 client. Authorize
    the owner/manager account with the scope
    `https://www.googleapis.com/auth/business.manage` and obtain an offline
    refresh token. Google OAuth Playground can be used for this one-business
    setup when it is configured with the project's own OAuth client credentials.
-4. Retrieve the account ID from
+5. Retrieve the account ID from
    `GET https://mybusinessaccountmanagement.googleapis.com/v1/accounts`, then
    retrieve the location ID from
    `GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{accountId}/locations?readMask=name,title,metadata`.
-5. Add all five `GOOGLE_BUSINESS_PROFILE_*` variables from `.env.example` to
+6. Add all five `GOOGLE_BUSINESS_PROFILE_*` variables from `.env.example` to
    Vercel Production and Preview, then redeploy. For local endpoint testing,
    populate `.env.local` and run `vercel dev`.
 
+#### Behaviour
+
 The function verifies that the configured location resolves to Place ID
-`ChIJpyGeLm3VWoYRSg2J_y46wmk`, requests up to 50 newest reviews, and sends the
-newest 12 text reviews to the carousel. Review content is cached for six hours
-with a 24-hour stale-on-error window. This is within Google's Business Profile
-policy, which permits limited secure temporary caching for performance for no
-more than 30 days. OAuth access tokens are refreshed server-side and never sent
-to the browser. If credentials, approval, quota, network, or Google fail, the
-public section silently retains its existing CMS testimonials.
+`ChIJpyGeLm3VWoYRSg2J_y46wmk` and **throws if it does not** — the lookup is by
+account/location ID, so a mismatch means the wrong location is configured and
+the alternative is publishing another business's reviews.
+
+It sends up to **50** text reviews to the carousel, newest first. `pageSize=50`
+is the v4 maximum per request, and a page includes star-only ratings that are
+dropped here for having no comment, so the function follows `nextPageToken` to
+top the list back up — bounded by `MAX_REVIEW_PAGES` (3) and
+`PAGINATION_BUDGET_MS` (3.5s) so a slow Google cannot push it past the function
+execution limit. Only one request every six hours pays that cost.
+
+Review content is cached for six hours with a 24-hour stale-on-error window.
+This is within Google's Business Profile policy, which permits limited secure
+temporary caching for performance for no more than 30 days. OAuth access tokens
+are refreshed server-side and never sent to the browser. If credentials,
+approval, quota, network, or Google fail, the public section silently retains its
+existing CMS testimonials.
 
 ## Pre-flight (must pass)
 ```bash

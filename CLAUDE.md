@@ -351,6 +351,33 @@ Supabase backend, deployed to Vercel.
   security-definer RPC — the invoices table stays admin-only under RLS.
 - Admin + invoice pages are `React.lazy` chunks in `src/App.tsx` so public visitors
   don't download them. Keep new admin code lazy.
+- **Google reviews come from the Business Profile v4 API, and it is gated on an
+  approval.** `api/google-reviews.ts` is a Vercel Function that exchanges the
+  five `GOOGLE_BUSINESS_PROFILE_*` vars for a `business.manage` token and reads
+  `mybusiness.googleapis.com/v4/.../reviews`; `testimonials.tsx` fetches it and
+  falls back to CMS testimonials on any failure, so the section never breaks.
+  Two facts stop this being re-diagnosed from scratch. Reviews live **only** on
+  that legacy v4 endpoint — the My Business *Business Information* and *Account
+  Management* APIs have no reviews method, so enabling them buys nothing. And
+  until Google grants the project Business Profile API access, the quota for
+  every `mybusiness*` API is `0`, so the **first** call of each minute 429s with
+  `quota_limit_value: "0"` and the Cloud dashboard reads a flat 100% error rate
+  — which looks like broken credentials and isn't: the token exchange succeeds
+  with the right scope while every data call still fails. Nothing in code can
+  lift that; it needs the access-request form (project number, managing account,
+  verified profile). Procedure in `docs/DEPLOY.md`.
+  The Place ID check **throws** rather than warns, deliberately: the lookup is by
+  account/location ID, so a mismatch means the wrong location is configured and
+  the alternative is publishing another business's reviews.
+  `pageSize=50` is the v4 per-request maximum and a page counts star-only
+  ratings that get dropped for having no comment, so the function follows
+  `nextPageToken` to reach `REVIEW_LIMIT` (50) text reviews — bounded by
+  `MAX_REVIEW_PAGES` and `PAGINATION_BUDGET_MS` so a slow Google can't push it
+  past the function execution limit; the 6-hour cache means one request pays it.
+  Places API (New) was evaluated as the way around the approval and rejected by
+  the owner: it needs no allowlist but caps at 5 reviews with no pagination. That
+  implementation is in git history (`api/google-reviews.ts`, Sept 2026) if the
+  approval never lands.
 - **Public routes are prerendered; `src/lib/seo.ts` is the only SEO source.**
   `scripts/prerender.mjs` writes real HTML per route into `dist/<route>/index.html`
   so non-JS crawlers (GPTBot, ClaudeBot, PerplexityBot) see the content. Titles,

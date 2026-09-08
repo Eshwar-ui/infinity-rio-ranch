@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Star } from '@phosphor-icons/react'
+import GoogleReviewsWidgetModule from 'google-reviews-widget'
 
 import { Reveal } from '@/components/effects/reveal'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,17 @@ import {
 } from '@/lib/google-reviews'
 
 const GOOGLE_PLACE_ID = 'ChIJpyGeLm3VWoYRSg2J_y46wmk'
+const WIDGET_INSTANCE_ID = 'BFnQb3gBYxetO8NZWHYM'
+
+// `google-reviews-widget` ships a CommonJS `main` with no `exports` map and no
+// `module` field, so its own `dist/index.mjs` is never picked up and the CJS
+// interop nests the component at `.default`. Rendering the import directly
+// throws "Element type is invalid ... but got: object". Unwrap it here rather
+// than deep-importing `dist/index.mjs`, which would break if the package ever
+// grows a proper exports map.
+const GoogleReviewsWidget =
+  (GoogleReviewsWidgetModule as unknown as { default?: typeof GoogleReviewsWidgetModule })
+    .default ?? GoogleReviewsWidgetModule
 
 type ReviewStatus = 'loading' | 'ready' | 'error'
 
@@ -326,10 +338,56 @@ const GoogleReviewsCarousel = ({ reviews }: { reviews: DisplayReview[] }) => {
   )
 }
 
+/**
+ * Mounts the beaver.codes widget and reports once it has actually painted.
+ *
+ * The widget renders an empty `div[data-instance-id]`, appends a remote
+ * `<script>` to it in an effect, and that script injects the reviews later — so
+ * the div is empty in the prerendered HTML and stays empty if the script is
+ * blocked, 404s or the plan lapses. Anything in there that is not the injected
+ * script means the reviews arrived, which is the only safe cue for swapping the
+ * CMS testimonials out: hiding them on mount would leave a blank section
+ * whenever the widget fails.
+ */
+const GoogleReviewsWidgetPanel = ({ onReady }: { onReady: () => void }) => {
+  const hostRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const host = hostRef.current
+    if (!host) return
+
+    const hasRendered = () =>
+      Boolean(host.querySelector('div[data-instance-id] > *:not(script)'))
+
+    if (hasRendered()) {
+      onReady()
+      return
+    }
+
+    const observer = new MutationObserver(() => {
+      if (!hasRendered()) return
+      observer.disconnect()
+      onReady()
+    })
+    observer.observe(host, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [onReady])
+
+  return (
+    <div ref={hostRef}>
+      <GoogleReviewsWidget instanceId={WIDGET_INSTANCE_ID} />
+    </div>
+  )
+}
+
 /** Social-proof band: live Google reviews with the CMS testimonials as a resilient fallback. */
 export const Testimonials = () => {
   const fallbackTestimonials = useTestimonials()
   const { data, status } = useGoogleReviews()
+  // Starts false on the server and on the client's first render, so the
+  // prerendered markup and the hydrated tree agree.
+  const [widgetReady, setWidgetReady] = useState(false)
+  const handleWidgetReady = useCallback(() => setWidgetReady(true), [])
 
   const reviews: DisplayReview[] = data?.reviews.length
     ? data.reviews.map((review: GoogleReview) => ({ ...review, source: 'google' as const }))
@@ -358,10 +416,20 @@ export const Testimonials = () => {
           />
         </Reveal>
 
-        <GoogleRatingSummary data={data} status={status} />
+        {widgetReady ? null : <GoogleRatingSummary data={data} status={status} />}
 
         <Reveal delay={0.08}>
-          <GoogleReviewsCarousel reviews={reviews} />
+          {/*
+            Both are mounted: the widget needs to be in the DOM for its script to
+            load, and the CMS carousel is what the prerenderer writes into
+            dist/*.html — effects don't run during SSR, so the widget contributes
+            an empty div there. Keeping the carousel as the server-rendered
+            content means crawlers get real reviews and the client's first render
+            matches the prerendered markup, so hydration holds; the swap happens
+            afterwards, in an effect, once the widget confirms it painted.
+          */}
+          <GoogleReviewsWidgetPanel onReady={handleWidgetReady} />
+          {widgetReady ? null : <GoogleReviewsCarousel reviews={reviews} />}
         </Reveal>
 
         {status === 'ready' && data?.googleMapsUrl ? (
