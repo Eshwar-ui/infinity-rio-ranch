@@ -5,6 +5,7 @@ import GoogleReviewsWidgetModule from 'google-reviews-widget'
 import { Reveal } from '@/components/effects/reveal'
 import { Button } from '@/components/ui/button'
 import { SectionHeading } from '@/components/ui/section-heading'
+import { useNearViewport } from '@/hooks/use-near-viewport'
 import { useTestimonials } from '@/hooks/use-site-content'
 import {
   isGoogleReviewsResponse,
@@ -39,11 +40,12 @@ type DisplayReview = {
   source: 'google' | 'fallback'
 }
 
-const useGoogleReviews = () => {
+const useGoogleReviews = (enabled: boolean) => {
   const [data, setData] = useState<GoogleReviewsResponse | null>(null)
   const [status, setStatus] = useState<ReviewStatus>('loading')
 
   useEffect(() => {
+    if (!enabled) return
     const controller = new AbortController()
 
     void fetch('/api/google-reviews', {
@@ -74,7 +76,7 @@ const useGoogleReviews = () => {
       })
 
     return () => controller.abort()
-  }, [])
+  }, [enabled])
 
   return { data, status }
 }
@@ -383,7 +385,15 @@ const GoogleReviewsWidgetPanel = ({ onReady }: { onReady: () => void }) => {
 /** Social-proof band: live Google reviews with the CMS testimonials as a resilient fallback. */
 export const Testimonials = () => {
   const fallbackTestimonials = useTestimonials()
-  const { data, status } = useGoogleReviews()
+  /*
+   * Live reviews load when the section approaches, not with the page. This band
+   * sits ~5,000 px down the homepage, and the beaver.codes widget alone is a
+   * script, three Firestore round trips and twenty avatar images that kept the
+   * network busy until ~4.8 s into a mobile load — for something nobody had
+   * scrolled to. The CMS carousel is what's prerendered and indexed either way.
+   */
+  const { ref: sectionRef, near } = useNearViewport<HTMLElement>('800px')
+  const { data, status } = useGoogleReviews(near)
   // Starts false on the server and on the client's first render, so the
   // prerendered markup and the hydrated tree agree.
   const [widgetReady, setWidgetReady] = useState(false)
@@ -404,6 +414,7 @@ export const Testimonials = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="testimonials"
       className="relative flex min-h-screen flex-col justify-center bg-[linear-gradient(180deg,var(--ink),var(--panel)_50%,var(--ink))] px-[clamp(20px,6vw,80px)] py-[clamp(70px,10vw,130px)]"
     >
@@ -420,15 +431,15 @@ export const Testimonials = () => {
 
         <Reveal delay={0.08}>
           {/*
-            Both are mounted: the widget needs to be in the DOM for its script to
-            load, and the CMS carousel is what the prerenderer writes into
+            Both are mounted once the section is near: the widget needs to be in
+            the DOM for its script to load, and the CMS carousel is what the prerenderer writes into
             dist/*.html — effects don't run during SSR, so the widget contributes
             an empty div there. Keeping the carousel as the server-rendered
             content means crawlers get real reviews and the client's first render
             matches the prerendered markup, so hydration holds; the swap happens
             afterwards, in an effect, once the widget confirms it painted.
           */}
-          <GoogleReviewsWidgetPanel onReady={handleWidgetReady} />
+          {near ? <GoogleReviewsWidgetPanel onReady={handleWidgetReady} /> : null}
           {widgetReady ? null : <GoogleReviewsCarousel reviews={reviews} />}
         </Reveal>
 

@@ -11,7 +11,9 @@ import imageSources from '@/lib/image-sources.json'
  *
  * PNG sources are served as WebP through <picture> (measured −77% on this photo
  * set); JPEG sources stay JPEG and only gain smaller widths, because WebP does
- * not beat mozjpeg here. See scripts/optimize-images.mjs for the measurements.
+ * not beat mozjpeg here. AVIF does, so where a photo has an AVIF ladder it goes
+ * first in the <picture> and the JPEG/WebP behind it is only the fallback. See
+ * scripts/optimize-images.mjs for the measurements.
  */
 
 type Entry = {
@@ -28,6 +30,8 @@ type Entry = {
   h?: number
   /** True when the WebP ladder reaches full width and can fully replace the PNG. */
   full?: boolean
+  /** AVIF ladder, offered ahead of everything else (~35% smaller than mozjpeg here). */
+  avif?: number[]
 }
 
 const SOURCES = imageSources as Record<string, Entry>
@@ -105,7 +109,11 @@ export const SmartImage = ({
       className={className}
       style={style}
       loading={loading}
-      decoding="async"
+      /* Async decode lets the browser paint the text first and the photo a few
+         frames later — measured ~280 ms after FCP on the homepage hero, which is
+         the LCP element. A priority image is the reason the page was opened;
+         it belongs in the first frame. */
+      decoding={priority ? 'sync' : 'async'}
       fetchPriority={fetchPriority}
       srcSet={sameSrcSet}
       sizes={sameSrcSet ? sizes : undefined}
@@ -116,18 +124,22 @@ export const SmartImage = ({
   // Only offer WebP when the ladder covers everything we are willing to serve —
   // otherwise a large slot picks the biggest WebP available and upscales it.
   // With a cap, "everything" is the cap rather than the source's own width.
+  // The same rule decides AVIF.
+  const covers = (widths?: number[]) =>
+    widths?.length ? widths.at(-1)! >= Math.min(cap, entry?.w ?? cap) : false
+  const ladder = (widths: number[], ext: string) =>
+    widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ')
+
   const webpWidths = within(entry?.webp)
-  const webpCovers =
-    entry?.full && webpWidths?.length ? webpWidths.at(-1)! >= Math.min(cap, entry.w ?? cap) : false
-  if (!webpCovers) return img
+  const webpCovers = Boolean(entry?.full) && covers(webpWidths)
+  const avifWidths = within(entry?.avif)
+  const avifCovers = covers(avifWidths)
+  if (!webpCovers && !avifCovers) return img
 
   return (
     <picture>
-      <source
-        type="image/webp"
-        srcSet={webpWidths!.map((w) => `${base}-${w}.webp ${w}w`).join(', ')}
-        sizes={sizes}
-      />
+      {avifCovers && <source type="image/avif" srcSet={ladder(avifWidths!, 'avif')} sizes={sizes} />}
+      {webpCovers && <source type="image/webp" srcSet={ladder(webpWidths!, 'webp')} sizes={sizes} />}
       {img}
     </picture>
   )

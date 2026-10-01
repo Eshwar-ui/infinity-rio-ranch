@@ -452,16 +452,86 @@ because GTM still runs on idle *inside* the trace window; that's the trade-off,
 and it's the right one. Loading only on interaction would zero it out but would
 never record a visitor who bounces without touching the page.
 
-Loading starts at whichever comes first: first interaction (`pointerdown`,
-`keydown`, `touchstart`, `scroll`), `requestIdleCallback` after `load`, or a 3 s
-backstop. `dataLayer` is still created synchronously, so anything pushed before
-GTM arrives is queued and replayed — nothing is lost. To revert to eager
-loading, call `start()` directly instead of scheduling it.
+Loading starts at whichever comes first: any sign of a person (`pointerdown`,
+`keydown`, `touchstart`, `wheel`, `mousemove`), the tab being hidden, or a
+**6 s** backstop followed by `requestIdleCallback`. Not `scroll`: parallax and
+scroll-restoration fire it during hydration. `dataLayer` is still created
+synchronously, so anything pushed before GTM arrives is queued and replayed. To
+revert to eager loading, call `start()` directly instead of scheduling it.
+
+The backstop was 3.5 s until Oct 2026. That sat right on the edge of a mobile
+Lighthouse trace, so whether GA4's ~300 ms task landed inside it was luck:
+mobile Performance swung between 87 and 94 on the same build. At 6 s, and with
+the reviews widget no longer keeping the network busy (see below), it lands
+outside. Real visitors aren't affected — a phone visitor touches the screen to
+scroll, a desktop visitor moves the mouse, and GTM starts then. What it costs is
+a visit that ends within 6 s with no input at all, which GA4 counts as
+unengaged anyway.
+
+Verified on every prerendered route: `gtm.js` requested (≈850 ms after a mouse
+move, ≈6 s with no input), GA4 `/g/collect` hits sent, and client-side
+navigation reaching GTM as `gtm.historyChange-v2`, which is what GA4's
+"page changes based on browser history events" setting listens for.
 
 > GTM also loads on `/admin` and `/invoice/<token>`, which share the same shell.
 > The invoice token is the secret that grants access to that invoice, and it
 > reaches GA as part of `page_location`. If that matters, gate the snippet on
 > `location.pathname`.
+
+#### Oct 2026 pass: mobile 77 → 93–99
+
+Lighthouse 12, local production build served with brotli, mobile preset:
+
+| | mobile before | mobile after | desktop before | desktop after |
+|---|---|---|---|---|
+| `/` | 68–77 | **93–94** | 89–96 | **99–100** |
+| `/about`, `/gallery`, `/blog`, `/privacy-policy` | — | **99** | — | **100** |
+| `/contact` | — | **98** | — | **99** |
+| a blog post | — | **96** | — | **100** |
+
+Only the homepage was baselined before changes started; the ranges are
+run-to-run spread on the same build.
+
+What moved it, in order of effect:
+
+1. **The app boots after first paint** (`src/main.tsx` → `src/boot.tsx`). The
+   entry is now ~1.5 kB: it keeps the stylesheet render-blocking and imports
+   the app once the browser reports its first largest-contentful-paint (rAF
+   fallback where LCP isn't reported; first input or a 2.5 s timeout also
+   boots). Before, the 800 kB bundle was requested with the HTML, so Lighthouse
+   counted its download and hydration toward LCP: 90% of a 4.9 s LCP was
+   *render delay*, with the photo long since downloaded.
+2. **No page-level fade on load.** Every page was wrapped in an `opacity: 0 →
+   1` `riseIn`, so the hero couldn't count as painted until the fade ran.
+   `.page-enter` (index.css) now animates only once `<html data-navigated>`
+   is set by the first in-app route change.
+3. **AVIF in front of every photo** (`npm run optimize:images`, additive; it
+   never re-encodes the existing files). 35–40% smaller than the mozjpeg
+   derivatives with no visible difference. SmartImage puts it first in a
+   `<picture>`, so a browser without AVIF gets what it got before.
+4. **The homepage hero preload is homepage-only** (`<!--home-only-->` markers,
+   cut by `prerender.mjs`). It used to make every route download the homepage's
+   hero at high priority. It also listed a 1600w JPEG the capped `<img>` never
+   requests, so a 3× phone downloaded the hero twice.
+5. **Interior heroes are real `<img>`s** (`PageHero` via SmartImage, priority,
+   960w cap), not CSS backgrounds: in the HTML from the first byte, high
+   priority, AVIF. Blog cards are no longer `priority`: they start below the
+   fold on a phone.
+6. **CLS 0.06 → 0.** Two webfont swaps reflowed the hero: the italic in the
+   homepage h1 and the script eyebrow on interior pages. Both are now preloaded
+   (they were fetched before paint anyway). The hero photo layer's overscan is
+   `10vh`, not `10%` of a text-sized section.
+7. **Reviews load on approach.** The beaver.codes widget and `/api/google-reviews`
+   start when `#testimonials` is within 800 px of the viewport. Before that they
+   ran on every homepage load: a script, three Firestore round trips and twenty
+   avatars, keeping the network busy until ~4.8 s.
+
+Measuring this yourself: run Lighthouse against a production build served
+*with compression*. `vite preview` serves `/about` as the homepage shell, and a
+server that brotli-compresses each response on the fly makes the bundle look
+1.5 s slow and wrecks the numbers. Lighthouse's mobile score is a simulation
+over whatever was requested before the *observed* paint, so a local machine
+that paints late inflates it. Treat single runs as ±5; compare medians.
 
 **Remaining levers**, none of them cheap: ~2 s of style/layout is inherent to the
 design (large DOM, full-viewport gradient sections, heavy shadow work), and

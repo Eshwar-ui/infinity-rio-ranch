@@ -80,7 +80,7 @@ export const ContactPage = () => {
   }
 
   return (
-    <div style={{ animation: 'riseIn .6s ease forwards' }}>
+    <div className="page-enter">
       <PageHero
         eyebrow={t('contact.hero.eyebrow')}
         title={t('contact.hero.title')}

@@ -67,7 +67,7 @@ export const HomePage = () => {
   const events = useEvents()
   const previewTiles = useGallery().slice(0, 8)
   return (
-  <div style={{ animation: 'riseIn .6s ease forwards' }}>
+  <div className="page-enter">
     <HomeHero />
 
     {/* Welcome */}

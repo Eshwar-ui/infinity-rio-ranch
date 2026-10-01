@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 import { useParallax } from '@/hooks/use-parallax'
+import { SmartImage } from '@/components/ui/smart-image'
 
 type PageHeroProps = {
   eyebrow: string
@@ -22,11 +23,24 @@ export const PageHero = ({ eyebrow, title, crumb, image, className }: PageHeroPr
         className ?? 'min-h-[52vh]',
       )}
     >
-      <div
-        ref={parallaxRef}
-        className="absolute inset-x-0 -inset-y-[12%] z-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${image})` }}
-      />
+      {/*
+        A real <img>, not a CSS background: it's the LCP element on every
+        interior page, and a background is found only once the stylesheet has
+        been applied, fetched at low priority, and served as the single
+        original file. Through SmartImage it is in the HTML from the first byte,
+        high priority, and AVIF from the responsive ladder. Capped at 960w for
+        the same reason as the homepage hero: it sits under a 0.45→0.97 wash.
+      */}
+      <div ref={parallaxRef} className="absolute inset-x-0 -inset-y-[12%] z-0">
+        <SmartImage
+          src={image}
+          alt=""
+          sizes="100vw"
+          priority
+          maxWidth={960}
+          className="h-full w-full object-cover"
+        />
+      </div>
       <div className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(14,11,8,0.45)_0%,rgba(14,11,8,0.7)_55%,rgba(10,8,6,0.97)_100%)]" />
       <div className="relative z-[3] px-5 pb-[60px] pt-[130px] text-center">
         <div className="mb-0.5 font-script text-[34px] font-bold text-[#e6cfa0]">

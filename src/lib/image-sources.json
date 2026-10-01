@@ -8,7 +8,14 @@
       960
     ],
     "w": 1600,
-    "h": 952
+    "h": 952,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/img/hero-02.jpg": {
     "base": "/assets/_r/img/hero-02",
@@ -19,7 +26,14 @@
       960
     ],
     "w": 1600,
-    "h": 952
+    "h": 952,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/img/hero-03.jpg": {
     "base": "/assets/_r/img/hero-03",
@@ -30,7 +44,14 @@
       960
     ],
     "w": 1600,
-    "h": 952
+    "h": 952,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/img/hero-04.jpg": {
     "base": "/assets/_r/img/hero-04",
@@ -41,7 +62,14 @@
       960
     ],
     "w": 1600,
-    "h": 952
+    "h": 952,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/img/venue-01.jpg": {
     "base": "/assets/_r/img/venue-01",
@@ -52,7 +80,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-02.jpg": {
     "base": "/assets/_r/img/venue-02",
@@ -63,7 +98,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-03.jpg": {
     "base": "/assets/_r/img/venue-03",
@@ -74,7 +116,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-04.jpg": {
     "base": "/assets/_r/img/venue-04",
@@ -85,7 +134,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-05.jpg": {
     "base": "/assets/_r/img/venue-05",
@@ -96,7 +152,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-06.jpg": {
     "base": "/assets/_r/img/venue-06",
@@ -107,7 +170,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-07.jpg": {
     "base": "/assets/_r/img/venue-07",
@@ -118,7 +188,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-08.jpg": {
     "base": "/assets/_r/img/venue-08",
@@ -129,7 +206,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-09.jpg": {
     "base": "/assets/_r/img/venue-09",
@@ -140,7 +224,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-10.jpg": {
     "base": "/assets/_r/img/venue-10",
@@ -151,7 +242,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-11.jpg": {
     "base": "/assets/_r/img/venue-11",
@@ -162,7 +260,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-12.jpg": {
     "base": "/assets/_r/img/venue-12",
@@ -173,7 +278,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-13.jpg": {
     "base": "/assets/_r/img/venue-13",
@@ -184,7 +296,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-14.jpg": {
     "base": "/assets/_r/img/venue-14",
@@ -195,7 +314,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-15.jpg": {
     "base": "/assets/_r/img/venue-15",
@@ -206,7 +332,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-16.jpg": {
     "base": "/assets/_r/img/venue-16",
@@ -217,7 +350,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-17.jpg": {
     "base": "/assets/_r/img/venue-17",
@@ -228,7 +368,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/img/venue-18.jpg": {
     "base": "/assets/_r/img/venue-18",
@@ -239,7 +386,14 @@
       960
     ],
     "w": 1000,
-    "h": 1000
+    "h": 1000,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1000
+    ]
   },
   "/assets/logo-cutout-dark.png": {
     "base": "/assets/_r/logo-cutout-dark",
@@ -269,7 +423,13 @@
     ],
     "w": 834,
     "full": true,
-    "h": 834
+    "h": 834,
+    "avif": [
+      240,
+      480,
+      720,
+      834
+    ]
   },
   "/assets/site/DSC3669-2.jpg": {
     "base": "/assets/_r/site/DSC3669-2",
@@ -280,7 +440,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3674.jpg": {
     "base": "/assets/_r/site/DSC3674",
@@ -291,7 +458,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3678.jpg": {
     "base": "/assets/_r/site/DSC3678",
@@ -301,7 +475,13 @@
       720
     ],
     "w": 768,
-    "h": 1152
+    "h": 1152,
+    "avif": [
+      240,
+      480,
+      720,
+      768
+    ]
   },
   "/assets/site/DSC3692.jpg": {
     "base": "/assets/_r/site/DSC3692",
@@ -312,7 +492,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3699-2.jpg": {
     "base": "/assets/_r/site/DSC3699-2",
@@ -323,7 +510,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3699-Edit-2.jpg": {
     "base": "/assets/_r/site/DSC3699-Edit-2",
@@ -334,7 +528,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3699-Edit-3.jpg": {
     "base": "/assets/_r/site/DSC3699-Edit-3",
@@ -345,7 +546,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3699.jpg": {
     "base": "/assets/_r/site/DSC3699",
@@ -356,7 +564,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3705.jpg": {
     "base": "/assets/_r/site/DSC3705",
@@ -367,7 +582,14 @@
       960
     ],
     "w": 1600,
-    "h": 1066
+    "h": 1066,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3707.jpg": {
     "base": "/assets/_r/site/DSC3707",
@@ -378,7 +600,14 @@
       960
     ],
     "w": 1600,
-    "h": 1067
+    "h": 1067,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/DSC3712.jpg": {
     "base": "/assets/_r/site/DSC3712",
@@ -389,7 +618,14 @@
       960
     ],
     "w": 1067,
-    "h": 1600
+    "h": 1600,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1067
+    ]
   },
   "/assets/site/arch.png": {
     "base": "/assets/_r/site/arch",
@@ -402,7 +638,14 @@
     ],
     "w": 1600,
     "full": true,
-    "h": 583
+    "h": 583,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/events/ev-57.png": {
     "base": "/assets/_r/site/events/ev-57",
@@ -413,7 +656,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-57b.png": {
     "base": "/assets/_r/site/events/ev-57b",
@@ -424,7 +672,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-58.png": {
     "base": "/assets/_r/site/events/ev-58",
@@ -435,7 +688,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-58b.png": {
     "base": "/assets/_r/site/events/ev-58b",
@@ -446,7 +704,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-59.png": {
     "base": "/assets/_r/site/events/ev-59",
@@ -457,7 +720,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-59b.png": {
     "base": "/assets/_r/site/events/ev-59b",
@@ -468,7 +736,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-60.png": {
     "base": "/assets/_r/site/events/ev-60",
@@ -479,7 +752,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-61.png": {
     "base": "/assets/_r/site/events/ev-61",
@@ -490,7 +768,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-62.png": {
     "base": "/assets/_r/site/events/ev-62",
@@ -501,7 +784,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-63.png": {
     "base": "/assets/_r/site/events/ev-63",
@@ -512,7 +800,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/events/ev-64.png": {
     "base": "/assets/_r/site/events/ev-64",
@@ -523,7 +816,12 @@
     ],
     "w": 600,
     "full": true,
-    "h": 500
+    "h": 500,
+    "avif": [
+      240,
+      480,
+      600
+    ]
   },
   "/assets/site/f11.jpg": {
     "base": "/assets/_r/site/f11",
@@ -534,7 +832,14 @@
       960
     ],
     "w": 1200,
-    "h": 1358
+    "h": 1358,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1200
+    ]
   },
   "/assets/site/ss.jpg": {
     "base": "/assets/_r/site/ss",
@@ -545,7 +850,14 @@
       960
     ],
     "w": 1600,
-    "h": 333
+    "h": 333,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1600
+    ]
   },
   "/assets/site/w1.jpg": {
     "base": "/assets/_r/site/w1",
@@ -553,7 +865,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w2.jpg": {
     "base": "/assets/_r/site/w2",
@@ -561,7 +877,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w3.jpg": {
     "base": "/assets/_r/site/w3",
@@ -569,7 +889,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w4.jpg": {
     "base": "/assets/_r/site/w4",
@@ -577,7 +901,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w5.jpg": {
     "base": "/assets/_r/site/w5",
@@ -585,7 +913,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w6.jpg": {
     "base": "/assets/_r/site/w6",
@@ -593,7 +925,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w7.jpg": {
     "base": "/assets/_r/site/w7",
@@ -601,7 +937,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/w8.jpg": {
     "base": "/assets/_r/site/w8",
@@ -609,7 +949,11 @@
       240
     ],
     "w": 428,
-    "h": 281
+    "h": 281,
+    "avif": [
+      240,
+      428
+    ]
   },
   "/assets/site/wed.jpg": {
     "base": "/assets/_r/site/wed",
@@ -620,6 +964,13 @@
       960
     ],
     "w": 1067,
-    "h": 1600
+    "h": 1600,
+    "avif": [
+      240,
+      480,
+      720,
+      960,
+      1067
+    ]
   }
 }

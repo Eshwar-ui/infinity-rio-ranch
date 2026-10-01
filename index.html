@@ -29,20 +29,47 @@
       crossorigin
     />
     <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/jost.woff2" crossorigin />
+    <!--
+      The italic carries the accent word in the homepage h1. Discovered only from
+      the stylesheet, it landed after first paint: the word rendered in
+      synthesized italic (wider), then reflowed when the real face swapped in,
+      moving the whole hero — CLS 0.06 in Lighthouse, 0.14 on a throttled phone.
+      It was being fetched before first paint anyway; this only starts it sooner.
+    -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/assets/fonts/cormorant-garamond-italic.woff2"
+      crossorigin
+    />
+    <!--
+      Same story for the script face: every interior page's hero eyebrow is set
+      in it, so its swap moved the hero heading (small CLS on /about, /gallery,
+      /blog). It too was already being fetched before first paint.
+    -->
+    <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/dancing-script.woff2" crossorigin />
 
     <!--
       Homepage LCP candidates: the first hero slide and the nav logo. imagesrcset
       must mirror what <SmartImage> renders, or the browser preloads one file and
-      then requests a different one.
+      then requests a different one. For the hero that is the AVIF <source>,
+      capped at 960w (maxWidth in hero-ambiance.tsx) — this used to offer the
+      1600w JPEG the <img> never asks for, so a 3x phone downloaded the hero
+      twice. `type` makes a browser without AVIF skip the preload rather than
+      fetch a file it can't use. The hero preload is homepage-only: the
+      prerenderer cuts the marked block from every other route.
     -->
+    <!--home-only-start-->
     <link
       rel="preload"
       as="image"
-      href="/assets/site/DSC3699-2.jpg"
-      imagesrcset="/assets/_r/site/DSC3699-2-480.jpg 480w, /assets/_r/site/DSC3699-2-720.jpg 720w, /assets/_r/site/DSC3699-2-960.jpg 960w, /assets/site/DSC3699-2.jpg 1600w"
+      type="image/avif"
+      imagesrcset="/assets/_r/site/DSC3699-2-240.avif 240w, /assets/_r/site/DSC3699-2-480.avif 480w, /assets/_r/site/DSC3699-2-720.avif 720w, /assets/_r/site/DSC3699-2-960.avif 960w"
       imagesizes="100vw"
       fetchpriority="high"
     />
+    <!--home-only-end-->
     <link
       rel="preload"
       as="image"
@@ -69,10 +96,18 @@
       decorative layers use — see src/hooks/use-after-paint.ts.
 
       dataLayer is created synchronously, so anything pushed before GTM loads is
-      still queued and replayed. Loading starts at whichever comes first:
-      first interaction, browser idle after load, or a 3 s backstop — so no
-      realistic visit goes unrecorded. To go back to eager loading, call
-      start() immediately instead of scheduling it.
+      still queued and replayed. Loading starts at whichever comes first: any
+      sign of a person (touch, click, key, wheel, mouse movement), the tab being
+      hidden, or a 6 s backstop followed by browser idle. To go back to eager
+      loading, call start() immediately instead of scheduling it.
+
+      The backstop used to be 3.5 s, which landed right on the edge of a
+      Lighthouse trace: whenever the run lasted long enough to catch it, GA4's
+      ~300 ms task went into Total Blocking Time and mobile Performance swung
+      between 92 and 87 run to run. Real visitors don't wait for the backstop —
+      a phone visitor touches the screen to scroll, a desktop visitor moves the
+      mouse — so what it costs is only a visit that ends inside 6 s with no
+      input at all, which GA4 would class as unengaged (< 10 s) anyway.
     -->
     <script>
       (function (w, d, s, l, i) {
@@ -99,10 +134,15 @@
         // which pulled GTM back onto the critical path (measured: loading at
         // 358 ms instead of on idle).
         var opts = { once: true, passive: true, capture: true }
-        var events = ['pointerdown', 'keydown', 'touchstart']
+        var events = ['pointerdown', 'keydown', 'touchstart', 'wheel', 'mousemove']
         for (var n = 0; n < events.length; n++) {
           w.addEventListener(events[n], start, opts)
         }
+        // Switching away is the last chance to record a visit that never
+        // interacted; the page stays alive in a background tab long enough.
+        d.addEventListener('visibilitychange', function () {
+          if (d.visibilityState === 'hidden') start()
+        })
 
         /*
          * Idle-after-load alone was not enough: on a fast connection `load`
@@ -115,7 +155,7 @@
         var backstop = setTimeout(function () {
           if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 1500 })
           else start()
-        }, 3500)
+        }, 6000)
       })(window, document, 'script', 'dataLayer', 'GTM-PXBN6P5J')
     </script>
 

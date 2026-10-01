@@ -18,7 +18,7 @@ export const AboutPage = () => {
   const included = useList('included')
 
   return (
-  <div style={{ animation: 'riseIn .6s ease forwards' }}>
+  <div className="page-enter">
     <PageHero
       eyebrow={t('about.hero.eyebrow')}
       title={t('about.hero.title')}

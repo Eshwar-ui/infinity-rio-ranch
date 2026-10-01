@@ -31,10 +31,16 @@ export const HeroSlideshow = ({ active }: { active: number }) => {
    */
   const animate = useAfterPaint()
 
+  /*
+   * Overscan is 10vh, not 10%. A percentage is of the *section's* height, and on
+   * a phone the section is taller than the viewport and sized by its text — so
+   * when the italic webfont swapped in and the h1 reflowed, the whole photo
+   * layer moved and Lighthouse scored it as a 0.057 layout shift.
+   */
   return (
     <div
       ref={parallaxRef}
-      className="absolute inset-x-0 -top-[10%] bottom-0 z-0"
+      className="absolute inset-x-0 -top-[10vh] bottom-0 z-0"
       style={{ background: 'var(--hero-bg)' }}
     >
       <div className="absolute inset-0 overflow-hidden">

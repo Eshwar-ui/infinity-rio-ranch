@@ -1,5 +1,5 @@
 {
-  "pulledAt": "2026-09-08T14:27:57.861Z",
+  "pulledAt": "2026-10-01T17:43:23.514Z",
   "copy": {
     "global.contact.email": "infinityrioranch6@gmail.com",
     "global.contact.phone_primary": "+1 (512) 630-2236",
@@ -317,6 +317,34 @@
       "cat": "outdoor",
       "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/87917e9f-e59e-4e56-bcff-20764cf09b11-DSC08653.jpg",
       "span": "tall",
+      "featured": false
+    },
+    {
+      "label": "Indoor Ceremony Setup.",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/767935a9-5ef5-465e-a87c-887338d99e93-DSC08442.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Ceremony Décor Space",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/e72c8c56-6dd6-410b-bacc-b4a649be3440-ev-64.png",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Grand Reception",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/e06b9a18-aa10-4d09-baf6-e4dcc265962a-ev-60.png",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Ceremony Seating Area",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/94cac2dd-542f-4a4c-b2b3-d01741e26134-ev-63.png",
+      "span": null,
       "featured": false
     }
   ],

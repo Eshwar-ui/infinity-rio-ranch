@@ -62,6 +62,19 @@ const DERIVATIVE_WIDTHS = [240, 480, 720, 960]
 const WEBP_MAX_WIDTH = 1600
 const WEBP = { quality: 74, effort: 5 }
 
+/**
+ * AVIF is the one format that does beat mozjpeg here, and by a lot: measured
+ * −35 to −40% at the same widths (hero 960w 165 → 101 kB, wed 720w 194 →
+ * 126 kB) with no visible difference side by side, at q50 / 4:2:0. It's
+ * offered *in front of* the existing ladder through <picture>, so a browser
+ * without AVIF keeps getting exactly what it got before.
+ *
+ * Generated additively, from the file as it now sits in public/assets: adding
+ * a format must not re-encode the originals or the JPEG/WebP derivatives a
+ * second lossy generation (which a STRATEGY_VERSION bump would do).
+ */
+const AVIF = { quality: 50, effort: 4, chromaSubsampling: '4:2:0' }
+
 const DRY_RUN = process.argv.includes('--dry')
 const FORCE = process.argv.includes('--force')
 
@@ -193,6 +206,36 @@ const writeDerivatives = async (file, buffer, sourceWidth, sourceHeight, sourceB
   return widths.length > 0 ? { base, jpg: widths, w: sourceWidth, h: sourceHeight } : null
 }
 
+/**
+ * Adds an AVIF ladder to a photo's entry, matching the widths it already
+ * serves: the JPEG widths plus the original for JPEG sources, the WebP widths
+ * for PNG photos. A width is kept only if it beats the file it would stand in
+ * for; logos (PNG ladder, alpha) are left alone.
+ */
+const addAvif = async (file, buffer, entry) => {
+  if (!entry || entry.avif || !(entry.jpg || entry.full)) return entry
+  const stem = keyFor(file).replace(/\.[^.]+$/, '')
+  const counterpart = entry.jpg
+    ? [
+        ...entry.jpg.map((w) => [w, path.join(DERIVED_DIR, `${stem}-${w}.jpg`)]),
+        [entry.w, file],
+      ]
+    : entry.webp.map((w) => [w, path.join(DERIVED_DIR, `${stem}-${w}.webp`)])
+
+  const widths = []
+  for (const [width, against] of counterpart) {
+    const data = await sharp(buffer)
+      .resize({ width, withoutEnlargement: true })
+      .avif(AVIF)
+      .toBuffer()
+    const rival = await stat(against).then((s) => s.size, () => Number.POSITIVE_INFINITY)
+    if (data.length >= rival) continue
+    if (!DRY_RUN) await writeFile(path.join(DERIVED_DIR, `${stem}-${width}.avif`), data)
+    widths.push(width)
+  }
+  return widths.length > 0 ? { ...entry, avif: widths } : entry
+}
+
 const optimize = async (file, manifest) => {
   const original = await readFile(file)
   const key = keyFor(file)
@@ -209,6 +252,7 @@ const optimize = async (file, manifest) => {
       : entry?.png
         ? entry.png.map((w) => `${stem}-${w}.png`)
         : (entry?.jpg ?? []).map((w) => `${stem}-${w}.jpg`)
+    expected.push(...(entry?.avif ?? []).map((w) => `${stem}-${w}.avif`))
     const intact = await Promise.all(expected.map((f) => exists(path.join(DERIVED_DIR, f))))
     if (intact.every(Boolean)) {
       /*
@@ -230,7 +274,7 @@ const optimize = async (file, manifest) => {
         before,
         after: before,
         hash: priorHash,
-        sources: entry,
+        sources: await addAvif(file, original, entry),
       }
     }
   }
@@ -276,7 +320,11 @@ const optimize = async (file, manifest) => {
   const cappedMeta = await sharp(capped).metadata()
   const sourceWidth = cappedMeta.width ?? 0
   const sourceHeight = cappedMeta.height ?? 0
-  const sources = await writeDerivatives(file, capped, sourceWidth, sourceHeight, output.length)
+  const sources = await addAvif(
+    file,
+    capped,
+    await writeDerivatives(file, capped, sourceWidth, sourceHeight, output.length),
+  )
 
   return {
     key,

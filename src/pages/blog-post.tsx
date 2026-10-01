@@ -234,7 +234,7 @@ export const BlogPostPage = () => {
   const ctaBody = post.ctaBody || DEFAULT_CTA_BODY
 
   return (
-    <div style={{ animation: 'riseIn .6s ease forwards' }}>
+    <div className="page-enter">
       <article>
         {/* ---- Header ------------------------------------------------- */}
         {/*

@@ -18,7 +18,7 @@ type Post = ReturnType<typeof usePosts>[number]
  * height with the "Read more" lines level, whatever length the copy runs; the
  * clamps stop one long title or excerpt from setting the height for everyone.
  */
-const PostCard = ({ post, priority }: { post: Post; priority?: boolean }) => (
+const PostCard = ({ post }: { post: Post }) => (
   <article className="h-full">
     <Link
       to={postRoute(post.slug)}
@@ -30,7 +30,6 @@ const PostCard = ({ post, priority }: { post: Post; priority?: boolean }) => (
             src={post.coverImage}
             alt={post.coverAlt || post.title}
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            priority={priority}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
@@ -93,7 +92,7 @@ export const BlogPage = () => {
         : 'sm:grid-cols-2 lg:grid-cols-3'
 
   return (
-    <div style={{ animation: 'riseIn .6s ease forwards' }}>
+    <div className="page-enter">
       <PageHero
         eyebrow="Guides & stories"
         title="The Blog"
@@ -123,8 +122,10 @@ export const BlogPage = () => {
               {posts.map((post, i) => (
                 /* Stagger by column so the fifteenth card isn't waiting a second. */
                 <Reveal key={post.slug} delay={(i % 3) * 0.08}>
-                  {/* The first row is above the fold on most viewports. */}
-                  <PostCard post={post} priority={i < 3} />
+                  {/* Not priority: below the 52vh hero and the intro, even the first
+                      row starts under the fold on a phone, and eager high-priority
+                      covers were competing with the hero image (the LCP element). */}
+                  <PostCard post={post} />
                 </Reveal>
               ))}
             </div>

@@ -22,7 +22,7 @@ type LegalPageProps = {
  * are reference documents someone lands on to read, not to be sold on.
  */
 export const LegalPage = ({ eyebrow, title, updated, children }: LegalPageProps) => (
-  <div style={{ animation: 'riseIn .6s ease forwards' }}>
+  <div className="page-enter">
     <section className="relative bg-ink px-[clamp(20px,6vw,80px)] pb-8 pt-[clamp(120px,14vw,160px)]">
       <div className="mx-auto max-w-[760px] text-center">
         <div className="font-script text-[28px] font-bold text-brass2">{eyebrow}</div>

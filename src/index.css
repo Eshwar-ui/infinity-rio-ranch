@@ -308,6 +308,19 @@
       transform: none;
     }
   }
+
+  /*
+   * Page-enter fade, for client-side navigation only. It used to run on every
+   * page load too, which started the whole page — hero photo included — at
+   * opacity 0: the browser can't count an invisible element as painted, so
+   * LCP waited out the fade (measured ~180 ms after first paint on the
+   * homepage, and the app bundle got pulled into that window). A visitor
+   * arriving from search sees the prerendered page as-is; `data-navigated`
+   * is set on <html> by RootLayout on the first in-app route change.
+   */
+  html[data-navigated] .page-enter {
+    animation: riseIn 0.6s ease forwards;
+  }
 }
 
 /* Print: show only the invoice document, drop all app chrome. */

@@ -26,7 +26,7 @@ export const GalleryPage = () => {
   )
 
   return (
-    <div style={{ animation: 'riseIn .6s ease forwards' }}>
+    <div className="page-enter">
       <PageHero
         eyebrow={t('gallery.hero.eyebrow')}
         title={t('gallery.hero.title')}

@@ -421,6 +421,29 @@ Supabase backend, deployed to Vercel.
   first client paint (localStorage, `Date`, viewport measurements) must render
   its server value first and correct itself in an effect — see `use-reveal.ts`
   and the `skipHydration` in `store/theme.ts`.
+- **The app bundle loads after first paint. Keep `src/main.tsx` tiny.** It
+  imports the CSS and nothing else statically, then `import('./boot')` (the old
+  hydrate/render entry) once the browser reports its first LCP, with a rAF
+  fallback, first input and a 2.5 s timeout as backstops. A static import of
+  `App` there puts ~800 kB of JS back ahead of the hero paint; that was 90% of
+  a 4.9 s mobile LCP. Same reason, **no page-level fade on load**: pages wrap in
+  `.page-enter`, which animates only after `<html data-navigated>` is set by
+  the first in-app route change (root-layout). An `opacity: 0` ancestor holds
+  LCP until the fade finishes. Numbers and the measuring method are in
+  `docs/SEO.md` ("Oct 2026 pass").
+- **GTM loads on input, tab-hide or a 6 s backstop, never during load.** The
+  why, and what was verified per route, is in `docs/SEO.md`. Don't shorten the
+  backstop without re-measuring: at 3.5 s, mobile Lighthouse swung 87↔94.
+  Third-party widgets below the fold follow the same idea: the Google-reviews
+  widget mounts via `useNearViewport` when `#testimonials` approaches.
+- **Every photo has an AVIF ladder in front of its JPEG/WebP one.**
+  `optimize:images` adds it additively from the files on disk and never
+  re-encodes the originals or the existing derivatives. A preload in
+  `index.html` must mirror the `<source>` SmartImage actually renders (AVIF,
+  capped by `maxWidth`) or the image downloads twice. Anything one route needs,
+  like the homepage hero preload, goes inside `<!--home-only-start/end-->`,
+  which `prerender.mjs` cuts from every other route. A preload in the shared
+  shell is a download on every page.
 - **Images go through `<SmartImage>`**, which reads `src/lib/image-sources.json`
   (generated) and falls back to a plain `<img>` for anything unknown, so CMS
   uploads still work. Pass a truthful `sizes` — a wrong one is worse than none.

@@ -21,6 +21,14 @@ const HEAD_START = '<!--seo-head-start-->'
 const HEAD_END = '<!--seo-head-end-->'
 const APP_SLOT = '<!--app-html-->'
 
+/**
+ * Wraps the homepage hero preload in index.html. Kept on `/` and cut from
+ * every other route: in the shared shell it made every page — /about, each
+ * blog post, the 404 — download the homepage's hero photo at high priority,
+ * competing with that page's own hero for the same bandwidth.
+ */
+const HOME_ONLY = /<!--home-only-start-->[\s\S]*?<!--home-only-end-->\s*/
+
 if (process.env.SKIP_PRERENDER === '1') {
   console.warn('[prerender] SKIP_PRERENDER=1 — skipping. Crawlers will see an empty shell.')
   process.exit(0)
@@ -203,7 +211,7 @@ const main = async () => {
 
   const renderRoute = (route) => {
     const { html, head } = render(route)
-    return template
+    return (route === '/' ? template : template.replace(HOME_ONLY, ''))
       .replace(headPattern, `${HEAD_START}\n    ${head}\n    ${HEAD_END}`)
       .replace(APP_SLOT, html)
   }
