@@ -356,6 +356,26 @@ rather than an empty `<meta>`. Cover images are CMS uploads with no known
 intrinsic size, so `og:image:width`/`height` are omitted for them — a wrong
 dimension makes scrapers mis-crop, which is worse than making them measure.
 
+**Announcing a new post.** Once the deploy is live, ping IndexNow (Bing, Yandex,
+Seznam, Naver — and Bing's index is what ChatGPT search and Copilot read):
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://api.indexnow.org/indexnow \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -d '{"host":"www.infinityrioranch.com","key":"398c932bfbde933b98647d4e380e486b",
+       "keyLocation":"https://www.infinityrioranch.com/398c932bfbde933b98647d4e380e486b.txt",
+       "urlList":["https://www.infinityrioranch.com/blog/<slug>","https://www.infinityrioranch.com/blog"]}'
+```
+
+200 or 202 is success. The key proves ownership by being served at
+`public/398c932bfbde933b98647d4e380e486b.txt` — it looks like a stray file and
+isn't; deleting it makes every later submission a 403. The key is public by
+design (anyone can read it at that URL), so it's fine in this doc.
+Google doesn't take IndexNow and retired its sitemap ping in 2023; for Google
+it's Search Console → URL Inspection → **Request indexing** by hand. Don't
+use Google's Indexing API for posts — it's restricted to `JobPosting` and
+livestream pages, and using it for anything else is a guidelines violation.
+
 ### 6. Content for answer engines
 
 - **FAQ answers now exist in the HTML.** `AccordionContent` uses `forceMount`,
