@@ -103,11 +103,11 @@ export const Footer = () => {
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted">
           <span>&copy; 2025 Infinity Rio Ranch. All Rights Reserved.</span>
           <Dot />
-          <Link to="/privacy-policy" className="transition-colors duration-300 hover:text-brass2">
+          <Link to="/privacy-policy" className="inline-flex min-h-6 items-center transition-colors duration-300 hover:text-brass2">
             Privacy Policy
           </Link>
           <Dot />
-          <Link to="/terms-conditions" className="transition-colors duration-300 hover:text-brass2">
+          <Link to="/terms-conditions" className="inline-flex min-h-6 items-center transition-colors duration-300 hover:text-brass2">
             Terms &amp; Conditions
           </Link>
           <Dot />
@@ -120,7 +120,7 @@ export const Footer = () => {
               href="https://velvomedia.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors duration-300 hover:text-brass2"
+              className="inline-flex min-h-6 items-center transition-colors duration-300 hover:text-brass2"
             >
               Velvo Media
             </a>
