@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"D:/velvo media projects\" -iname \"*infinity*\" 2>/dev/null | head -20; echo \"---downloads---\"; ls -la \"C:/Users/Eswar/Downloads\" 2>/dev/null | grep -i \"infinity\\\\|\\\\.dc\\\\.html\" | head)",
+      "Bash(node -e \"const s=require\\('./src/data/content.generated.json'\\); console.log\\(Object.keys\\(s\\)\\); console.log\\('pulledAt', s.pulledAt\\); console.log\\('posts' in s\\);\")",
+      "Bash(npm install *)",
+      "Bash(npm audit *)",
+      "Bash(node -p \"const p=require\\('./package.json'\\); JSON.stringify\\({rm:p.dependencies['react-markdown'], gfm:p.dependencies['remark-gfm']},null,2\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(cp src/data/content.generated.json __TRACKED_VAR__/snapshot-backup.json)",
+      "Bash(cp src/data/content.generated.json /c/Users/Eswar/AppData/Local/Temp/claude/d--velvo-media-projects-infinity-rio-ranch/3f5bb112-2fa9-4371-ad83-3e8f38da8484/scratchpad/snapshot-backup.json)",
+      "Bash(node -e ' *)",
+      "Bash(SKIP_PULL=1 npx tsc -b)",
+      "Bash(npx vite *)",
+      "Bash(node scripts/prerender.mjs)",
+      "Bash(sed -n '/## Articles/,/^$/p' dist/llms.txt)",
+      "Bash(npx oxlint *)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "Bash(cd \"d:/velvo media projects/infinity rio ranch\" && mkdir -p supabase/seeds && cp \"/c/Users/Eswar/AppData/Local/Temp/claude/d--velvo-media-projects-infinity-rio-ranch/3f5bb112-2fa9-4371-ad83-3e8f38da8484/scratchpad/seed-first-post.sql\" supabase/seeds/first-post.sql && ls -la supabase/seeds/ && head -5 supabase/seeds/first-post.sql)",
+      "PowerShell(npx tsc -b)",
+      "PowerShell(npm run lint)",
+      "PowerShell(npm run build)",
+      "PowerShell($sp = \"C:\\\\Users\\\\Eswar\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--velvo-media-projects-infinity-rio-ranch\\\\ed59f702-9bff-4589-bb69-8e9298c76540\\\\scratchpad\"; npm install --prefix $sp pdfjs-dist --no-save --loglevel error; Get-ChildItem \"$sp\\\\node_modules\" -Name)",
+      "Bash(git log *)",
+      "Bash(node \"C:/Users/Eshwar/AppData/Local/Temp/claude/d--velvo-media-projects-infinity-rio-ranch/930352ba-9ad3-41d6-9e5c-d44426720514/scratchpad/pdftext2.mjs\" \"INFINITY RIO RANCH - Rental Agreement.pdf\")",
+      "Bash(node \"C:/Users/Eshwar/AppData/Local/Temp/claude/d--velvo-media-projects-infinity-rio-ranch/930352ba-9ad3-41d6-9e5c-d44426720514/scratchpad/dump.mjs\" \"INFINITY RIO RANCH - Rental Agreement.pdf\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Eswar\\AppData\\Local\\Temp\\claude\\d--velvo-media-projects-infinity-rio-ranch\\3f5bb112-2fa9-4371-ad83-3e8f38da8484\\scratchpad"
+    ]
+  }
+}
