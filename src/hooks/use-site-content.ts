@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { codePosts, withCodePosts } from '@/data/code-posts'
 import { DEFAULT_COPY } from '@/data/copy'
 import {
   SEEDED_COPY,
@@ -258,7 +259,7 @@ export const usePosts = (): Post[] => {
       .then(({ data, error }) => {
         // Unlike the other lists, an empty result is meaningful here: the owner
         // may have unpublished the only post. Only a genuine error is ignored.
-        if (active && !error && data) setPosts(data.map(mapPostRow))
+        if (active && !error && data) setPosts(withCodePosts(data.map(mapPostRow)))
       })
     return () => {
       active = false
@@ -301,7 +302,8 @@ export const usePost = (slug: string | undefined): { post?: Post; loading: boole
       .then(({ data, error }) => {
         if (!active) return
         if (!error && data) setPost(mapPostRow(data))
-        else if (!error && !data) setPost(undefined)
+        // No DB row: a post defined in code still exists.
+        else if (!error && !data) setPost(codePosts.find((p) => p.slug === slug))
         setLoading(false)
       })
     return () => {

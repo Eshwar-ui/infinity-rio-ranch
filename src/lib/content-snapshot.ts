@@ -1,4 +1,5 @@
 import snapshotJson from '@/data/content.generated.json'
+import { withCodePosts } from '@/data/code-posts'
 import { DEFAULT_COPY } from '@/data/copy'
 import {
   amenities as amenitiesFallback,
@@ -144,8 +145,12 @@ export const seededList = (list: string): string[] =>
  * fallback, because there is nothing sensible to invent. An empty array is the
  * correct state for a site that hasn't blogged yet, and every consumer
  * (`PUBLIC_ROUTES`, the index page, the sitemap) already handles it.
+ * Posts defined in `src/data/code-posts.ts` are merged in here, so every
+ * consumer sees them without knowing where they came from.
  */
-export const seededPosts: Post[] = Array.isArray(snapshot.posts) ? snapshot.posts : []
+export const seededPosts: Post[] = withCodePosts(
+  Array.isArray(snapshot.posts) ? snapshot.posts : [],
+)
 
 export const postBySlug = (slug: string): Post | undefined =>
   seededPosts.find((p) => p.slug === slug)

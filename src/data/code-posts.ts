@@ -1,72 +1,79 @@
--- ============================================================================
---  Ninth blog post — "Wedding Venue With Bridal Suite Near Austin".
---  Run AFTER supabase/migrations/0008_posts.sql and 0010_post_content_seo.sql.
---  Linear VEL-120.
---
---  This is a ONE-OFF seed, not a migration. Do not move it into
---  supabase/migrations/: it is content, and the owner edits it in /admin/blog
---  afterwards. Re-running it upserts on slug and stomps those edits.
---
---  Same three omissions as the earlier post seeds, for the same reasons:
---    * no table of contents in the body — blog-post.tsx derives it from the
---      ## / ### headings;
---    * no FAQ block in the body — it lives in `faqs` below, which renders as the
---      visible accordion AND the FAQPage JSON-LD. Google drops the rich result
---      when the two disagree, so there has to be exactly one source;
---    * no closing CTA and no address/phone/email/website block — cta_heading/
---      cta_body drive that section, and contact details are read live from the
---      CMS.
---  Typing any of the three into the body renders it twice.
---
---  Other edits from the source draft:
---    * its "Article Schema" and "FAQPage Schema" sections are dropped — seo.ts
---      emits BlogPosting from these columns (image = cover_image, date =
---      published_at) and FAQPage from `faqs`. The draft's FAQPage block carried
---      only six of the eight visible questions (it skipped "Can I take wedding
---      preparation photographs…" and "Can we host the wedding ceremony and
---      reception…"); all eight are below, so markup and page agree. Its @id
---      also pointed at /wedding-venue-with-bridal-suite-near-austin without the
---      /blog prefix;
---    * the draft's numbering was inconsistent (a nine-item TOC, a "10." FAQ
---      heading, a "5." FAQPage-schema heading). All "1."–"10." numbering on the
---      H2s and FAQ questions is dropped, and so is the first H2 ("Looking for a
---      Wedding Venue With a Bridal Suite Near Austin?"), which headed the
---      introduction — matching the earlier posts;
---    * section 9, "Find Your Wedding Venue With a Bridal Suite Near Austin", is
---      the CTA rather than a body section, so the heading isn't printed twice;
---    * "lists … among its venue amenities", "described as climate-controlled",
---      "The venue also lists" and "states that" (body and FAQ 3) were
---      research-tool phrasing about the website and were rewritten as plain
---      prose. Every claim was checked against src/data/site.ts (`included`,
---      amenities, the climate-controlled 2,600 sq ft hall, the bridal suite,
---      the string-lit terrace, outside caterers welcome);
---    * the gallery and contact links are kept, as site-relative paths; the
---      "official venue website" link became the About page, since a link from
---      the site to its own homepage tells the reader nothing. Added inline
---      links to three earlier posts in the wedding cluster (Liberty Hill,
---      outdoor, reception);
---    * both tables' header rows were plain bold body rows in the draft and are
---      real GFM headers here; "jewellery" became "jewelry".
---  The draft's "Recommended URL: /wedding-venue-with-bridal-suite-near-austin"
---  becomes the slug — every post lives under /blog/<slug>.
---
---  published = true, so it goes live at the next build. published_at is stamped
---  by the DB trigger on first publish and is never set here.
--- ============================================================================
+import type { Post } from '@/lib/content-snapshot'
 
-insert into public.posts (
-  slug, title, excerpt, body,
-  cover_image, cover_alt,
-  seo_title, seo_description,
-  category, tags,
-  primary_query, target_location, search_intent, reader_goal,
-  faqs, cta_heading, cta_body, published
-) values (
-  'wedding-venue-with-bridal-suite-near-austin',
-  'Wedding Venue With Bridal Suite Near Austin: What Couples Should Look For',
-  'Why a private bridal suite matters, what to check in one — space, mirrors, light, privacy, access times — and the questions to ask before booking a wedding venue near Austin.',
-
-$md$Your wedding day involves many moving parts, from hair and makeup appointments to photography, ceremony preparations, guest arrivals, and the reception. Having a comfortable place to prepare before the ceremony can make these moments easier to organize.
+/*
+ * Posts that live in the codebase rather than the `posts` table.
+ *
+ * Merged under the DB rows by `withCodePosts` everywhere posts are read — the
+ * snapshot (so the prerenderer, sitemap and llms.txt see them) and both
+ * browser refetches (so hydration holds and the refetch can't drop them). A DB
+ * row with the same slug wins, which is how the owner overrides one of these
+ * from /admin/blog without a deploy. They don't appear in the admin list.
+ *
+ * There is no stamp_published_at() trigger here, so publishedAt is fixed by
+ * hand and never changes; bump updatedAt when the content is edited — it is
+ * the sitemap's <lastmod>.
+ */
+export const codePosts: Post[] = [
+  {
+    // Linear VEL-120. Edits from the source Google Doc: section numbering
+    // dropped (the TOC is derived from the headings), the intro's H2 and the
+    // closing section folded into the intro / CTA, the doc's schema blocks
+    // dropped (seo.ts emits BlogPosting and FAQPage from these fields), all
+    // eight FAQs kept (the doc's FAQPage schema had six), research-tool
+    // phrasing ("the venue lists…") rewritten against src/data/site.ts.
+    slug: "wedding-venue-with-bridal-suite-near-austin",
+    title: "Wedding Venue With Bridal Suite Near Austin: What Couples Should Look For",
+    excerpt: "Why a private bridal suite matters, what to check in one — space, mirrors, light, privacy, access times — and the questions to ask before booking a wedding venue near Austin.",
+    // No photo of the bridal suite exists in public/assets (site.ts's
+    // "The Bridal Suite" tile, DSC3712, is oaks on the lawn), so the cover is
+    // the indoor hall's chandelier and the alt text says so.
+    coverImage: "/assets/site/DSC3678.jpg",
+    coverAlt: "Gold and crystal chandelier lit inside the climate-controlled indoor hall at Infinity at Rio Ranch wedding venue in Liberty Hill, TX",
+    seoTitle: "Wedding Venue With Bridal Suite Near Austin | Infinity at Rio Ranch",
+    seoDescription: "Looking for a wedding venue with a bridal suite near Austin? Discover what to look for in a private preparation space and explore Infinity at Rio Ranch in Liberty Hill, TX.",
+    category: "Venue planning",
+    tags: ["Wedding venues","Bridal suite","Liberty Hill","Austin weddings"],
+    primaryQuery: "Wedding venue with bridal suite near Austin",
+    author: '',
+    faqs: [
+      {
+        q: "Why should I choose a wedding venue with a bridal suite?",
+        a: "A bridal suite provides a private space for the bride and wedding party to prepare before the ceremony. It can help organize hair and makeup, dressing, personal belongings, and getting-ready photographs.",
+      },
+      {
+        q: "What should a bridal suite include?",
+        a: "Look for suitable space, mirrors, lighting, seating, electrical outlets, privacy, and convenient access to the ceremony area. Confirm exactly which facilities are included with the venue.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch have a private bridal suite?",
+        a: "Yes. Private bridal suite access is one of the venue's amenities. Contact the team to confirm access times, facilities, and package inclusions.",
+      },
+      {
+        q: "Where is Infinity at Rio Ranch located?",
+        a: "Infinity at Rio Ranch is located at 326 Rio Pk Dr, Liberty Hill, TX 78642, in the Greater Austin area.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch have indoor and outdoor wedding spaces?",
+        a: "Yes. The property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor space across two acres of grounds.",
+      },
+      {
+        q: "Can I take wedding preparation photographs in the bridal suite?",
+        a: "The venue has a bridal suite, but couples should confirm photography access and arrangements with the venue team. It is also useful to discuss lighting and space requirements with your photographer.",
+      },
+      {
+        q: "Can we host the wedding ceremony and reception at Infinity at Rio Ranch?",
+        a: "The venue offers indoor and outdoor wedding spaces. Contact the team to confirm the arrangements, available layouts, guest requirements, and suitability for your planned ceremony and reception.",
+      },
+      {
+        q: "How do I arrange a tour of Infinity at Rio Ranch?",
+        a: "Visit the contact page or call +1 (512) 630-2236. Share your preferred date and event requirements to discuss availability and arrange a visit.",
+      },
+    ],
+    ctaHeading: "Find Your Wedding Venue With a Bridal Suite Near Austin",
+    ctaBody: "For couples exploring Liberty Hill and the Greater Austin area, Infinity at Rio Ranch offers private bridal suite access alongside indoor and outdoor event spaces. Share your preferred wedding date, estimated guest count and bridal suite requirements with the team to discuss availability and arrange a tour.",
+    publishedAt: '2026-11-03T15:00:00.000Z',
+    updatedAt: '2026-11-03T15:00:00.000Z',
+    body: `Your wedding day involves many moving parts, from hair and makeup appointments to photography, ceremony preparations, guest arrivals, and the reception. Having a comfortable place to prepare before the ceremony can make these moments easier to organize.
 
 If you're searching for a **wedding venue with a bridal suite near Austin**, look beyond the ceremony and reception spaces. Consider whether the venue provides a private preparation area where the bride and wedding party can get ready, organize personal belongings, take photographs, and enjoy a few quiet moments before the celebrations begin.
 
@@ -318,94 +325,14 @@ Before finalizing your venue, compare the following:
 
 A venue that looks beautiful in photographs should also meet your practical requirements.
 
-Take time to compare the details before paying a deposit. When you're ready, [contact the team](/contact) to check your date.$md$,
+Take time to compare the details before paying a deposit. When you're ready, [contact the team](/contact) to check your date.`,
+  },
+]
 
-  /*
-   * DSC3678 — the gold-and-crystal chandelier lit against the dark ceiling of
-   * the indoor hall. There is no photo of the bridal suite itself in
-   * public/assets (site.ts labels DSC3712 "The Bridal Suite", but that frame
-   * is oaks on the lawn), so the alt text describes what is actually shown
-   * rather than claiming the suite. Not used as a cover by any earlier post.
-   * 768x1152 portrait per src/lib/image-sources.json; the 16:9 card and the
-   * hero both object-cover it to the chandelier's body. Swap in a real suite
-   * photo from /admin/blog when one exists.
-   */
-  '/assets/site/DSC3678.jpg',
-  'Gold and crystal chandelier lit inside the climate-controlled indoor hall at Infinity at Rio Ranch wedding venue in Liberty Hill, TX',
-
-  'Wedding Venue With Bridal Suite Near Austin | Infinity at Rio Ranch',
-  'Looking for a wedding venue with a bridal suite near Austin? Discover what to look for in a private preparation space and explore Infinity at Rio Ranch in Liberty Hill, TX.',
-
-  'Venue planning',
-  '["Wedding venues","Bridal suite","Liberty Hill","Austin weddings"]'::jsonb,
-
-  -- Editorial brief (0010). Not rendered anywhere — it keeps the article's
-  -- target intact for whoever edits it next. Meta title from the draft:
-  -- "Wedding Venue With Bridal Suite Near Austin, TX". Secondary keywords:
-  -- wedding venue with bridal suite Austin TX, bridal suite wedding venue near
-  -- Austin, wedding venue with bride preparation room, wedding venue with
-  -- getting ready suite, Liberty Hill wedding venue, wedding venue near
-  -- Georgetown TX, wedding venue near Leander TX, indoor and outdoor wedding
-  -- venue near Austin, wedding ceremony and reception venue.
-  'Wedding venue with bridal suite near Austin',
-  'Liberty Hill, TX — Greater Austin',
-  'Commercial investigation with booking intent',
-  'Know what a good bridal suite offers and what to ask, then shortlist and tour a venue that has one',
-
-$json$[
-  {
-    "q": "Why should I choose a wedding venue with a bridal suite?",
-    "a": "A bridal suite provides a private space for the bride and wedding party to prepare before the ceremony. It can help organize hair and makeup, dressing, personal belongings, and getting-ready photographs."
-  },
-  {
-    "q": "What should a bridal suite include?",
-    "a": "Look for suitable space, mirrors, lighting, seating, electrical outlets, privacy, and convenient access to the ceremony area. Confirm exactly which facilities are included with the venue."
-  },
-  {
-    "q": "Does Infinity at Rio Ranch have a private bridal suite?",
-    "a": "Yes. Private bridal suite access is one of the venue's amenities. Contact the team to confirm access times, facilities, and package inclusions."
-  },
-  {
-    "q": "Where is Infinity at Rio Ranch located?",
-    "a": "Infinity at Rio Ranch is located at 326 Rio Pk Dr, Liberty Hill, TX 78642, in the Greater Austin area."
-  },
-  {
-    "q": "Does Infinity at Rio Ranch have indoor and outdoor wedding spaces?",
-    "a": "Yes. The property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor space across two acres of grounds."
-  },
-  {
-    "q": "Can I take wedding preparation photographs in the bridal suite?",
-    "a": "The venue has a bridal suite, but couples should confirm photography access and arrangements with the venue team. It is also useful to discuss lighting and space requirements with your photographer."
-  },
-  {
-    "q": "Can we host the wedding ceremony and reception at Infinity at Rio Ranch?",
-    "a": "The venue offers indoor and outdoor wedding spaces. Contact the team to confirm the arrangements, available layouts, guest requirements, and suitability for your planned ceremony and reception."
-  },
-  {
-    "q": "How do I arrange a tour of Infinity at Rio Ranch?",
-    "a": "Visit the contact page or call +1 (512) 630-2236. Share your preferred date and event requirements to discuss availability and arrange a visit."
-  }
-]$json$::jsonb,
-
-  'Find Your Wedding Venue With a Bridal Suite Near Austin',
-  'For couples exploring Liberty Hill and the Greater Austin area, Infinity at Rio Ranch offers private bridal suite access alongside indoor and outdoor event spaces. Share your preferred wedding date, estimated guest count and bridal suite requirements with the team to discuss availability and arrange a tour.',
-  true
-)
-on conflict (slug) do update set
-  title           = excluded.title,
-  excerpt         = excluded.excerpt,
-  body            = excluded.body,
-  cover_image     = excluded.cover_image,
-  cover_alt       = excluded.cover_alt,
-  seo_title       = excluded.seo_title,
-  seo_description = excluded.seo_description,
-  category        = excluded.category,
-  tags            = excluded.tags,
-  primary_query   = excluded.primary_query,
-  target_location = excluded.target_location,
-  search_intent   = excluded.search_intent,
-  reader_goal     = excluded.reader_goal,
-  faqs            = excluded.faqs,
-  cta_heading     = excluded.cta_heading,
-  cta_body        = excluded.cta_body,
-  published       = excluded.published;
+/** DB posts plus the code posts whose slug the DB doesn't have, newest first. */
+export const withCodePosts = (dbPosts: Post[]): Post[] => {
+  const taken = new Set(dbPosts.map((p) => p.slug))
+  return [...dbPosts, ...codePosts.filter((p) => !taken.has(p.slug))].sort((a, b) =>
+    (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+  )
+}
