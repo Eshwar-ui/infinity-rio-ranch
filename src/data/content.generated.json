@@ -1,5 +1,5 @@
 {
-  "pulledAt": "2026-11-03T13:29:37.032Z",
+  "pulledAt": "2026-11-12T04:47:35.158Z",
   "copy": {
     "global.contact.email": "infinityrioranch6@gmail.com",
     "global.contact.phone_primary": "+1 (512) 630-2236",
@@ -358,6 +358,27 @@
       "label": "Grand Reception & Dance Floor Setup",
       "cat": "ceremony",
       "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/d5816da9-343f-45ff-93f6-396b09e5e77e-DSC03054.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Outdoor Pavilion Setup",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/18787da1-78fa-4e94-b89d-ee265fbf6986-IMG_2534.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Elegant Stage Decoration",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/0e47814a-b000-4ab7-b67b-de19117a9ff6-IMG_25171.jpg",
+      "span": null,
+      "featured": false
+    },
+    {
+      "label": "Traditional Wedding Mandap Setup",
+      "cat": "ceremony",
+      "src": "https://xmnneacpgjwaihwcvayx.supabase.co/storage/v1/object/public/gallery/64808e82-7c6c-451d-9c56-5d5df2b6c8f6-IMG_25121.jpg",
       "span": null,
       "featured": false
     }

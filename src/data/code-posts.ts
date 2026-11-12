@@ -15,6 +15,325 @@ import type { Post } from '@/lib/content-snapshot'
  */
 export const codePosts: Post[] = [
   {
+    // Linear VEL-200. Edits from the source Google Doc: section numbering
+    // dropped (the TOC is derived from the headings), the intro's H2 and the
+    // closing "Book Your Wedding Venue" section folded into the intro / CTA,
+    // the doc's schema blocks dropped (seo.ts emits BlogPosting and FAQPage
+    // from these fields — all eight FAQs match the doc's schema), "the venue
+    // lists…" phrasing rewritten against src/data/site.ts, and internal links
+    // added to the Liberty Hill, outdoor, reception and bridal-suite posts.
+    // The ticket's root URL becomes /blog/<slug> like every other post.
+    slug: "wedding-venue-near-georgetown-tx",
+    title: "Wedding Venue Near Georgetown, TX: Find the Perfect Place for Your Special Day",
+    excerpt: "What Georgetown couples should compare when choosing a wedding venue — capacity, indoor and outdoor space, amenities, vendors and budget — and why nearby Liberty Hill is worth a look.",
+    // DSC3712 is the live oaks on the outdoor lawn, backlit by the sun.
+    coverImage: "/assets/site/DSC3712.jpg",
+    coverAlt: "Sun shining through live oak trees over the green outdoor lawn at Infinity at Rio Ranch wedding venue in Liberty Hill, near Georgetown, TX",
+    seoTitle: "Wedding Venue Near Georgetown, TX | Infinity at Rio Ranch",
+    seoDescription: "Searching for a wedding venue near Georgetown, TX? Explore indoor and outdoor wedding spaces at Infinity at Rio Ranch in nearby Liberty Hill, Texas.",
+    category: "Venue planning",
+    tags: ["Wedding venues","Georgetown","Liberty Hill","Austin weddings"],
+    primaryQuery: "Wedding venue near Georgetown TX",
+    author: '',
+    faqs: [
+      {
+        q: "Where can I find a wedding venue near Georgetown, TX?",
+        a: "Couples can explore wedding venues in Georgetown and nearby communities such as Liberty Hill. Infinity at Rio Ranch is located in Liberty Hill and serves Georgetown and the Greater Austin area.",
+      },
+      {
+        q: "How far is Infinity at Rio Ranch from Georgetown?",
+        a: "Infinity at Rio Ranch is located at 326 Rio Pk Dr, Liberty Hill, TX 78642. Travel time depends on your starting point in Georgetown and current road conditions. Check your preferred route before planning a venue visit.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch offer indoor and outdoor wedding spaces?",
+        a: "Yes. The property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor space across two acres of grounds.",
+      },
+      {
+        q: "Can I host both the wedding ceremony and reception at Infinity at Rio Ranch?",
+        a: "The venue offers indoor and outdoor wedding spaces. Contact the team to confirm whether your preferred ceremony and reception layouts can be accommodated within your event schedule.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch have a bridal suite?",
+        a: "Yes. Private bridal suite access is one of the venue's amenities. Contact the team to confirm access times and package inclusions.",
+      },
+      {
+        q: "Can I bring my own wedding caterer?",
+        a: "Yes. Outside caterers and vendors are welcome at Infinity at Rio Ranch. Confirm the current vendor policies and arrangements directly with the venue.",
+      },
+      {
+        q: "Is parking available at Infinity at Rio Ranch?",
+        a: "Yes. The venue offers ample on-site parking for guests.",
+      },
+      {
+        q: "How do I check wedding venue availability and pricing?",
+        a: "Contact Infinity at Rio Ranch with your preferred date, estimated guest count, and event requirements. Inquiries receive a response within one business day.",
+      },
+    ],
+    ctaHeading: "Book Your Wedding Venue Near Georgetown, TX",
+    ctaBody: "If you're searching for a wedding venue near Georgetown, consider nearby Liberty Hill. Infinity at Rio Ranch offers indoor and outdoor event spaces, a private bridal suite and a string-lit terrace. Share your preferred date, estimated guest count and ceremony and reception requirements to request availability and pricing, or arrange a tour.",
+    publishedAt: '2026-11-12T15:00:00.000Z',
+    updatedAt: '2026-11-12T15:00:00.000Z',
+    body: `Choosing the right wedding venue is one of the biggest decisions when planning your special day. The location, surroundings, available facilities, and guest experience all influence how your wedding celebration comes together.
+
+If you're searching for a **wedding venue near Georgetown, TX**, you may be comparing locations that offer beautiful surroundings, comfortable indoor spaces, outdoor ceremony options, and convenient access for family and friends.
+
+Georgetown is part of the Greater Austin region, and couples planning weddings in the area can also explore nearby communities such as Liberty Hill, Leander, and Cedar Park.
+
+One venue worth considering is **Infinity at Rio Ranch**, located in Liberty Hill, Texas. The property spans two acres and features 2,600 square feet of indoor space and 12,400 square feet of outdoor grounds.
+
+Whether you're planning an outdoor ceremony, an elegant reception, or a celebration that combines indoor and outdoor spaces, finding the right venue starts with understanding your priorities. This guide will help you compare wedding venue options near Georgetown and understand what to consider before making your booking.
+
+## Why Consider a Wedding Venue Near Georgetown, TX?
+
+When couples begin searching for wedding venues, they often look beyond the exact city where they live. Nearby communities may offer different venue styles, layouts, and settings. Exploring locations around Georgetown can help you compare more options before making your final decision.
+
+### Explore Nearby Wedding Locations
+
+Georgetown couples can consider venues in surrounding communities, including Liberty Hill and other parts of the Greater Austin area. Expanding your search radius may help you discover properties with the facilities and atmosphere you're looking for. Our [guide to wedding venues in Liberty Hill, TX](/blog/wedding-venue-liberty-hill-tx) explains what the area offers.
+
+### Find a Setting That Matches Your Wedding Style
+
+Every couple has a different vision. Some prefer an outdoor ceremony surrounded by natural scenery, while others want a formal indoor reception or a combination of both.
+
+When comparing venues near Georgetown, look for a location that supports your preferred celebration rather than choosing solely based on photographs.
+
+### Consider Your Guests' Travel Requirements
+
+Your venue should be convenient for the people attending your wedding. Before selecting a location, consider:
+
+- Where most guests will be travelling from
+- Driving time from Georgetown
+- Directions and road access
+- Parking availability
+- Accessibility for older guests and families
+- Accommodation options in the surrounding area
+
+A venue slightly outside Georgetown may still be a practical choice if it offers the right facilities and a comfortable journey for your guests.
+
+### Plan Your Ceremony and Reception Together
+
+A venue that can accommodate different parts of your wedding celebration may simplify coordination. Ask whether the property can support your preferred ceremony and reception arrangements, including guest seating, dining, photography, entertainment, and transitions between spaces.
+
+## What to Look for When Choosing a Wedding Venue
+
+Before booking a wedding venue near Georgetown, compare the practical details that influence your event.
+
+### Guest Capacity
+
+Start with your expected guest count. Ask each venue to confirm the appropriate capacity for your preferred seating arrangement, ceremony layout, and reception setup. Remember that standing capacity and seated dining capacity can be very different.
+
+### Location and Accessibility
+
+Check the distance from Georgetown and other areas where your guests may be travelling from. Review directions, parking, road access, and accessibility arrangements before finalizing your decision.
+
+### Indoor Facilities
+
+An indoor reception area can be important for dining, entertainment, speeches, and celebrations that require protection from the weather. Check the available layout, climate control, seating arrangements, restrooms, and sound facilities.
+
+### Outdoor Ceremony Space
+
+If you envision an outdoor wedding, inspect the ceremony area and understand what arrangements are possible. Ask about seating, shade, lighting, decorations, photography locations, and alternative arrangements if the weather changes.
+
+### Wedding Amenities
+
+Compare what each venue includes. Some venues provide tables, chairs, setup, teardown, preparation rooms, and event support, while others may charge separately. Request a detailed list of inclusions before comparing rental prices.
+
+### Catering and Vendor Flexibility
+
+Food and vendor arrangements can influence your wedding budget and planning process. Ask whether the venue allows outside caterers, decorators, photographers, entertainment providers, and other professionals. Confirm any restrictions, access requirements, and additional fees.
+
+### Parking and Guest Comfort
+
+Parking and accessibility are important practical considerations. Ask about on-site parking arrangements, accessible entrances, guest facilities, and the availability of support during the event.
+
+## Indoor and Outdoor Wedding Venue Options Near Georgetown
+
+Your preferred wedding atmosphere should influence the type of venue you choose.
+
+### Outdoor Wedding Venues
+
+Outdoor ceremonies can create a beautiful setting for exchanging vows and taking wedding photographs. When exploring outdoor wedding venues near Georgetown, consider:
+
+- Ceremony location and available seating
+- Natural surroundings
+- Photography opportunities
+- Weather conditions
+- Shade and guest comfort
+- Evening lighting
+- Indoor backup arrangements
+
+Texas weather can be unpredictable, so always discuss a contingency plan before booking an outdoor venue. Our guide to [choosing an outdoor wedding venue near Austin](/blog/outdoor-wedding-venue-near-austin) covers this in more detail.
+
+### Indoor Wedding Venues
+
+Indoor venues provide a controlled environment for receptions and other wedding activities. When comparing indoor spaces, check:
+
+- Reception hall size
+- Climate control
+- Guest seating arrangements
+- Dining layout
+- Dance-floor requirements
+- Sound and lighting facilities
+- Restroom access
+
+Choose a space that supports your guest count and planned activities comfortably.
+
+### Wedding Venues With Both Indoor and Outdoor Spaces
+
+Some couples prefer a venue that offers both options. This can provide flexibility when planning an outdoor ceremony followed by an indoor reception, or when using different areas for dining, photographs, and socializing.
+
+Before booking, confirm which areas are available and whether the venue can support your preferred event schedule.
+
+## Planning Your Wedding Ceremony and Reception
+
+A successful wedding celebration requires coordination between the ceremony, reception, vendors, and guest arrangements. Planning these details early can make the day easier for everyone.
+
+### Plan the Ceremony Layout
+
+Think about the ceremony backdrop, seating arrangement, entrance, decorations, and photography positions. Ask the venue about setup requirements and how much time is available before guests arrive.
+
+### Organize the Reception
+
+Your reception may include:
+
+- Guest welcome and seating
+- Dinner or catering service
+- Speeches and celebrations
+- Music and entertainment
+- First dance
+- Photography
+- Guest socializing
+
+Make sure the proposed reception layout leaves sufficient room for these activities. For more on this, see [how to choose a wedding reception venue near Austin](/blog/wedding-reception-venue-near-austin).
+
+### Coordinate Photography
+
+Discuss photography locations with your photographer before the wedding. Identify areas for couple portraits, family photographs, group pictures, and ceremony photographs.
+
+If golden-hour photography is important to you, discuss the timing and available locations during your venue tour.
+
+### Confirm Vendor Arrangements
+
+Share the venue's access rules and setup schedule with your vendors. Confirm arrival times, parking, equipment requirements, and responsibilities so that everyone understands the wedding-day arrangements.
+
+### Prepare for Weather Changes
+
+If your ceremony or photographs involve outdoor areas, ask about indoor alternatives and the process for changing arrangements. Having a backup plan helps reduce last-minute uncertainty.
+
+## Why Consider Infinity at Rio Ranch?
+
+If you're researching a **wedding venue near Georgetown, TX**, Infinity at Rio Ranch is a nearby Liberty Hill property worth exploring. The venue serves Liberty Hill, Georgetown, Leander, Cedar Park, and the Greater Austin area.
+
+Located at 326 Rio Pk Dr, Liberty Hill, TX 78642, the property combines indoor facilities and outdoor grounds for wedding ceremonies, receptions, and other celebrations.
+
+### Two Acres of Grounds
+
+Infinity at Rio Ranch spans two acres, providing indoor and outdoor areas for different wedding arrangements. The property includes:
+
+- 2,600 square feet of indoor space
+- 12,400 square feet of outdoor space
+- An indoor reception hall
+- Outdoor ceremony areas
+- A string-lit outdoor terrace
+
+Discuss the specific layouts available for your expected guest count and event requirements.
+
+### Indoor Reception Hall
+
+The venue features a 2,600-square-foot climate-controlled indoor hall. This provides an indoor setting for wedding receptions, dining, speeches, and other planned activities.
+
+During your tour, ask the venue team about seating configurations, guest capacity, and the best layout for your celebration.
+
+### Outdoor Ceremony and Celebration Areas
+
+The property includes 12,400 square feet of outdoor space. Couples can explore the outdoor grounds when planning their ceremony, photographs, and other wedding activities.
+
+Ask which specific areas are available for your booking and what weather alternatives are offered.
+
+### String-Lit Outdoor Terrace
+
+The string-lit outdoor terrace may be worth exploring if you're considering an evening celebration or an outdoor social area for your guests. Confirm the available arrangements and permitted uses during your visit.
+
+### Private Bridal Suite
+
+Private bridal suite access is included among the venue's amenities, giving the bride a dedicated preparation space to consider when planning the wedding-day schedule. Ask about access times, available facilities, and the number of people the suite can accommodate. Our guide to [choosing a wedding venue with a bridal suite near Austin](/blog/wedding-venue-with-bridal-suite-near-austin) covers what to check.
+
+### Wedding Amenities
+
+The venue's amenities include:
+
+- Tables and elegant seating
+- Setup and teardown by the team
+- Private bridal suite access
+- String-lit outdoor terrace
+- Ample on-site parking
+- Sound-ready indoor and outdoor spaces
+- Flexible, catering-friendly layouts
+- A dedicated day-of venue contact
+
+Confirm the exact inclusions and arrangements for your selected package.
+
+### Catering and Vendor Flexibility
+
+The spaces at Infinity at Rio Ranch are catering-friendly, and outside caterers and vendors are welcome. This may be useful if you want to work with preferred wedding professionals. Contact the venue to understand vendor policies, setup arrangements, and any applicable requirements.
+
+### Explore the Venue Gallery
+
+Photographs can help you understand the property, but an in-person tour is the best way to evaluate whether it fits your wedding requirements.
+
+Explore the [Infinity at Rio Ranch gallery](/gallery) to view the ceremony lawn, reception hall, terrace, and other venue areas. You can also learn more [about the venue](/about) and its property.
+
+## Wedding Venue Budget and Planning Tips
+
+When comparing wedding venues near Georgetown, don't evaluate the rental price alone. Look at the total cost of hosting your event.
+
+### Venue Rental
+
+Ask for the rental cost and confirm whether pricing changes according to the date, season, day of the week, or duration.
+
+### Included Amenities
+
+Check whether the package includes tables, chairs, setup, teardown, bridal suite access, and other services.
+
+### Catering and Vendors
+
+Consider food, beverages, photography, decorations, flowers, entertainment, and any vendor-related charges.
+
+### Additional Expenses
+
+Ask about deposits, cleaning fees, overtime, security requirements, and other potential charges.
+
+### Transportation and Parking
+
+Consider the travel requirements of your guests and whether additional transportation arrangements are necessary.
+
+### Payment and Cancellation Policies
+
+Review the agreement carefully before making a payment. Confirm the deposit amount, payment schedule, cancellation conditions, and rescheduling terms.
+
+**Budget tip:** Request written quotations from shortlisted venues using the same guest count, event duration, and service requirements. This will make comparisons more meaningful.
+
+## Questions to Ask Before Booking a Wedding Venue Near Georgetown
+
+Before selecting your venue, ask these questions:
+
+1. Is our preferred wedding date available?
+2. How far is the venue from Georgetown?
+3. What is the suitable guest capacity for our preferred setup?
+4. Can the venue accommodate both our ceremony and reception?
+5. Which indoor and outdoor spaces are available?
+6. Is a private bridal suite included?
+7. Are tables, chairs, setup, and teardown included?
+8. Can we bring our own caterers and wedding vendors?
+9. Is on-site parking available?
+10. What happens if weather affects our outdoor ceremony?
+11. Are there restrictions on music, decorations, or event timings?
+12. What are the deposit, payment, and cancellation policies?
+13. Can we schedule a site visit before booking?
+
+Getting clear answers will help you make an informed decision and avoid unexpected costs. When you're ready, [contact the team](/contact) with your preferred date, estimated guest count, and indoor or outdoor preferences to check availability.`,
+  },
+  {
     // Linear VEL-120. Edits from the source Google Doc: section numbering
     // dropped (the TOC is derived from the headings), the intro's H2 and the
     // closing section folded into the intro / CTA, the doc's schema blocks
