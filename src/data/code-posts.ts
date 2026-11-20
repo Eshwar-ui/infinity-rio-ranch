@@ -15,6 +15,324 @@ import type { Post } from '@/lib/content-snapshot'
  */
 export const codePosts: Post[] = [
   {
+    // Linear VEL-259. Edits from the source Google Doc: section numbering
+    // dropped (the TOC is derived from the headings), the intro's H2 folded
+    // into the intro and "Book Your Birthday Party Venue" into the CTA, the
+    // doc's "4. Article Schema" / "5. FAQPage Schema" blocks not published
+    // (seo.ts emits BlogPosting and FAQPage from these fields; all eight
+    // visible FAQs go in, the doc's schema had seven), "the venue lists…"
+    // phrasing rewritten against src/data/site.ts, Gallery/Contact links kept
+    // as relative links, and internal links added to the private-event and
+    // event-venue posts. The ticket's root URL becomes /blog/<slug>.
+    slug: "birthday-party-venue-near-austin",
+    title: "Birthday Party Venue Near Austin, TX: Find the Perfect Space for Your Celebration",
+    excerpt: "Milestone, family and surprise birthdays — what to look for in a birthday party venue near Austin, indoor versus outdoor space, how to plan the day and the questions to ask before you book.",
+    // DSC3699 is the pergola walkway through the live oaks to the indoor hall.
+    coverImage: "/assets/site/DSC3699.jpg",
+    coverAlt: "Pergola-covered walkway through live oak trees leading to the indoor event hall at Infinity at Rio Ranch, a birthday party venue in Liberty Hill near Austin, TX",
+    seoTitle: "Birthday Party Venue Near Austin, TX | Infinity at Rio Ranch",
+    seoDescription: "Looking for a birthday party venue near Austin, TX? Explore indoor and outdoor celebration spaces at Infinity at Rio Ranch in Liberty Hill for memorable birthday events.",
+    category: "Event planning",
+    tags: ["Birthday parties","Private events","Liberty Hill","Austin events"],
+    primaryQuery: "Birthday party venue near Austin",
+    author: '',
+    faqs: [
+      {
+        q: "Where can I find a birthday party venue near Austin, TX?",
+        a: "You can explore event venues throughout the Greater Austin area, including Liberty Hill. Infinity at Rio Ranch is located in Liberty Hill and hosts birthday and anniversary celebrations.",
+      },
+      {
+        q: "Can I host a milestone birthday celebration at Infinity at Rio Ranch?",
+        a: "Yes. Birthday and anniversary celebrations are among the occasions Infinity at Rio Ranch hosts. Contact the team to discuss your milestone birthday, expected guest count, preferred setup and availability.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch offer indoor and outdoor birthday party spaces?",
+        a: "Yes. The property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor space across two acres of grounds.",
+      },
+      {
+        q: "Can I bring my own caterer for a birthday party?",
+        a: "Yes. Outside caterers and vendors are welcome at Infinity at Rio Ranch. Contact the venue to confirm the applicable vendor policies and requirements.",
+      },
+      {
+        q: "Are tables and chairs available at Infinity at Rio Ranch?",
+        a: "Yes. Tables and elegant seating are included among the venue's amenities. Confirm the available furniture and setup arrangements for your specific event.",
+      },
+      {
+        q: "Is parking available for birthday party guests?",
+        a: "Yes. Infinity at Rio Ranch offers ample on-site parking for guests.",
+      },
+      {
+        q: "Can I decorate the venue for a themed birthday party?",
+        a: "Ask the venue team about decoration policies, permitted materials, setup timings and any restrictions before making your arrangements.",
+      },
+      {
+        q: "How do I check birthday party venue pricing and availability?",
+        a: "Contact Infinity at Rio Ranch with your preferred date, estimated guest count and event requirements. The team can discuss availability, arrange a venue tour and provide current booking information.",
+      },
+    ],
+    ctaHeading: "Book Your Birthday Party Venue Near Austin, TX",
+    ctaBody: "Whether you're planning a milestone birthday, a family celebration or a private party, Infinity at Rio Ranch in Liberty Hill offers indoor and outdoor event spaces for birthdays, anniversaries and other special gatherings. Share your preferred date, estimated guest count, type of celebration and indoor or outdoor preference to request current pricing and availability, or schedule a venue tour.",
+    publishedAt: '2026-11-20T13:00:00.000Z',
+    updatedAt: '2026-11-20T13:00:00.000Z',
+    body: `A birthday is more than another date on the calendar. It is an opportunity to bring family and friends together, celebrate important milestones, and create memories that last beyond the occasion.
+
+Whether you're planning a 30th birthday, a 50th birthday celebration, a family gathering, or a special surprise party, choosing the right venue can make the experience more enjoyable for everyone.
+
+If you're searching for a **birthday party venue near Austin, TX**, consider a space that offers enough room for your guests, comfortable facilities, flexible arrangements, and an atmosphere that matches your celebration.
+
+Located in Liberty Hill, Texas, **Infinity at Rio Ranch** offers indoor and outdoor event spaces for birthdays, anniversaries, and other special occasions. The two-acre property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor grounds, giving hosts different options to explore when planning a celebration.
+
+From a relaxed family gathering to a larger milestone birthday, the right venue should make it easier to bring your ideas together.
+
+## Why Choose a Dedicated Birthday Party Venue?
+
+Hosting a birthday party at home can work for smaller gatherings, but larger celebrations often require additional space, seating, parking, and event arrangements. A dedicated event venue provides an alternative when you want to bring more people together without managing every aspect of the gathering in your home.
+
+### More Space for Your Guests
+
+A dedicated venue gives you the opportunity to accommodate your guest list and plan seating, dining, entertainment, and socializing areas. Before booking, confirm the suitable guest capacity for your preferred setup.
+
+### A Different Atmosphere
+
+A special birthday deserves a setting that feels different from an ordinary day. An event venue can provide an environment that you can personalize with decorations, flowers, lighting, music, and other celebration details.
+
+### Flexible Celebration Arrangements
+
+Different birthday celebrations require different layouts. You may want a seated dinner, a relaxed gathering, a dance floor, or a combination of activities. Look for a venue that can accommodate your preferred arrangements and confirm which facilities are included.
+
+### Convenient Event Coordination
+
+A venue with tables, seating, setup assistance, and a dedicated point of contact can simplify some of the practical arrangements. Ask exactly which services are included in your booking package.
+
+### Indoor and Outdoor Possibilities
+
+If you prefer an open-air celebration, an outdoor venue can offer a different atmosphere. A property with both indoor and outdoor areas can also give you alternatives when planning around guest comfort and Texas weather.
+
+## Types of Birthday Celebrations You Can Host
+
+When comparing birthday party venues near Austin, think about the type of celebration you want to organize. The occasion can influence your guest list, venue layout, catering requirements, and entertainment plans.
+
+### Milestone Birthday Parties
+
+Milestone birthdays such as 30th, 40th, 50th, and 60th celebrations often bring together friends, family, and colleagues. A dedicated event space can provide room for dinner, speeches, photographs, music, and socializing.
+
+### Family Birthday Celebrations
+
+Family birthday gatherings are an opportunity to bring different generations together. When choosing a venue, consider comfortable seating, accessibility, parking, food arrangements, and enough room for guests to spend time together.
+
+### Surprise Birthday Parties
+
+Planning a surprise party requires coordination between the host, guests, and venue team. Before booking, discuss arrival arrangements, setup timing, decorations, and any special requirements needed to keep the celebration organized.
+
+### Adult Birthday Parties
+
+Adult birthday celebrations may include formal dinners, evening parties, music, entertainment, and social gatherings. Look for a venue with appropriate indoor and outdoor areas and ask about its policies for music, catering, beverages, and event timings.
+
+### Birthday and Anniversary Celebrations
+
+If you're planning a combined birthday and anniversary gathering or another family milestone, consider a venue that can support a customized event arrangement. A flexible space can help hosts bring different parts of the celebration together.
+
+### Private Birthday Gatherings
+
+Some hosts prefer a smaller, more personal celebration, while others want a larger event with extended family and friends. Discuss your expected attendance and preferred layout with the venue before deciding whether it is suitable. Our guide to [choosing a private event venue near Austin](/blog/private-event-venue-near-austin) covers other family milestones too.
+
+## What to Look for in a Birthday Party Venue Near Austin
+
+Not every event space is suitable for every birthday celebration. Compare the following factors before making a booking.
+
+### Guest Capacity and Seating
+
+Start with your expected guest count. Ask the venue how many guests it can accommodate for your preferred layout, whether seated dining, a reception-style gathering, or a combination of both. Do not assume the total property area represents the number of guests who can be seated comfortably.
+
+### Indoor Facilities
+
+An indoor event space can be useful for dining, speeches, music, and celebrations that require climate control. Check the available seating, lighting, restrooms, sound arrangements, and event layout.
+
+### Outdoor Space
+
+Outdoor areas can provide room for socializing, photographs, and open-air celebrations. Ask about shade, lighting, accessibility, weather contingencies, and which areas are included in your booking.
+
+### Catering and Food Arrangements
+
+Food is an important part of most birthday celebrations. Ask whether the venue allows outside caterers, what arrangements are available, and whether there are restrictions on food service or beverages. Request details of any vendor requirements or additional fees.
+
+### Decorations and Personalization
+
+Birthday decorations can make the celebration feel personal. Before booking, ask about decoration policies, installation times, permitted materials, and whether there are restrictions on candles, hanging decorations, or other items.
+
+### Music and Entertainment
+
+If you are planning music, dancing, speeches, or entertainment, confirm the venue's sound facilities and event timing policies. Ask about indoor and outdoor sound arrangements and any restrictions on volume or event hours.
+
+### Parking and Accessibility
+
+Consider how guests will arrive and move around the property. Confirm parking availability, directions, accessible routes, and facilities for older guests and families.
+
+### Pricing and Booking Terms
+
+Request a written quote that explains:
+
+- Venue rental charges
+- Rental duration
+- Tables and seating
+- Setup and teardown
+- Catering and vendor arrangements
+- Additional service charges
+- Deposit and payment schedule
+- Cancellation and rescheduling policies
+
+Comparing complete quotes is more useful than comparing the headline rental price alone.
+
+## Indoor vs. Outdoor Birthday Party Spaces
+
+The right setting depends on the type of birthday celebration you want to create.
+
+### Indoor Birthday Party Venues
+
+Indoor spaces can be suitable for:
+
+- Formal birthday dinners
+- Family gatherings
+- Speeches and celebrations
+- Music and dancing
+- Events requiring climate control
+
+When visiting an indoor venue, check the available floor plan, seating arrangements, sound facilities, lighting, and guest capacity.
+
+### Outdoor Birthday Party Venues
+
+Outdoor spaces can create a relaxed atmosphere for celebrations with family and friends. They may be suitable for:
+
+- Open-air birthday gatherings
+- Outdoor dining arrangements
+- Social celebrations
+- Photography
+- Evening events
+
+Before booking an outdoor space in Central Texas, consider seasonal temperatures, shade, rain, and other weather conditions.
+
+### A Venue With Both Indoor and Outdoor Areas
+
+A property with indoor and outdoor facilities gives hosts more flexibility when organizing different parts of a birthday party. For example, you may want to welcome guests outdoors, organize dining indoors, and use an outdoor area for photographs or socializing.
+
+The available arrangements depend on the venue's layout, booking terms, and event requirements. Always discuss your preferred schedule and backup plan with the venue team.
+
+## Why Consider Infinity at Rio Ranch for Your Birthday Celebration?
+
+If you're searching for a birthday party venue near Austin, TX, Infinity at Rio Ranch in Liberty Hill is an option worth exploring. Birthdays and anniversaries are among the occasions it hosts, and it serves Liberty Hill, Georgetown, Leander, Cedar Park, and the Greater Austin area. Its indoor and outdoor spaces provide different possibilities for family celebrations, milestone birthdays, and private gatherings.
+
+### Two Acres of Event Grounds
+
+Infinity at Rio Ranch features:
+
+- Two acres of grounds
+- 2,600 square feet of indoor space
+- 12,400 square feet of outdoor space
+
+This combination gives hosts different areas to consider when planning their celebration. Discuss the available layouts and suitable guest capacity with the venue team before booking.
+
+### Climate-Controlled Indoor Hall
+
+The 2,600-square-foot indoor hall is climate-controlled, providing an indoor option for birthday dining, speeches, entertainment, and social gatherings. Ask the team about the most suitable arrangement for your guest count and celebration style.
+
+### Spacious Outdoor Grounds
+
+The property includes 12,400 square feet of outdoor space, giving hosts outdoor areas to explore for photographs, socializing, and other celebration arrangements. Ask which specific areas are available for your event and whether there are any restrictions on decorations or activities.
+
+### String-Lit Outdoor Terrace
+
+A string-lit outdoor terrace is one of the venue's features, and may be worth considering if you want an evening atmosphere for your birthday gathering. Confirm the permitted use, available setup, and lighting arrangements during your venue tour.
+
+### Tables, Seating, and Event Setup
+
+Tables and elegant seating are included, along with setup and teardown by the venue team. These features can help reduce some of the logistical work involved in organizing a birthday celebration. Confirm the exact furniture, setup arrangements, and services included in your booking.
+
+### Catering-Friendly Arrangements
+
+The spaces are catering-friendly, and outside caterers and vendors are welcome. This may be useful if you want to work with a preferred catering provider or personalize the food arrangements for your guests. Contact the venue to understand the current vendor policies and any applicable requirements.
+
+### On-Site Parking
+
+Ample on-site parking can make guest arrival more convenient. If you are expecting a larger gathering, confirm the arrangements for your expected attendance.
+
+### Dedicated Day-of Venue Contact
+
+A dedicated day-of venue contact is among the amenities. Ask how this support works, what responsibilities are covered, and who will coordinate with you during the celebration.
+
+### Explore the Venue Before Booking
+
+Photographs can help you understand the property, but visiting in person allows you to assess the spaces and discuss your plans. Explore the [Infinity at Rio Ranch gallery](/gallery) to see the reception hall, outdoor grounds, terrace, and actual event setups, or read our guide to [choosing an event venue near Austin](/blog/event-venue-near-austin).
+
+## How to Plan a Memorable Birthday Celebration
+
+Once you have shortlisted a birthday party venue near Austin, organize the following details.
+
+### Step 1: Decide on the Celebration Style
+
+Choose whether you want a formal dinner, family gathering, surprise party, milestone celebration, or evening event. Your preferred style will influence the venue layout and other arrangements.
+
+### Step 2: Prepare Your Guest List
+
+Estimate the number of guests and identify any special seating or accessibility requirements. Share this information with the venue so the team can suggest a suitable arrangement.
+
+### Step 3: Establish Your Budget
+
+Prepare a budget that includes the venue, catering, decorations, photography, entertainment, and other event expenses. Keep a contingency amount for unexpected costs.
+
+### Step 4: Select the Venue and Date
+
+Compare available venues based on location, facilities, pricing, and event policies. Contact your preferred venue with your date and an alternative date to check availability.
+
+### Step 5: Plan Food and Catering
+
+Decide whether you want a buffet, seated meal, refreshments, snacks, or another arrangement. Confirm catering policies and vendor requirements with the venue.
+
+### Step 6: Organize Decorations and Entertainment
+
+Plan your theme, photographs, decorations, music, and any entertainment. Check the venue's policies before arranging decorations or booking entertainment providers.
+
+### Step 7: Prepare the Event Schedule
+
+Create a simple schedule covering:
+
+- Venue setup
+- Guest arrival
+- Welcome and photographs
+- Food and refreshments
+- Birthday cake and celebrations
+- Music and entertainment
+- Closing and teardown
+
+Share the schedule with the venue team and relevant vendors.
+
+### Step 8: Confirm All Arrangements
+
+Before the event, reconfirm the booking, guest count, catering, setup, vendor arrival times, payment details, and event timings. Having everything confirmed in writing can help avoid last-minute confusion.
+
+## Questions to Ask Before Booking a Birthday Party Venue
+
+Before paying a deposit, ask the venue:
+
+1. Is my preferred birthday party date available?
+2. What is the suitable guest capacity for my event layout?
+3. Can we use both indoor and outdoor spaces?
+4. Are tables and chairs included?
+5. Is setup and teardown included?
+6. Can we bring our own caterer?
+7. Are outside decorators and entertainment providers permitted?
+8. What are the rules for music and event timings?
+9. Is on-site parking available?
+10. Are there restrictions on decorations or activities?
+11. What happens if outdoor plans are affected by weather?
+12. What are the rental charges and additional fees?
+13. What are the deposit, cancellation, and rescheduling policies?
+14. Can we arrange a venue tour before booking?
+
+Getting clear answers will help you compare venues and understand the complete cost of hosting your birthday party.
+
+When you're ready, [contact the team](/contact) with your preferred event date, estimated guest count, type of birthday celebration, preferred indoor or outdoor setup, catering and vendor requirements, and any special arrangements to request current pricing and availability or schedule a venue tour.`,
+  },
+  {
     // Linear VEL-200. Edits from the source Google Doc: section numbering
     // dropped (the TOC is derived from the headings), the intro's H2 and the
     // closing "Book Your Wedding Venue" section folded into the intro / CTA,
