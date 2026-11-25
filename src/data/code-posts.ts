@@ -15,6 +15,333 @@ import type { Post } from '@/lib/content-snapshot'
  */
 export const codePosts: Post[] = [
   {
+    // Linear VEL-282. Edits from the source Google Doc: section numbering
+    // dropped (the TOC is derived from the headings), the intro's H2 folded
+    // into the intro and "Book Your Family Reunion Venue" into the closing
+    // CTA, the doc's "2. CTA Strategy" / "Article Schema" / "FAQPage Schema"
+    // blocks not published (seo.ts emits BlogPosting and FAQPage from these
+    // fields; all eight visible FAQs go in, the doc's schema had seven — it
+    // was missing the activities/photographs question), the ticket's two CTAs
+    // placed after the intro, after the venue features and at the end, all to
+    // /contact, Gallery/Contact links kept as relative links, and internal
+    // links added to the private-event, birthday and event-venue posts.
+    // The ticket's root URL becomes /blog/<slug>.
+    slug: "family-reunion-venue-near-austin",
+    title: "Family Reunion Venue Near Austin, TX: Plan a Memorable Gathering for Every Generation",
+    excerpt: "What makes a good family reunion venue near Austin, indoor and outdoor spaces for every generation, activity ideas, a step-by-step planning guide and the questions to ask before you book.",
+    // DSC3692 is the oak-shaded lawn with string lights and the cedar pergola.
+    coverImage: "/assets/site/DSC3692.jpg",
+    coverAlt: "Oak-shaded lawn with string lights and a cedar pergola at Infinity at Rio Ranch, a family reunion venue in Liberty Hill near Austin, TX",
+    seoTitle: "Family Reunion Venue Near Austin, TX | Infinity at Rio Ranch",
+    seoDescription: "Looking for a family reunion venue near Austin, TX? Explore spacious indoor and outdoor event spaces at Infinity at Rio Ranch in Liberty Hill for memorable family gatherings.",
+    category: "Event planning",
+    tags: ["Family reunions","Private events","Liberty Hill","Austin events"],
+    primaryQuery: "Family reunion venue near Austin",
+    author: '',
+    faqs: [
+      {
+        q: "Where can I find a family reunion venue near Austin, TX?",
+        a: "You can explore event venues across the Greater Austin area, including Liberty Hill. Infinity at Rio Ranch is located in Liberty Hill and offers indoor and outdoor spaces for celebrations and community gatherings.",
+      },
+      {
+        q: "Can Infinity at Rio Ranch accommodate a large family gathering?",
+        a: "The property includes two acres of grounds, a 2,600-square-foot indoor hall, and 12,400 square feet of outdoor space. Contact the venue with your expected guest count to confirm the suitable layout and capacity.",
+      },
+      {
+        q: "Does Infinity at Rio Ranch offer indoor and outdoor spaces?",
+        a: "Yes. The property includes indoor and outdoor event spaces, allowing families to discuss different arrangements for their gathering.",
+      },
+      {
+        q: "Can we bring our own caterer for a family reunion?",
+        a: "Yes. Infinity at Rio Ranch's spaces are catering-friendly and outside caterers and vendors are welcome. Confirm the current vendor requirements with the venue.",
+      },
+      {
+        q: "Are tables and chairs available at the venue?",
+        a: "Yes. Tables and elegant seating are among the venue's amenities. Contact the team to confirm the available quantities and arrangements for your event.",
+      },
+      {
+        q: "Is parking available for family reunion guests?",
+        a: "Yes. Infinity at Rio Ranch offers ample on-site parking for guests.",
+      },
+      {
+        q: "Can we organize family activities and group photographs?",
+        a: "Discuss your proposed activities and photography requirements with the venue team. They can help clarify which indoor and outdoor areas are available and what restrictions may apply.",
+      },
+      {
+        q: "How do I check family reunion venue availability and pricing?",
+        a: "Contact Infinity at Rio Ranch with your preferred date, estimated guest count, and event requirements. You can request current pricing, discuss suitable layouts, and arrange a venue tour.",
+      },
+    ],
+    ctaHeading: "Book Your Family Reunion Venue Near Austin, TX",
+    ctaBody: "A family reunion brings generations together, and the right venue makes organizing it easier when relatives are travelling from different places. Share your preferred reunion date, estimated guest count, indoor or outdoor requirements, catering preferences, planned activities and any accessibility needs to check family event availability and current pricing, or schedule a venue tour of Infinity at Rio Ranch in Liberty Hill.",
+    publishedAt: '2026-11-25T09:00:00.000Z',
+    updatedAt: '2026-11-25T09:00:00.000Z',
+    body: `Getting the entire family together is becoming increasingly special. Relatives may live in different cities, children have busy schedules, and coordinating a date that works for everyone can take time.
+
+A family reunion gives everyone an opportunity to reconnect, share stories, celebrate milestones, and create new memories across generations.
+
+If you're searching for a **family reunion venue near Austin, TX**, finding the right location is an important first step. You need a space where grandparents, parents, children, and extended family members can gather comfortably. A suitable venue should offer enough room for your guests, convenient parking, flexible seating arrangements, catering options, and spaces for different activities.
+
+Located in Liberty Hill, Texas, **Infinity at Rio Ranch** offers indoor and outdoor event spaces for celebrations and community gatherings. Its two-acre property includes 2,600 square feet of indoor space and 12,400 square feet of outdoor space. For families exploring event venues around Austin, Georgetown, and Liberty Hill, it is an option worth considering for a private family gathering.
+
+**[Check Family Event Availability](/contact)** · [Schedule a Venue Tour](/contact)
+
+## Why Choose a Dedicated Family Reunion Venue?
+
+Hosting a reunion at home may work for a small group, but larger family gatherings can require more space and coordination. A dedicated venue gives families an opportunity to bring everyone together in one location without managing all the arrangements at home.
+
+### Space for Extended Family
+
+Family reunions often involve multiple generations and relatives travelling from different places. A dedicated event space can provide room for dining, conversations, group photographs, and activities. Before booking, confirm the suitable guest capacity for your expected attendance and preferred layout.
+
+### A Comfortable Setting for All Generations
+
+A successful family reunion should be enjoyable for everyone, from young children to older relatives. Consider seating arrangements, accessibility, restrooms, parking, shaded areas, and convenient movement between indoor and outdoor spaces.
+
+### Opportunities to Reconnect
+
+Family gatherings are about spending quality time together. A venue with different areas for dining, conversations, photographs, and group activities can help create a relaxed atmosphere.
+
+### Flexible Catering Arrangements
+
+Food is often one of the highlights of a family reunion. A venue that accommodates flexible catering arrangements can help families organize meals according to their preferences and traditions. Always confirm vendor policies and food-service arrangements before booking.
+
+### A Place for Family Memories
+
+Group photographs, family speeches, games, and shared meals can make a reunion memorable. Choosing a dedicated venue helps bring these activities together in a setting designed for gatherings and celebrations.
+
+## What Makes a Good Family Reunion Venue?
+
+Not every event venue is suitable for a multi-generation family gathering. Consider the following factors before making your choice.
+
+### Guest Capacity and Seating
+
+Prepare an estimated guest list before contacting venues. Ask about:
+
+- Comfortable seated capacity
+- Dining arrangements
+- Space for children and older guests
+- Areas for group photographs
+- Space for planned activities
+- Accessibility between different areas
+
+A venue's total property size does not automatically indicate how many guests it can accommodate comfortably.
+
+### Location and Accessibility
+
+Family members may travel from Austin, Georgetown, Round Rock, Leander, Cedar Park, and other communities. Choose a location that works reasonably well for the majority of your guests, and check driving directions, travel time, parking, and road access before selecting the venue.
+
+### Indoor Facilities
+
+Indoor spaces can be useful for dining, speeches, entertainment, and gatherings that require climate control. Ask about the seating arrangements, lighting, restrooms, sound facilities, and available event layouts.
+
+### Outdoor Areas
+
+Outdoor spaces can provide room for photographs, socializing, and family activities. If your reunion involves children or older relatives, consider shade, seating, accessibility, and safe movement around the property.
+
+### Catering and Food Options
+
+Food arrangements can be particularly important for family reunions where relatives may have different preferences and traditions. Ask whether the venue allows outside caterers and what arrangements are available for serving meals.
+
+### Parking and Guest Convenience
+
+A convenient arrival experience can make a difference, especially when several families are attending. Confirm on-site parking availability and any arrangements for guests who require accessible access.
+
+### Event Support
+
+Planning a reunion involves several details, including setup, seating, catering, decorations, and scheduling. Ask whether the venue provides setup assistance, teardown, and a dedicated point of contact during the event.
+
+## Indoor and Outdoor Spaces for Family Gatherings
+
+The right combination of indoor and outdoor areas can make a family reunion more flexible. Depending on your guest list and planned activities, you may want different spaces for dining, conversations, photographs, and entertainment.
+
+### Indoor Family Gathering Spaces
+
+Indoor spaces can be suitable for:
+
+- Family meals and group dining
+- Speeches and family announcements
+- Photo presentations
+- Music and entertainment
+- Conversations and socializing
+- Gatherings that require climate control
+
+Check the available floor plan and seating arrangements to ensure that the space works for your family.
+
+### Outdoor Family Gathering Spaces
+
+Outdoor areas can create a relaxed environment for spending time together. They may be useful for:
+
+- Family photographs
+- Outdoor socializing
+- Group activities
+- Casual gatherings
+- Evening celebrations
+
+Before booking an outdoor area, ask about shade, lighting, weather contingencies, and available seating.
+
+### Combining Indoor and Outdoor Areas
+
+A venue offering both indoor and outdoor facilities gives families more options. For example, your gathering could begin with guest arrivals and photographs outdoors, followed by a meal indoors and additional socializing on the terrace.
+
+The exact arrangements depend on the venue's available layouts and booking terms. Discuss your proposed schedule with the venue team before finalizing the event.
+
+## Activities and Arrangements for a Memorable Family Reunion
+
+A family reunion becomes more meaningful when there are opportunities for different generations to participate. Here are some ideas to discuss when planning your gathering.
+
+### Family Group Photographs
+
+Arrange a group photograph that brings everyone together. You can also organize smaller photographs with grandparents, cousins, siblings, and individual family branches. Identify suitable indoor or outdoor photography locations in advance.
+
+### Family History and Memory Sharing
+
+Create a short program where family members share stories, photographs, and memories. You could prepare a photo slideshow featuring older family pictures, family milestones, and memorable occasions.
+
+### Games and Group Activities
+
+Depending on the venue's policies and available space, consider simple activities such as family trivia, team games, and activities for children. Choose options that allow different age groups to participate comfortably.
+
+### Shared Family Meal
+
+A shared meal is often the centrepiece of a reunion. Discuss catering arrangements, seating, food preferences, and service timing before the event. If your family has specific food traditions, coordinate them with the caterer and venue.
+
+### Celebrating Family Milestones
+
+A reunion can also provide an opportunity to celebrate birthdays, anniversaries, graduations, retirements, or other important family occasions. If your gathering includes multiple celebrations, share the proposed schedule with the venue team. Our guides to [planning a birthday party near Austin](/blog/birthday-party-venue-near-austin) and [choosing a private event venue near Austin](/blog/private-event-venue-near-austin) cover those occasions in more detail.
+
+## Why Consider Infinity at Rio Ranch?
+
+If you're searching for a **family reunion venue near Austin, TX**, Infinity at Rio Ranch in Liberty Hill is worth exploring for your next private family gathering. The venue serves Liberty Hill, Georgetown, Leander, Cedar Park, and the Greater Austin area, and its property combines indoor and outdoor spaces for weddings, corporate events, cultural and community gatherings, birthdays, anniversaries, and other celebrations.
+
+### Two Acres of Grounds
+
+Infinity at Rio Ranch features:
+
+- Two acres of grounds
+- 2,600 square feet of indoor space
+- 12,400 square feet of outdoor space
+
+These areas provide different possibilities for family gatherings, depending on the guest count and event layout. Discuss your requirements with the venue team to determine which spaces are suitable for your reunion.
+
+### Climate-Controlled Indoor Hall
+
+The 2,600-square-foot indoor hall is climate-controlled, providing an indoor setting for family dining, speeches, presentations, and socializing. Ask about the available seating arrangements and guest capacity for your planned layout.
+
+### Spacious Outdoor Grounds
+
+The property includes 12,400 square feet of outdoor space. These grounds provide additional options to explore for group photographs, outdoor socializing, and family celebrations. Confirm which areas are available for your event and whether specific activities are permitted.
+
+### String-Lit Outdoor Terrace
+
+A string-lit outdoor terrace is one of the venue's features, and may be worth exploring if your family reunion includes an evening gathering or outdoor social time. Discuss the available setup and arrangements during your venue visit.
+
+### Tables, Seating, and Event Setup
+
+Tables and elegant seating are included, along with setup and teardown by the venue team. These amenities can help simplify some of the arrangements involved in organizing a family gathering. Confirm the furniture quantities, layout options, and services included in your booking.
+
+### Catering-Friendly Layouts
+
+The spaces are catering-friendly, and outside caterers and vendors are welcome. This gives families an opportunity to discuss their preferred food arrangements with the venue team. Confirm catering requirements, vendor access, and any additional charges before booking.
+
+### On-Site Parking
+
+Ample on-site parking can help make arrival more convenient for family members travelling from different locations. If you expect a larger gathering, confirm that the parking arrangements are suitable for your attendance.
+
+### Dedicated Day-of Venue Contact
+
+A dedicated day-of venue contact is among the amenities. Ask how this support works and what event-day responsibilities are covered.
+
+### Explore the Venue Gallery
+
+Before making your decision, review the actual venue photographs and arrange a visit. Explore the [Infinity at Rio Ranch gallery](/gallery) to view the indoor hall, outdoor grounds, terrace, and different event setups, learn more [about the venue](/about), or read our guide to [choosing an event venue near Austin](/blog/event-venue-near-austin).
+
+**[Check Family Event Availability](/contact)** · [Schedule a Venue Tour](/contact)
+
+## How to Plan a Successful Family Reunion
+
+A little planning can make it easier for everyone to enjoy the gathering.
+
+### Step 1: Decide on the Reunion Date
+
+Choose a preferred date and one or two alternatives. Consider school schedules, public holidays, work commitments, and travel requirements for relatives coming from outside Austin.
+
+### Step 2: Prepare Your Guest List
+
+Estimate the number of adults, children, and older family members attending. Share the expected guest count with the venue to discuss a suitable layout.
+
+### Step 3: Set Your Budget
+
+Prepare a budget covering:
+
+- Venue rental
+- Catering and refreshments
+- Decorations
+- Photography
+- Entertainment
+- Activities
+- Additional services
+- Contingency expenses
+
+If multiple family members are contributing, agree on the budget and payment arrangements in advance.
+
+### Step 4: Select the Venue
+
+Compare shortlisted venues based on location, capacity, amenities, accessibility, parking, and pricing. Arrange a site visit before making a final decision.
+
+### Step 5: Organize Food and Catering
+
+Discuss the menu with your family and identify dietary requirements. Confirm the venue's outside-catering policy and coordinate service timings with your chosen caterer.
+
+### Step 6: Plan Activities and Entertainment
+
+Decide whether you want family games, a slideshow, speeches, music, group photographs, or other activities. Check whether the venue can accommodate your plans.
+
+### Step 7: Create an Event Schedule
+
+Prepare a simple schedule for:
+
+- Venue setup
+- Guest arrival
+- Welcome and introductions
+- Group photographs
+- Family activities
+- Meal service
+- Speeches and memories
+- Closing arrangements
+
+Share the schedule with the venue team and relevant vendors.
+
+### Step 8: Confirm the Booking Details
+
+Before the reunion, reconfirm the guest count, venue access, catering, setup, vendor arrival times, payment schedule, and event timings. Get the agreed arrangements in writing.
+
+## Questions to Ask Before Booking a Family Reunion Venue
+
+Before making a deposit, ask the venue:
+
+1. Is our preferred date available?
+2. What is the suitable capacity for our guest count?
+3. Can we use both indoor and outdoor areas?
+4. Are tables and chairs included?
+5. Is setup and teardown included?
+6. Can we bring our own caterer?
+7. Are outside decorators and entertainment providers permitted?
+8. Is on-site parking available?
+9. Are there accessible facilities for older guests?
+10. Are there restrictions on music, decorations, or activities?
+11. What happens if outdoor plans are affected by weather?
+12. What are the venue rental charges and additional fees?
+13. What are the deposit, cancellation, and rescheduling policies?
+14. Can we arrange a site visit before booking?
+
+Having clear answers will help your family compare venues and plan the gathering with fewer surprises.
+
+When you're ready, [contact the team](/contact) with your preferred reunion date, estimated number of guests, indoor or outdoor requirements, catering preferences, activities and entertainment plans, and any accessibility requirements to request current pricing and availability, or arrange a venue tour to explore the property.
+
+**[Check Family Event Availability](/contact)** · [Schedule a Venue Tour](/contact)`,
+  },
+  {
     // Linear VEL-259. Edits from the source Google Doc: section numbering
     // dropped (the TOC is derived from the headings), the intro's H2 folded
     // into the intro and "Book Your Birthday Party Venue" into the CTA, the
